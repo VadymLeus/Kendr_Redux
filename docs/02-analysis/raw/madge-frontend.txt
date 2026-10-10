@@ -1,0 +1,5 @@
+﻿Processed 198 files (3.4s) (14 warnings)
+
+1) modules/editor/core/BlockRenderer.jsx > modules/editor/blocks/Layout/LayoutBlock.jsx
+2) modules/editor/core/BlockRenderer.jsx > modules/editor/blocks/Layout/LayoutBlock.jsx > modules/editor/ui/EditableBlockWrapper.jsx
+

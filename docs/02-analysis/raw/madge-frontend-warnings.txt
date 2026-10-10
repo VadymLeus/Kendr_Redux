@@ -1,0 +1,971 @@
+﻿Processed 198 files (3.5s) (14 warnings)
+
+app/App.jsx
+  app/guards/ProtectedRoute.jsx
+  app/providers/AuthContext.jsx
+  modules/admin/pages/AdminBillingPage.jsx
+  modules/admin/pages/AdminControlPage.jsx
+  modules/admin/pages/AdminDashboardPage.jsx
+  modules/admin/pages/AdminTemplatesPage.jsx
+  modules/admin/pages/AdminTicketsReportsPage.jsx
+  modules/admin/pages/AdminUsersSitesPage.jsx
+  modules/auth/AdminLoginPage.jsx
+  modules/auth/AuthPage.jsx
+  modules/auth/AuthSuccessPage.jsx
+  modules/auth/RestoreAccountPage.jsx
+  modules/dashboard/pages/CreateSitePage.jsx
+  modules/dashboard/pages/MySitesPage.jsx
+  modules/dashboard/pages/SiteDashboardPage.jsx
+  modules/media/pages/MediaLibraryPage.jsx
+  modules/profile/pages/ProfilePage.jsx
+  modules/profile/pages/SettingsPage.jsx
+  modules/renderer/pages/CatalogPage.jsx
+  modules/renderer/pages/SiteDisplayPage.jsx
+  modules/shop/CartPage.jsx
+  modules/shop/MyOrdersPage.jsx
+  modules/shop/ProductDetailPage.jsx
+  modules/support/AppealPage.jsx
+  modules/support/MyTicketsPage.jsx
+  modules/support/NewTicketPage.jsx
+  modules/support/SupportPage.jsx
+  modules/support/TicketDetailPage.jsx
+  pages/HomePage.jsx
+  pages/InvitePage.jsx
+  pages/NotFoundPage.jsx
+  pages/RulesPage.jsx
+  pages/UpgradePage.jsx
+  shared/ui/complex/MaintenanceScreen.jsx
+  shared/ui/layouts/Layout.jsx
+app/guards/ProtectedRoute.jsx
+  app/providers/AuthContext.jsx
+app/main.jsx
+  app/App.jsx
+  app/providers/AuthContext.jsx
+  app/providers/CartContext.jsx
+  app/providers/ConfirmContext.jsx
+  app/providers/FavoritesContext.jsx
+  app/providers/ThemeContext.jsx
+  app/styles/index.css
+app/providers/AuthContext.jsx
+  shared/api/api.js
+app/providers/CartContext.jsx
+  app/providers/AuthContext.jsx
+app/providers/ConfirmContext.jsx
+  shared/ui/complex/ConfirmModal.jsx
+app/providers/FavoritesContext.jsx
+  app/providers/AuthContext.jsx
+  shared/api/api.js
+app/providers/ThemeContext.jsx
+  app/providers/AuthContext.jsx
+  shared/api/api.js
+app/router/routesConfig.js
+app/styles/index.css
+modules/admin/components/AdminLogsPage.jsx
+  modules/admin/components/AdminTableComponents.jsx
+  shared/hooks/useDataList.js
+  shared/ui/elements/Avatar.jsx
+  shared/ui/elements/CustomSelect.jsx
+  shared/ui/elements/DateRangePicker.jsx
+  shared/ui/elements/Input.jsx
+  shared/utils/exportToCsv.js
+modules/admin/components/AdminPageLayout.jsx
+  shared/ui/elements/Button.jsx
+modules/admin/components/AdminTableComponents.jsx
+  shared/ui/complex/LoadingState.jsx
+  shared/ui/elements/Button.jsx
+modules/admin/components/BaseDetailsPanel.jsx
+  shared/ui/elements/Button.jsx
+modules/admin/components/BillingDetailsPanel.jsx
+  modules/admin/components/BaseDetailsPanel.jsx
+  shared/ui/elements/Avatar.jsx
+  shared/ui/elements/Button.jsx
+modules/admin/components/SiteDetailsPanel.jsx
+  modules/admin/components/BaseDetailsPanel.jsx
+  shared/api/api.js
+  shared/ui/elements/Avatar.jsx
+  shared/ui/elements/Button.jsx
+modules/admin/components/UserDetailsPanel.jsx
+  modules/admin/components/BaseDetailsPanel.jsx
+  shared/ui/elements/Avatar.jsx
+  shared/ui/elements/Button.jsx
+modules/admin/pages/AdminBillingPage.jsx
+  modules/admin/components/AdminPageLayout.jsx
+  modules/admin/components/AdminTableComponents.jsx
+  modules/admin/components/BillingDetailsPanel.jsx
+  shared/api/api.js
+  shared/ui/elements/Button.jsx
+  shared/ui/elements/CustomSelect.jsx
+  shared/ui/elements/DateRangePicker.jsx
+  shared/ui/elements/Input.jsx
+  shared/utils/exportToCsv.js
+modules/admin/pages/AdminControlPage.jsx
+  shared/api/api.js
+  shared/ui/complex/LoadingState.jsx
+  shared/ui/elements/index.js
+modules/admin/pages/AdminDashboardPage.jsx
+  app/providers/AuthContext.jsx
+  modules/admin/components/AdminLogsPage.jsx
+  modules/admin/components/AdminPageLayout.jsx
+  shared/api/api.js
+  shared/ui/complex/LoadingState.jsx
+  shared/ui/elements/CustomSelect.jsx
+modules/admin/pages/AdminTemplatesPage.jsx
+  app/providers/AuthContext.jsx
+  modules/dashboard/components/TemplateModal.jsx
+  shared/hooks/useTemplateManager.js
+  shared/ui/complex/ConfirmModal.jsx
+  shared/ui/complex/EmptyState.jsx
+  shared/ui/complex/LoadingState.jsx
+  shared/ui/complex/SitePreviewer.jsx
+  shared/ui/complex/TemplateBadge.jsx
+  shared/ui/complex/TemplateCard.jsx
+  shared/ui/complex/TemplateFilters.jsx
+  shared/utils/templateUtils.js
+modules/admin/pages/AdminTicketsReportsPage.jsx
+  modules/admin/components/AdminPageLayout.jsx
+  modules/admin/components/AdminTableComponents.jsx
+  shared/api/api.js
+  shared/hooks/useConfirm.js
+  shared/hooks/useDataList.js
+  shared/ui/elements/Avatar.jsx
+  shared/ui/elements/Button.jsx
+  shared/ui/elements/CustomSelect.jsx
+  shared/ui/elements/DateRangePicker.jsx
+  shared/ui/elements/Input.jsx
+  shared/utils/exportToCsv.js
+modules/admin/pages/AdminUsersSitesPage.jsx
+  modules/admin/components/AdminPageLayout.jsx
+  modules/admin/components/AdminTableComponents.jsx
+  modules/admin/components/SiteDetailsPanel.jsx
+  modules/admin/components/UserDetailsPanel.jsx
+  shared/api/api.js
+  shared/hooks/useConfirm.js
+  shared/hooks/useDataList.js
+  shared/ui/elements/Avatar.jsx
+  shared/ui/elements/Button.jsx
+  shared/ui/elements/CustomSelect.jsx
+  shared/ui/elements/DateRangePicker.jsx
+  shared/ui/elements/Input.jsx
+  shared/utils/exportToCsv.js
+modules/auth/AdminLoginPage.jsx
+  app/providers/AuthContext.jsx
+  shared/api/api.js
+  shared/ui/complex/OtpInput.jsx
+  shared/ui/elements/index.js
+modules/auth/AuthPage.jsx
+  app/providers/AuthContext.jsx
+  shared/api/api.js
+  shared/config/index.js
+  shared/hooks/useCooldown.js
+  shared/ui/complex/ImageUploadTrigger.jsx
+  shared/ui/complex/OtpInput.jsx
+  shared/ui/complex/PasswordStrengthMeter.jsx
+  shared/ui/elements/Avatar.jsx
+  shared/ui/elements/index.js
+  shared/utils/validationUtils.js
+modules/auth/AuthSuccessPage.jsx
+  app/providers/AuthContext.jsx
+  shared/api/api.js
+  shared/ui/complex/LoadingState.jsx
+modules/auth/RestoreAccountPage.jsx
+  app/providers/AuthContext.jsx
+  shared/hooks/useConfirm.js
+  shared/ui/elements/Button.jsx
+modules/dashboard/components/DashboardHeader.jsx
+  app/providers/AuthContext.jsx
+  shared/ui/elements/Switch.jsx
+modules/dashboard/components/ProductPickerModal.jsx
+  shared/api/api.js
+  shared/config/index.js
+  shared/ui/complex/LoadingState.jsx
+  shared/ui/elements/CustomSelect.jsx
+modules/dashboard/components/TemplateModal.jsx
+  shared/api/api.js
+  shared/hooks/useConfirm.js
+  shared/ui/complex/InputWithCounter.jsx
+  shared/ui/complex/UniversalMediaInput.jsx
+  shared/ui/elements/CustomSelect.jsx
+  shared/ui/elements/index.js
+  shared/utils/mediaUtils.js
+modules/dashboard/features/commerce/CommerceTab.jsx
+  app/providers/AuthContext.jsx
+  modules/dashboard/features/commerce/components/CategoryManager.jsx
+  modules/dashboard/features/commerce/components/CommerceSettingsTab.jsx
+  modules/dashboard/features/commerce/components/OrdersTab.jsx
+  modules/dashboard/features/commerce/components/ProductManager.jsx
+  modules/dashboard/features/commerce/components/ReviewsTab.jsx
+  shared/api/api.js
+modules/dashboard/features/commerce/components/CategoryManager.jsx
+  shared/api/api.js
+  shared/hooks/useConfirm.js
+  shared/ui/complex/EmptyState.jsx
+  shared/ui/complex/InputWithCounter.jsx
+  shared/ui/complex/LoadingState.jsx
+  shared/ui/elements/Button.jsx
+  shared/ui/elements/CustomSelect.jsx
+  shared/ui/elements/Input.jsx
+  shared/ui/layouts/SplitViewLayout.jsx
+modules/dashboard/features/commerce/components/CommerceSettingsTab.jsx
+  shared/api/api.js
+  shared/ui/elements/CustomSelect.jsx
+  shared/ui/elements/index.js
+modules/dashboard/features/commerce/components/OrdersTab.jsx
+  shared/api/api.js
+  shared/ui/complex/EmptyState.jsx
+  shared/ui/complex/LoadingState.jsx
+  shared/ui/elements/Button.jsx
+  shared/ui/elements/CustomSelect.jsx
+  shared/ui/elements/DateRangePicker.jsx
+  shared/ui/elements/Input.jsx
+modules/dashboard/features/commerce/components/ProductManager.jsx
+  modules/media/components/MediaPickerModal.jsx
+  shared/api/api.js
+  shared/config/index.js
+  shared/config/limits.js
+  shared/ui/complex/ConfirmModal.jsx
+  shared/ui/complex/EmptyState.jsx
+  shared/ui/complex/InputWithCounter.jsx
+  shared/ui/complex/LoadingState.jsx
+  shared/ui/elements/Button.jsx
+  shared/ui/elements/CustomSelect.jsx
+  shared/ui/elements/Input.jsx
+  shared/ui/layouts/SplitViewLayout.jsx
+modules/dashboard/features/commerce/components/ReviewsTab.jsx
+  shared/api/api.js
+  shared/config/index.js
+  shared/hooks/useConfirm.js
+  shared/ui/complex/EmptyState.jsx
+  shared/ui/complex/LoadingState.jsx
+  shared/ui/elements/CustomSelect.jsx
+  shared/ui/elements/Input.jsx
+modules/dashboard/features/overview/OverviewTab.jsx
+  modules/dashboard/features/overview/components/AnalyticsTab.jsx
+  modules/dashboard/features/overview/components/SubmissionsTab.jsx
+modules/dashboard/features/overview/components/AnalyticsTab.jsx
+  shared/api/api.js
+  shared/ui/complex/LoadingState.jsx
+modules/dashboard/features/overview/components/SubmissionsTab.jsx
+  shared/api/api.js
+  shared/hooks/useConfirm.js
+  shared/ui/complex/EmptyState.jsx
+  shared/ui/complex/LoadingState.jsx
+  shared/ui/elements/CustomSelect.jsx
+  shared/ui/elements/Input.jsx
+modules/dashboard/features/settings/GeneralSettingsTab.jsx
+  app/providers/AuthContext.jsx
+  modules/dashboard/features/settings/components/GeneralIdentitySection.jsx
+  modules/dashboard/features/settings/components/GeneralTemplatesSection.jsx
+  modules/dashboard/features/settings/components/GeneralVisualsSection.jsx
+  modules/dashboard/features/settings/components/TeamSettingsSection.jsx
+  shared/api/api.js
+  shared/config/index.js
+  shared/hooks/useAutoSave.js
+  shared/hooks/useConfirm.js
+  shared/ui/elements/index.js
+  shared/utils/siteExporter.js
+  shared/utils/validationUtils.js
+modules/dashboard/features/settings/PagesManagerModal.jsx
+  shared/api/api.js
+  shared/hooks/useConfirm.js
+  shared/ui/complex/LoadingState.jsx
+  shared/ui/elements/Button.jsx
+  shared/ui/elements/Input.jsx
+modules/dashboard/features/settings/StyleSettingsTab.jsx
+  modules/renderer/components/FontPicker.jsx
+  shared/ui/complex/AccentColorSelector.jsx
+  shared/ui/complex/ThemeModeSelector.jsx
+modules/dashboard/features/settings/components/GeneralIdentitySection.jsx
+  app/providers/AuthContext.jsx
+  modules/editor/ui/components/AlignmentControl.jsx
+  shared/config/limits.js
+  shared/hooks/useCooldown.js
+  shared/ui/complex/InputWithCounter.jsx
+  shared/ui/complex/UniversalMediaInput.jsx
+  shared/ui/elements/CustomSelect.jsx
+  shared/ui/elements/index.js
+modules/dashboard/features/settings/components/GeneralTemplatesSection.jsx
+  app/providers/AuthContext.jsx
+  modules/dashboard/components/TemplateModal.jsx
+  shared/api/api.js
+  shared/config/index.js
+  shared/hooks/useTemplateManager.js
+  shared/ui/complex/ConfirmModal.jsx
+  shared/ui/complex/EmptyState.jsx
+  shared/ui/complex/LoadingState.jsx
+  shared/ui/complex/SitePreviewer.jsx
+  shared/ui/complex/TemplateBadge.jsx
+  shared/ui/complex/TemplateCard.jsx
+  shared/ui/complex/TemplateFilters.jsx
+  shared/ui/elements/Button.jsx
+  shared/utils/templateUtils.js
+modules/dashboard/features/settings/components/GeneralVisualsSection.jsx
+  shared/ui/complex/SiteCoverDisplay.jsx
+  shared/ui/complex/UniversalMediaInput.jsx
+modules/dashboard/features/settings/components/TeamSettingsSection.jsx
+  app/providers/AuthContext.jsx
+  shared/api/api.js
+  shared/ui/complex/ConfirmModal.jsx
+  shared/ui/elements/Avatar.jsx
+  shared/ui/elements/index.js
+modules/dashboard/pages/CreateSitePage.jsx
+  app/providers/AuthContext.jsx
+  modules/dashboard/components/TemplateModal.jsx
+  shared/api/api.js
+  shared/config/index.js
+  shared/hooks/useTemplateManager.js
+  shared/ui/complex/ConfirmModal.jsx
+  shared/ui/complex/EmptyState.jsx
+  shared/ui/complex/LoadingState.jsx
+  shared/ui/complex/SitePreviewer.jsx
+  shared/ui/complex/TemplateBadge.jsx
+  shared/ui/complex/TemplateCard.jsx
+  shared/ui/complex/TemplateFilters.jsx
+  shared/ui/complex/UniversalMediaInput.jsx
+  shared/ui/elements/Button.jsx
+  shared/ui/elements/Input.jsx
+  shared/utils/templateUtils.js
+  shared/utils/validationUtils.js
+modules/dashboard/pages/MySitesPage.jsx
+  app/providers/AuthContext.jsx
+  shared/api/api.js
+  shared/ui/complex/EmptyState.jsx
+  shared/ui/complex/LoadingState.jsx
+  shared/ui/complex/SiteFilters.jsx
+  shared/ui/complex/SiteGridCard.jsx
+  shared/ui/elements/Button.jsx
+modules/dashboard/pages/SiteDashboardPage.jsx
+  app/providers/AuthContext.jsx
+  modules/dashboard/components/DashboardHeader.jsx
+  modules/dashboard/features/commerce/CommerceTab.jsx
+  modules/dashboard/features/overview/OverviewTab.jsx
+  modules/dashboard/features/settings/GeneralSettingsTab.jsx
+  modules/dashboard/features/settings/PagesManagerModal.jsx
+  modules/dashboard/features/settings/StyleSettingsTab.jsx
+  modules/editor/core/BlockEditor.jsx
+  modules/editor/core/blockUtils.js
+  modules/editor/core/editorConfig.jsx
+  modules/editor/ui/EditorSidebar.jsx
+  modules/renderer/components/FontLoader.jsx
+  shared/api/api.js
+  shared/hooks/useHistory.js
+  shared/ui/complex/ConfirmModal.jsx
+  shared/ui/complex/LoadingState.jsx
+  shared/ui/elements/Button.jsx
+  shared/utils/themeUtils.js
+modules/editor/blocks/Accordion/AccordionBlock.jsx
+  modules/editor/blocks/Accordion/AccordionItem.jsx
+  shared/hooks/useBlockFonts.jsx
+modules/editor/blocks/Accordion/AccordionItem.jsx
+modules/editor/blocks/Accordion/AccordionSettings.jsx
+  modules/editor/core/editorConfig.jsx
+  modules/editor/ui/components/FontSelector.jsx
+  modules/editor/ui/configuration/SettingsUI.jsx
+  shared/ui/complex/ConfirmModal.jsx
+  shared/ui/elements/Button.jsx
+  shared/ui/elements/Input.jsx
+  shared/ui/elements/Switch.jsx
+modules/editor/blocks/Button/ButtonBlock.jsx
+  shared/config/index.js
+  shared/hooks/useBlockFonts.jsx
+  shared/utils/linkUtils.js
+modules/editor/blocks/Button/ButtonSettings.jsx
+  modules/editor/ui/components/ButtonEditor.jsx
+  modules/editor/ui/configuration/SettingsUI.jsx
+  shared/ui/complex/UniversalMediaInput.jsx
+modules/editor/blocks/Catalog/CatalogBlock.jsx
+  modules/editor/ui/components/ProductCard.jsx
+  shared/api/api.js
+  shared/hooks/useBlockFonts.jsx
+  shared/ui/elements/CustomSelect.jsx
+modules/editor/blocks/Catalog/CatalogSettings.jsx
+  modules/editor/ui/components/FontSelector.jsx
+  modules/editor/ui/configuration/SettingsUI.jsx
+  shared/api/api.js
+  shared/ui/elements/CustomSelect.jsx
+  shared/ui/elements/Input.jsx
+  shared/ui/elements/RangeSlider.jsx
+modules/editor/blocks/Features/FeaturesBlock.jsx
+  shared/hooks/useBlockFonts.jsx
+modules/editor/blocks/Features/FeaturesSettings.jsx
+  modules/editor/core/editorConfig.jsx
+  modules/editor/ui/components/AlignmentControl.jsx
+  modules/editor/ui/components/FontSelector.jsx
+  modules/editor/ui/configuration/SettingsUI.jsx
+  shared/hooks/useConfirm.js
+  shared/ui/elements/Button.jsx
+  shared/ui/elements/Input.jsx
+modules/editor/blocks/Footer/FooterBlock.jsx
+  shared/config/index.js
+  shared/hooks/useBlockFonts.jsx
+modules/editor/blocks/Footer/FooterSettings.jsx
+  modules/editor/core/editorConfig.jsx
+  modules/editor/ui/components/FontSelector.jsx
+  modules/editor/ui/components/OverlayControl.jsx
+  modules/editor/ui/configuration/SettingsUI.jsx
+  shared/config/index.js
+  shared/ui/complex/UniversalMediaInput.jsx
+  shared/ui/elements/Button.jsx
+  shared/ui/elements/CustomSelect.jsx
+  shared/ui/elements/Input.jsx
+modules/editor/blocks/Form/FormBlock.jsx
+  shared/api/api.js
+  shared/hooks/useBlockFonts.jsx
+modules/editor/blocks/Form/FormSettings.jsx
+  modules/editor/ui/components/ButtonEditor.jsx
+  modules/editor/ui/configuration/SettingsUI.jsx
+  shared/ui/elements/Button.jsx
+  shared/ui/elements/Input.jsx
+modules/editor/blocks/Header/HeaderBlock.jsx
+  app/providers/AuthContext.jsx
+  app/providers/FavoritesContext.jsx
+  shared/config/index.js
+  shared/hooks/useBlockFonts.jsx
+  shared/utils/linkUtils.js
+modules/editor/blocks/Header/HeaderSettings.jsx
+  modules/editor/core/editorConfig.jsx
+  modules/editor/ui/components/AlignmentControl.jsx
+  modules/editor/ui/components/ButtonEditor.jsx
+  modules/editor/ui/components/FontSelector.jsx
+  modules/editor/ui/configuration/SettingsUI.jsx
+  shared/ui/complex/ConfirmModal.jsx
+  shared/ui/complex/UniversalMediaInput.jsx
+  shared/ui/elements/Button.jsx
+  shared/ui/elements/Input.jsx
+  shared/ui/elements/RangeSlider.jsx
+modules/editor/blocks/Hero/HeroBlock.jsx
+  modules/editor/blocks/Button/ButtonBlock.jsx
+  shared/config/index.js
+  shared/hooks/useBlockFonts.jsx
+modules/editor/blocks/Hero/HeroSettings.jsx
+  modules/editor/ui/components/AlignmentControl.jsx
+  modules/editor/ui/components/ButtonEditor.jsx
+  modules/editor/ui/components/FontSelector.jsx
+  modules/editor/ui/components/OverlayControl.jsx
+  modules/editor/ui/configuration/SettingsUI.jsx
+  shared/config/index.js
+  shared/ui/complex/UniversalMediaInput.jsx
+  shared/ui/elements/Input.jsx
+modules/editor/blocks/Image/ImageBlock.jsx
+  shared/config/index.js
+  shared/utils/linkUtils.js
+modules/editor/blocks/Image/ImageSettings.jsx
+  modules/editor/core/editorConfig.jsx
+  modules/editor/ui/components/AlignmentControl.jsx
+  modules/editor/ui/configuration/SettingsUI.jsx
+  shared/ui/complex/UniversalMediaInput.jsx
+  shared/ui/elements/CustomSelect.jsx
+  shared/ui/elements/RangeSlider.jsx
+modules/editor/blocks/Layout/LayoutBlock.jsx
+  modules/editor/core/BlockRenderer.jsx
+  modules/editor/ui/DraggableBlockItem.jsx
+  modules/editor/ui/EditableBlockWrapper.jsx
+  shared/config/index.js
+modules/editor/blocks/Layout/LayoutSettings.jsx
+  modules/editor/ui/components/OverlayControl.jsx
+  modules/editor/ui/configuration/SettingsUI.jsx
+  shared/config/index.js
+  shared/ui/complex/UniversalMediaInput.jsx
+  shared/ui/elements/CustomSelect.jsx
+modules/editor/blocks/Map/MapBlock.jsx
+modules/editor/blocks/Map/MapSettings.jsx
+  modules/editor/ui/configuration/SettingsUI.jsx
+  shared/ui/elements/Button.jsx
+modules/editor/blocks/ShowCase/ShowCaseBlock.jsx
+  modules/editor/ui/components/ProductCard.jsx
+  shared/api/api.js
+  shared/hooks/useBlockFonts.jsx
+modules/editor/blocks/ShowCase/ShowCaseSettings.jsx
+  modules/dashboard/components/ProductPickerModal.jsx
+  modules/editor/ui/components/AlignmentControl.jsx
+  modules/editor/ui/components/FontSelector.jsx
+  modules/editor/ui/configuration/SettingsUI.jsx
+  shared/api/api.js
+  shared/ui/elements/Button.jsx
+  shared/ui/elements/CustomSelect.jsx
+  shared/ui/elements/Input.jsx
+modules/editor/blocks/SocialIcons/SocialIconsBlock.jsx
+modules/editor/blocks/SocialIcons/SocialIconsSettings.jsx
+  modules/editor/ui/configuration/SettingsUI.jsx
+  shared/ui/elements/Input.jsx
+modules/editor/blocks/Text/TextBlock.jsx
+  shared/hooks/useBlockFonts.jsx
+modules/editor/blocks/Text/TextSettings.jsx
+  modules/editor/ui/components/AlignmentControl.jsx
+  modules/editor/ui/components/FontSelector.jsx
+  modules/editor/ui/configuration/SettingsUI.jsx
+modules/editor/blocks/Video/VideoBlock.jsx
+  shared/config/index.js
+modules/editor/blocks/Video/VideoSettings.jsx
+  modules/editor/ui/components/OverlayControl.jsx
+  modules/editor/ui/configuration/SettingsUI.jsx
+  shared/config/index.js
+  shared/ui/complex/UniversalMediaInput.jsx
+  shared/ui/elements/index.js
+modules/editor/core/BlockEditor.jsx
+  modules/editor/core/blockUtils.js
+  modules/editor/core/useBlockDrop.js
+  modules/editor/ui/ContextMenu.jsx
+  modules/editor/ui/DraggableBlockItem.jsx
+  modules/editor/ui/EditableBlockWrapper.jsx
+  shared/hooks/useConfirm.js
+modules/editor/core/BlockRenderer.jsx
+  modules/editor/blocks/Accordion/AccordionBlock.jsx
+  modules/editor/blocks/Button/ButtonBlock.jsx
+  modules/editor/blocks/Catalog/CatalogBlock.jsx
+  modules/editor/blocks/Features/FeaturesBlock.jsx
+  modules/editor/blocks/Footer/FooterBlock.jsx
+  modules/editor/blocks/Form/FormBlock.jsx
+  modules/editor/blocks/Header/HeaderBlock.jsx
+  modules/editor/blocks/Hero/HeroBlock.jsx
+  modules/editor/blocks/Image/ImageBlock.jsx
+  modules/editor/blocks/Layout/LayoutBlock.jsx
+  modules/editor/blocks/Map/MapBlock.jsx
+  modules/editor/blocks/ShowCase/ShowCaseBlock.jsx
+  modules/editor/blocks/SocialIcons/SocialIconsBlock.jsx
+  modules/editor/blocks/Text/TextBlock.jsx
+  modules/editor/blocks/Video/VideoBlock.jsx
+  modules/renderer/components/AnimationWrapper.jsx
+  shared/utils/linkUtils.js
+modules/editor/core/blockUtils.js
+modules/editor/core/editorConfig.jsx
+modules/editor/core/useBlockDrop.js
+modules/editor/ui/BlockLayerItem.jsx
+  modules/editor/core/editorConfig.jsx
+  modules/editor/core/useBlockDrop.js
+  shared/hooks/useConfirm.js
+modules/editor/ui/ContextMenu.jsx
+modules/editor/ui/DraggableBlockItem.jsx
+modules/editor/ui/EditableBlockWrapper.jsx
+  modules/editor/core/BlockRenderer.jsx
+  modules/editor/core/editorConfig.jsx
+  modules/editor/core/useBlockDrop.js
+  modules/editor/ui/modals/SaveBlockModal.jsx
+  shared/api/api.js
+  shared/hooks/useConfirm.js
+modules/editor/ui/EditorSidebar.jsx
+  modules/editor/ui/tabs/AddBlocksTab.jsx
+  modules/editor/ui/tabs/LayersTab.jsx
+  modules/editor/ui/tabs/SettingsTab.jsx
+  shared/ui/elements/CustomSelect.jsx
+modules/editor/ui/components/AlignmentControl.jsx
+  modules/editor/ui/configuration/SettingsUI.jsx
+modules/editor/ui/components/ButtonEditor.jsx
+  modules/editor/ui/components/AlignmentControl.jsx
+  modules/editor/ui/components/FontSelector.jsx
+  modules/editor/ui/configuration/SettingsUI.jsx
+  shared/ui/elements/CustomSelect.jsx
+  shared/ui/elements/Input.jsx
+  shared/ui/elements/RangeSlider.jsx
+modules/editor/ui/components/FontSelector.jsx
+  modules/editor/core/editorConfig.jsx
+  shared/api/api.js
+  shared/ui/elements/CustomSelect.jsx
+modules/editor/ui/components/OverlayControl.jsx
+  shared/ui/elements/RangeSlider.jsx
+modules/editor/ui/components/ProductCard.jsx
+  app/providers/AuthContext.jsx
+  app/providers/CartContext.jsx
+  shared/config/index.js
+  shared/hooks/useConfirm.js
+modules/editor/ui/configuration/AnimationSettings.jsx
+  shared/ui/elements/CustomSelect.jsx
+  shared/ui/elements/RangeSlider.jsx
+  shared/ui/elements/Switch.jsx
+modules/editor/ui/configuration/SettingsGroup.jsx
+modules/editor/ui/configuration/SettingsUI.jsx
+modules/editor/ui/configuration/SpacingControl.jsx
+  shared/ui/elements/RangeSlider.jsx
+modules/editor/ui/modals/BlockSettingsModal.jsx
+modules/editor/ui/modals/SaveBlockModal.jsx
+  shared/api/api.js
+  shared/hooks/useConfirm.js
+  shared/ui/elements/Button.jsx
+  shared/ui/elements/Input.jsx
+modules/editor/ui/tabs/AddBlocksTab.jsx
+  modules/editor/core/editorConfig.jsx
+  modules/editor/ui/DraggableBlockItem.jsx
+  shared/api/api.js
+  shared/hooks/useConfirm.js
+  shared/ui/elements/Input.jsx
+modules/editor/ui/tabs/AdvancedSettingsTab.jsx
+  modules/editor/ui/configuration/AnimationSettings.jsx
+  modules/editor/ui/configuration/SettingsUI.jsx
+  modules/editor/ui/configuration/SpacingControl.jsx
+  shared/ui/elements/CustomSelect.jsx
+  shared/ui/elements/Input.jsx
+modules/editor/ui/tabs/LayersTab.jsx
+  modules/editor/ui/BlockLayerItem.jsx
+modules/editor/ui/tabs/SettingsTab.jsx
+  modules/editor/blocks/Accordion/AccordionSettings.jsx
+  modules/editor/blocks/Button/ButtonSettings.jsx
+  modules/editor/blocks/Catalog/CatalogSettings.jsx
+  modules/editor/blocks/Features/FeaturesSettings.jsx
+  modules/editor/blocks/Footer/FooterSettings.jsx
+  modules/editor/blocks/Form/FormSettings.jsx
+  modules/editor/blocks/Header/HeaderSettings.jsx
+  modules/editor/blocks/Hero/HeroSettings.jsx
+  modules/editor/blocks/Image/ImageSettings.jsx
+  modules/editor/blocks/Layout/LayoutSettings.jsx
+  modules/editor/blocks/Map/MapSettings.jsx
+  modules/editor/blocks/ShowCase/ShowCaseSettings.jsx
+  modules/editor/blocks/SocialIcons/SocialIconsSettings.jsx
+  modules/editor/blocks/Text/TextSettings.jsx
+  modules/editor/blocks/Video/VideoSettings.jsx
+  modules/editor/core/blockUtils.js
+  modules/editor/ui/tabs/AdvancedSettingsTab.jsx
+modules/media/components/MediaGridItem.jsx
+  shared/ui/complex/MediaFilePreview.jsx
+modules/media/components/MediaInspector.jsx
+  shared/api/api.js
+  shared/ui/complex/MediaFilePreview.jsx
+  shared/ui/elements/Button.jsx
+  shared/utils/mediaUtils.js
+modules/media/components/MediaPickerModal.jsx
+  shared/api/api.js
+  shared/ui/complex/DragDropWrapper.jsx
+  shared/ui/complex/ImageCropperModal.jsx
+  shared/ui/complex/LoadingState.jsx
+  shared/ui/complex/MediaFilePreview.jsx
+  shared/ui/elements/Button.jsx
+  shared/utils/mediaUtils.js
+modules/media/pages/MediaLibraryPage.jsx
+  modules/media/components/MediaGridItem.jsx
+  modules/media/components/MediaInspector.jsx
+  shared/api/api.js
+  shared/config/index.js
+  shared/config/limits.js
+  shared/hooks/useConfirm.js
+  shared/ui/complex/DragDropWrapper.jsx
+  shared/ui/complex/EmptyState.jsx
+  shared/ui/complex/LoadingState.jsx
+  shared/ui/complex/SiteFilters.jsx
+  shared/ui/elements/index.js
+modules/profile/pages/ProfilePage.jsx
+  app/providers/AuthContext.jsx
+  modules/admin/components/UserDetailsPanel.jsx
+  pages/NotFoundPage.jsx
+  shared/api/api.js
+  shared/hooks/useConfirm.js
+  shared/ui/complex/LoadingState.jsx
+  shared/ui/complex/SiteFilters.jsx
+  shared/ui/complex/SiteGridCard.jsx
+  shared/ui/elements/Avatar.jsx
+  shared/ui/elements/Button.jsx
+modules/profile/pages/SettingsPage.jsx
+  app/providers/AuthContext.jsx
+  modules/profile/tabs/ProfileAppearanceTab.jsx
+  modules/profile/tabs/ProfileGeneralTab.jsx
+  modules/profile/tabs/ProfilePublicTab.jsx
+  modules/profile/tabs/ProfileSecurityTab.jsx
+modules/profile/tabs/ProfileAppearanceTab.jsx
+  app/providers/ThemeContext.jsx
+  shared/ui/complex/AccentColorSelector.jsx
+  shared/ui/complex/ThemeModeSelector.jsx
+modules/profile/tabs/ProfileGeneralTab.jsx
+  app/providers/AuthContext.jsx
+  shared/api/api.js
+  shared/config/limits.js
+  shared/hooks/useCooldown.js
+  shared/ui/complex/ConfirmModal.jsx
+  shared/ui/complex/ImageUploadTrigger.jsx
+  shared/ui/elements/Avatar.jsx
+  shared/ui/elements/index.js
+modules/profile/tabs/ProfilePublicTab.jsx
+  app/providers/AuthContext.jsx
+  shared/api/api.js
+  shared/hooks/useCooldown.js
+  shared/ui/elements/index.js
+modules/profile/tabs/ProfileSecurityTab.jsx
+  app/providers/AuthContext.jsx
+  shared/api/api.js
+  shared/hooks/useConfirm.js
+  shared/hooks/useCooldown.js
+  shared/ui/complex/PasswordStrengthMeter.jsx
+  shared/ui/elements/index.js
+  shared/utils/validationUtils.js
+modules/renderer/components/AnimationWrapper.jsx
+modules/renderer/components/CookieBanner.jsx
+modules/renderer/components/FontLoader.jsx
+  shared/config/index.js
+modules/renderer/components/FontPicker.jsx
+  modules/editor/core/editorConfig.jsx
+  modules/media/components/MediaPickerModal.jsx
+  shared/api/api.js
+  shared/config/index.js
+  shared/hooks/useConfirm.js
+  shared/ui/elements/Button.jsx
+modules/renderer/components/SiteControls.jsx
+  app/providers/AuthContext.jsx
+  app/providers/FavoritesContext.jsx
+  modules/admin/components/SiteDetailsPanel.jsx
+  shared/api/api.js
+modules/renderer/pages/CatalogPage.jsx
+  app/providers/AuthContext.jsx
+  app/providers/FavoritesContext.jsx
+  shared/api/api.js
+  shared/ui/complex/EmptyState.jsx
+  shared/ui/complex/LoadingState.jsx
+  shared/ui/complex/SiteFilters.jsx
+  shared/ui/complex/SiteGridCard.jsx
+  shared/ui/elements/Button.jsx
+modules/renderer/pages/SiteDisplayPage.jsx
+  app/providers/AuthContext.jsx
+  modules/editor/core/BlockRenderer.jsx
+  modules/editor/core/editorConfig.jsx
+  modules/renderer/components/CookieBanner.jsx
+  modules/renderer/components/FontLoader.jsx
+  modules/renderer/components/SiteControls.jsx
+  pages/MaintenancePage.jsx
+  pages/NotFoundPage.jsx
+  shared/api/api.js
+  shared/config/index.js
+  shared/hooks/useScrollToHash.js
+  shared/ui/complex/ReportModal.jsx
+  shared/utils/themeUtils.js
+modules/shop/CartPage.jsx
+  app/providers/AuthContext.jsx
+  app/providers/CartContext.jsx
+  shared/api/api.js
+  shared/config/index.js
+  shared/ui/complex/ConfirmModal.jsx
+  shared/ui/complex/EmptyState.jsx
+  shared/ui/complex/LoadingState.jsx
+  shared/ui/complex/NovaPoshtaMapModal.jsx
+  shared/ui/complex/PaymentMethodModal.jsx
+  shared/ui/elements/Button.jsx
+  shared/ui/elements/Input.jsx
+modules/shop/MyOrdersPage.jsx
+  shared/api/api.js
+  shared/config/index.js
+  shared/ui/complex/EmptyState.jsx
+  shared/ui/complex/LoadingState.jsx
+  shared/ui/elements/Button.jsx
+  shared/ui/elements/CustomSelect.jsx
+  shared/ui/elements/DateRangePicker.jsx
+  shared/ui/elements/Input.jsx
+modules/shop/ProductDetailPage.jsx
+  app/providers/AuthContext.jsx
+  app/providers/CartContext.jsx
+  modules/editor/core/BlockRenderer.jsx
+  modules/editor/core/editorConfig.jsx
+  modules/editor/ui/components/ProductCard.jsx
+  modules/renderer/components/CookieBanner.jsx
+  modules/renderer/components/FontLoader.jsx
+  modules/renderer/components/SiteControls.jsx
+  pages/MaintenancePage.jsx
+  pages/NotFoundPage.jsx
+  shared/api/api.js
+  shared/config/index.js
+  shared/ui/complex/LoadingState.jsx
+  shared/ui/complex/ReportModal.jsx
+  shared/utils/themeUtils.js
+modules/support/AppealPage.jsx
+  shared/api/api.js
+  shared/ui/complex/LoadingState.jsx
+  shared/ui/elements/Button.jsx
+modules/support/MyTicketsPage.jsx
+  modules/admin/components/AdminTableComponents.jsx
+  shared/api/api.js
+  shared/hooks/useConfirmDialog.js
+  shared/ui/complex/ConfirmModal.jsx
+  shared/ui/elements/Button.jsx
+  shared/ui/elements/CustomSelect.jsx
+  shared/ui/elements/Input.jsx
+modules/support/NewTicketPage.jsx
+  shared/api/api.js
+  shared/config/limits.js
+  shared/ui/complex/DragDropWrapper.jsx
+  shared/ui/elements/Button.jsx
+  shared/ui/elements/CustomSelect.jsx
+modules/support/SupportPage.jsx
+  shared/ui/elements/Button.jsx
+modules/support/TicketDetailPage.jsx
+  app/providers/AuthContext.jsx
+  pages/NotFoundPage.jsx
+  shared/api/api.js
+  shared/config/limits.js
+  shared/hooks/useConfirmDialog.js
+  shared/ui/complex/ConfirmModal.jsx
+  shared/ui/complex/DragDropWrapper.jsx
+  shared/ui/complex/LoadingState.jsx
+  shared/ui/elements/Button.jsx
+pages/HomePage.jsx
+  shared/ui/elements/Button.jsx
+pages/InvitePage.jsx
+  app/providers/AuthContext.jsx
+  shared/api/api.js
+  shared/ui/elements/index.js
+pages/MaintenancePage.jsx
+  shared/config/index.js
+pages/NotFoundPage.jsx
+  shared/ui/elements/Button.jsx
+pages/RulesPage.jsx
+pages/UpgradePage.jsx
+  app/providers/AuthContext.jsx
+  shared/api/api.js
+  shared/ui/complex/PaymentMethodModal.jsx
+  shared/ui/elements/index.js
+shared/api/api.js
+  shared/config/index.js
+shared/config/index.js
+shared/config/limits.js
+shared/hooks/useAutoSave.js
+  shared/api/api.js
+shared/hooks/useBlockFonts.jsx
+  shared/config/index.js
+shared/hooks/useConfirm.js
+  app/providers/ConfirmContext.jsx
+shared/hooks/useConfirmDialog.js
+shared/hooks/useCooldown.js
+shared/hooks/useDataList.js
+  shared/api/api.js
+shared/hooks/useHistory.js
+shared/hooks/useScrollToHash.js
+shared/hooks/useTemplateManager.js
+  app/providers/AuthContext.jsx
+  shared/api/api.js
+shared/ui/complex/AccentColorSelector.jsx
+  shared/utils/themeUtils.js
+shared/ui/complex/CategoryTabs.jsx
+  shared/utils/templateUtils.js
+shared/ui/complex/ConfirmModal.jsx
+  shared/ui/elements/Button.jsx
+  shared/ui/elements/Input.jsx
+shared/ui/complex/DragDropWrapper.jsx
+shared/ui/complex/EmptyState.jsx
+shared/ui/complex/ImageCropperModal.jsx
+  shared/ui/elements/Button.jsx
+  shared/ui/elements/RangeSlider.jsx
+  shared/ui/elements/Switch.jsx
+  shared/utils/canvasUtils.js
+shared/ui/complex/ImageUploadTrigger.jsx
+  shared/config/limits.js
+  shared/ui/complex/ImageCropperModal.jsx
+shared/ui/complex/InputWithCounter.jsx
+  shared/config/limits.js
+  shared/ui/elements/Input.jsx
+shared/ui/complex/LoadingState.jsx
+shared/ui/complex/MaintenanceScreen.jsx
+shared/ui/complex/MediaFilePreview.jsx
+  shared/utils/mediaUtils.js
+shared/ui/complex/NovaPoshtaDelivery.jsx
+  shared/api/api.js
+  shared/ui/elements/Input.jsx
+shared/ui/complex/NovaPoshtaMapModal.jsx
+  shared/api/api.js
+  shared/ui/elements/Button.jsx
+  shared/ui/elements/Input.jsx
+shared/ui/complex/OtpInput.jsx
+shared/ui/complex/PasswordStrengthMeter.jsx
+  shared/utils/validationUtils.js
+shared/ui/complex/PaymentMethodModal.jsx
+  shared/ui/elements/Button.jsx
+shared/ui/complex/ReportModal.jsx
+  shared/api/api.js
+  shared/ui/elements/Button.jsx
+  shared/ui/elements/CustomSelect.jsx
+shared/ui/complex/SiteCoverDisplay.jsx
+  shared/config/index.js
+shared/ui/complex/SiteFilters.jsx
+  shared/ui/elements/CustomSelect.jsx
+  shared/ui/elements/index.js
+shared/ui/complex/SiteGridCard.jsx
+  app/providers/AuthContext.jsx
+  shared/api/api.js
+  shared/config/index.js
+  shared/hooks/useConfirm.js
+  shared/hooks/useCooldown.js
+  shared/ui/complex/ReportModal.jsx
+  shared/ui/complex/SiteCoverDisplay.jsx
+shared/ui/complex/SitePreviewer.jsx
+  modules/editor/core/BlockRenderer.jsx
+  modules/editor/core/editorConfig.jsx
+  modules/renderer/components/FontLoader.jsx
+  shared/ui/complex/LoadingState.jsx
+  shared/ui/elements/CustomSelect.jsx
+  shared/utils/themeUtils.js
+shared/ui/complex/TemplateBadge.jsx
+shared/ui/complex/TemplateCard.jsx
+  shared/utils/templateUtils.js
+shared/ui/complex/TemplateFilters.jsx
+  shared/ui/complex/CategoryTabs.jsx
+  shared/ui/elements/Button.jsx
+  shared/ui/elements/Input.jsx
+shared/ui/complex/ThemeModeSelector.jsx
+  shared/utils/themeUtils.js
+shared/ui/complex/UniversalMediaInput.jsx
+  modules/media/components/MediaPickerModal.jsx
+  shared/api/api.js
+  shared/ui/complex/ImageCropperModal.jsx
+  shared/utils/mediaUtils.js
+shared/ui/elements/Avatar.jsx
+  shared/config/index.js
+shared/ui/elements/Button.jsx
+shared/ui/elements/CustomSelect.jsx
+shared/ui/elements/DateRangePicker.jsx
+shared/ui/elements/Input.jsx
+shared/ui/elements/RangeSlider.jsx
+shared/ui/elements/Switch.jsx
+shared/ui/elements/index.js
+  pages/MaintenancePage.jsx
+  shared/ui/complex/ConfirmModal.jsx
+  shared/ui/complex/SiteCoverDisplay.jsx
+  shared/ui/elements/Button.jsx
+  shared/ui/elements/CustomSelect.jsx
+  shared/ui/elements/Input.jsx
+  shared/ui/elements/Switch.jsx
+shared/ui/layouts/Footer.jsx
+shared/ui/layouts/Layout.jsx
+  app/providers/AuthContext.jsx
+  modules/renderer/components/FontLoader.jsx
+  shared/api/api.js
+  shared/ui/complex/LoadingState.jsx
+  shared/ui/layouts/Footer.jsx
+  shared/ui/layouts/PlatformSidebar.jsx
+  shared/ui/layouts/TitleManager.jsx
+  shared/utils/themeUtils.js
+shared/ui/layouts/PlatformSidebar.jsx
+  app/providers/AuthContext.jsx
+  app/providers/CartContext.jsx
+  shared/ui/layouts/UserMenu.jsx
+shared/ui/layouts/SiteHeader.jsx
+  modules/editor/core/BlockRenderer.jsx
+  shared/config/index.js
+shared/ui/layouts/SplitViewLayout.jsx
+shared/ui/layouts/TitleManager.jsx
+  app/router/routesConfig.js
+shared/ui/layouts/UserMenu.jsx
+  app/providers/AuthContext.jsx
+  shared/ui/complex/ConfirmModal.jsx
+  shared/ui/elements/Avatar.jsx
+shared/utils/canvasUtils.js
+shared/utils/exportToCsv.js
+shared/utils/htmlGenerator.js
+shared/utils/linkUtils.js
+shared/utils/mediaUtils.js
+  shared/config/index.js
+shared/utils/siteExporter.js
+  shared/api/api.js
+  shared/config/index.js
+  shared/utils/htmlGenerator.js
+shared/utils/templateUtils.js
+shared/utils/themeUtils.js
+shared/utils/validationUtils.js
+
+тЬЦ Skipped 14 files
+
+react-router-dom
+swiper/react
+swiper/modules
+swiper/css
+swiper/css/navigation
+swiper/css/pagination
+tailwindcss
+./settings/BannerSettings
+./settings/CategoriesSettings
+./features/editor/settings/FeaturesSettings
+./features/editor/settings/CatalogSettings
+./features/editor/settings/TextSettings
+./features/editor/settings/HeroSettings
+./common/AnimationSettings
+
