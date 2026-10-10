@@ -1,0 +1,46 @@
+@startuml
+skinparam ActivityBackgroundColor #F0F8FF
+skinparam ActivityBorderColor #0055A4
+skinparam ActivityDiamondBackgroundColor #FDFDFD
+skinparam ActivityDiamondBorderColor #0055A4
+skinparam ArrowColor #0055A4
+
+|Клієнт (Гість/Користувач)|
+start
+:Переглядає сайт-магазин;
+:Обирає товар для перегляду;
+
+|Система (Frontend)|
+:Відображає сторінку товару
+(з даними `stock_quantity`);
+if (Кількість товару > 0?) then (Так)
+    :Відображає активну кнопку
+    "Додати в кошик";
+    
+    |Клієнт (Гість/Користувач)|
+    :Натискає "Додати в кошик";
+    
+    |Система (Frontend)|
+    if (Користувач авторизований?) then (Так)
+        if (Користувач є власником сайту?) then (Так)
+            :Кнопка неактивна
+            "Це ваш товар";
+            stop
+        else (Ні)
+            :Додати/оновити товар
+            в `localStorage` (кошик);
+            :Оновити лічильник
+            товарів у кошику;
+            stop
+        endif
+    else (Ні)
+        :Перенаправити на
+        сторінку входу/реєстрації;
+        stop
+    endif
+else (Ні)
+    :Відображає неактивну кнопку
+    "Товар закінчився";
+    stop
+endif
+@enduml

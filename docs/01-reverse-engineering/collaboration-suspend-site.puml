@@ -1,0 +1,24 @@
+@startuml
+skinparam object {
+    BackgroundColor #FDFDFD
+    BorderColor #0055A4
+    ArrowColor #0055A4
+}
+top to bottom direction
+
+object ":Адміністратор" as Admin
+object ":AdminDashboardPage" as Dashboard
+object ":adminController" as Controller
+object ":Warning" as Warning
+object ":Site" as Site
+object ":User" as User
+
+Admin --> Dashboard : 1: натискає "Призупинити"
+Dashboard --> Controller : 2: POST /api/admin/sites/:id/suspend
+Controller --> Warning : 3: create()
+Controller --> Warning : 4: countForUser()
+Controller --> User : 5: deleteById() [if count >= 3]
+Controller --> Site : 6: updateStatus()
+Controller --> Dashboard : 7: HTTP 200 OK
+Dashboard --> Admin : 8: оновлює UI
+@enduml

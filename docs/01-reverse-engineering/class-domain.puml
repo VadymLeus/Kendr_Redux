@@ -1,0 +1,95 @@
+@startuml
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 70
+skinparam shadowing false
+
+skinparam class {
+    BackgroundColor #FFFFFF
+    HeaderBackgroundColor #F0F8FF
+    BorderColor #0055A4
+    ArrowColor #444444
+    AttributeIconSize 0
+    BorderThickness 1.5
+}
+
+class User {
+  + id: INT
+  + username: String
+  + email: String
+  + role: Enum(user, admin, mod)
+  + plan: Enum(FREE, PLUS, ADMIN)
+  + status: Enum(active, suspended)
+  + is_verified: Boolean
+}
+
+class Site {
+  + id: INT
+  + site_path: String
+  + title: String
+  + status: Enum(published, private)
+  + currency: String
+  + is_online_payment_enabled: Boolean
+}
+
+class Page {
+  + id: INT
+  + name: String
+  + slug: String
+  + block_content: JSON
+  + is_homepage: Boolean
+}
+
+class Product {
+  + id: INT
+  + name: String
+  + type: Enum(physical, digital)
+  + price: Decimal
+  + stock_quantity: Integer
+  + is_available: Boolean
+}
+
+class Category {
+  + id: INT
+  + name: String
+  + discount_percentage: Integer
+}
+
+class Media {
+  + id: INT
+  + original_file_name: String
+  + file_type: Enum(image, video, font)
+  + mime_type: String
+  + file_size_kb: Integer
+}
+
+class SupportTicket {
+  + id: INT
+  + subject: String
+  + type: Enum(general, appeal)
+  + status: Enum(open, answered, closed)
+}
+
+class Order {
+  + id: String (NanoID)
+  + customer_name: String
+  + total_amount: Decimal
+  + status: Enum(pending, paid, completed)
+  + payment_method: Enum(online, cod)
+}
+
+' Зв'язки користувача
+User "1" *-- "0..*" Site : Володіє >
+User "1" *-- "0..*" Media : Завантажує >
+User "1" *-- "0..*" SupportTicket : Створює >
+
+' Зв'язки сайту
+Site "1" *-- "1..*" Page : Складається з >
+Site "1" *-- "0..*" Product : Містить >
+Site "1" *-- "0..*" Category : Має >
+Site "1" *-- "0..*" Order : Отримує >
+
+' Зв'язки магазину
+Category "1" o-- "0..*" Product : Групує >
+Order "1" o-- "1..*" Product : Включає >
+@enduml

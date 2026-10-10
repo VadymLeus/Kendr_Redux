@@ -1,0 +1,79 @@
+@startuml
+left to right direction
+skinparam componentStyle uml2
+skinparam linetype ortho
+skinparam shadowing false
+skinparam nodesep 40
+skinparam ranksep 60
+
+package "Браузер (Клієнт - React / Vite)" {
+    component "Frontend Application" {
+        [Ядро та Роутер (App)] as Core
+        
+        folder "Функціональні модулі" {
+            [editor] as Editor
+            [renderer] as Renderer
+            [dashboard] as Dashboard
+            [shop] as Shop
+        }
+        
+        [API Клієнт] as ApiClient
+        
+        Core --> Editor
+        Core --> Renderer
+        Core --> Dashboard
+        Core --> Shop
+        
+        Editor --> ApiClient
+        Renderer --> ApiClient
+        Dashboard --> ApiClient
+        Shop --> ApiClient
+    }
+    
+    [localStorage] as LocalStorage
+    ApiClient --> LocalStorage : "JWT"
+}
+
+package "Сервер (Node.js / Express)" {
+    component "Backend REST API" {
+        [routes] as Routes
+        [middleware] as Middleware
+        [controllers] as Controllers
+        [config / utils] as Services
+        [models] as Models
+        
+        Routes --> Middleware : " Перевірка"
+        Routes --> Controllers
+        Middleware --> Controllers : " Доступ"
+        Controllers --> Models
+        Controllers --> Services
+    }
+}
+
+database "База даних" {
+    [MySQL] as DB
+}
+
+' Головні потоки даних між системами
+ApiClient ===> Routes : " HTTP REST API запити"
+Models ===> DB : "Транзакції"
+
+' Нотатки
+note bottom of Editor
+  **Візуальний редактор**
+  Drag-and-Drop конструктор
+end note
+
+note bottom of Middleware
+  **Безпека**
+  Перевірка JWT та ролей,
+  захист від спаму
+end note
+
+note bottom of DB
+  **Збереження даних**
+  ACID-транзакції для юзерів,
+  JSON для контенту сторінок
+end note
+
+@enduml

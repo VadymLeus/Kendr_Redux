@@ -1,0 +1,76 @@
+@startuml
+skinparam linetype ortho
+skinparam nodesep 50
+skinparam ranksep 60
+skinparam shadowing false
+
+skinparam class {
+    BackgroundColor #FFFFFF
+    HeaderBackgroundColor #F0F8FF
+    BorderColor #0055A4
+    ArrowColor #444444
+    AttributeIconSize 0
+    BorderThickness 1.5
+}
+
+skinparam package {
+    BackgroundColor #FCFCFC
+    BorderColor #888888
+    BorderThickness 1
+}
+
+package "Frontend (React SPA)" as FrontendPkg {
+  class ProtectedRoute <<Decorator>> {
+    + checkAuth(): Boolean
+    + render(): ReactNode
+  }
+
+  class BlockRenderer <<Factory>> {
+    + renderBlock(blockType: String, data: JSON): ReactNode
+  }
+
+  class ApiClient <<Singleton>> {
+    - axiosInstance: Object
+    + get(url: String, config: Object)
+    + post(url: String, data: Object)
+  }
+  
+  ' Фронтенд йде зліва направо
+  ProtectedRoute -[hidden]right- BlockRenderer
+  BlockRenderer -[hidden]right- ApiClient
+}
+
+package "Backend (Node.js / Express)" as BackendPkg {
+  class Database <<Singleton>> {
+    - pool: Object
+    + connect()
+    + query(sql: String, params: Array)
+  }
+
+  class SiteModel <<Model>> {
+    + findById(id: Int)
+    + save(data: Object)
+  }
+
+  class SiteController <<Controller>> {
+    + createSite(req, res)
+    + updateSiteSettings(req, res)
+  }
+
+  class VerifyToken <<Middleware>> {
+    + execute(req, res, next)
+  }
+
+  ' Бекенд йде справа наліво
+  VerifyToken .left.> SiteController : " next()"
+  SiteController .left.> SiteModel : " CRUD операції"
+  SiteModel .left.> Database : " SQL запити"
+}
+
+' Змушуємо весь блок бекенду бути строго під фронтендом
+FrontendPkg -[hidden]down- BackendPkg
+
+' Зв'язуємо правий край фронтенду (ApiClient) з правим краєм бекенду (VerifyToken)
+ApiClient =down=> VerifyToken : " HTTP запит + JWT"
+
+@enduml

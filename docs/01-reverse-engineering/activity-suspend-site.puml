@@ -1,0 +1,50 @@
+@startuml
+skinparam ActivityBackgroundColor #F0F8FF
+skinparam ActivityBorderColor #0055A4
+skinparam ActivityDiamondBackgroundColor #FDFDFD
+skinparam ActivityDiamondBorderColor #0055A4
+skinparam ArrowColor #0055A4
+
+|Адміністратор|
+start
+:Заходить в адмін-панель
+(/admin/sites);
+
+|Система (Backend / БД)|
+:Відображає список
+всіх сайтів (з `sites`);
+
+|Адміністратор|
+:Знаходить сайт-порушник;
+:Натискає "Призупинити";
+:Підтверджує дію;
+
+|Система (Backend / БД)|
+:Отримує запит;
+fork
+    :Оновлює `sites`
+    SET `status` = 'suspended',
+    `deletion_scheduled_for` = NOW() + 3d;
+fork again
+    :Створює запис у `user_warnings`
+    (для `user_id` власника сайту);
+end fork
+:Перевіряє загальну кількість
+попереджень у користувача;
+
+if (Кількість попереджень >= 3?) then (Так)
+    :Виконує процедуру
+    видалення акаунту
+    (встановлює `users.status` = 'deleted',
+    каскадно приховує сайти);
+    :Повідомляє Адміністратора
+    про блокування користувача;
+else (Ні)
+    :Повідомляє Адміністратора
+    про призупинення сайту;
+endif
+
+|Адміністратор|
+:Бачить оновлений статус сайту;
+stop
+@enduml

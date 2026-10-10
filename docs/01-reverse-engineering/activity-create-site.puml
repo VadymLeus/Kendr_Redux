@@ -1,0 +1,56 @@
+@startuml
+skinparam ActivityBackgroundColor #F0F8FF
+skinparam ActivityBorderColor #0055A4
+skinparam ActivityDiamondBackgroundColor #FDFDFD
+skinparam ActivityDiamondBorderColor #0055A4
+skinparam ArrowColor #0055A4
+
+|Користувач|
+start
+:Натискає "Створити сайт";
+:Переходить на сторінку створення;
+
+|Система (Backend / БД)|
+:Завантажує список шаблонів
+(з табл. `templates`);
+
+|Користувач|
+:Відображається форма;
+:Обирає шаблон;
+:Вводить назву сайту;
+:Вводить унікальний URL (site_path);
+:Натискає "Створити";
+
+|Система (Backend / БД)|
+:Отримує дані;
+fork
+    :Валідація даних
+    (URL не містить спецсимволів);
+fork again
+    :Перевірка правил
+    (ліміт сайтів користувача);
+end fork
+
+if (Дані валідні?) then (Так)
+    :Перевірка унікальності URL
+    (SELECT * FROM `sites` WHERE `site_path` = ?);
+    if (URL унікальний?) then (Так)
+        :Створює новий запис у `sites`
+        (user_id, site_path, template_id,
+        default_block_content);
+        :Перенаправляє на дашборд сайту
+        (/dashboard/:site_path);
+        stop
+    else (Ні)
+        |Користувач|
+        :Повідомляє про помилку
+        "Ця адреса вже зайнята";
+        stop
+    endif
+else (Ні)
+    |Користувач|
+    :Повідомляє про помилку
+    (напр. "Некоректна адреса");
+    stop
+endif
+@enduml

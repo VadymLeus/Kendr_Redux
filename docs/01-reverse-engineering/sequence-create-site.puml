@@ -1,0 +1,39 @@
+@startuml
+skinparam sequence {
+    ArrowColor #0055A4
+    ActorBorderColor #0055A4
+    LifeLineBorderColor #0055A4
+    LifeLineBackgroundColor #F0F8FF
+    ParticipantBorderColor #0055A4
+    ParticipantBackgroundColor #FDFDFD
+}
+
+actor ":Користувач" as User
+participant ":CreateSitePage" as UI
+participant ":siteController" as Controller
+participant ":Template" as TemplateModel
+participant ":Site" as SiteModel
+
+User -> UI : 1: Заповнює форму (назва, шлях, шаблон)
+UI -> UI : 2: Валідація полів
+User -> UI : 3: Натискає "Створити"
+
+activate UI
+UI -> Controller : 4: POST /api/sites/create (data)
+activate Controller
+
+Controller -> TemplateModel : 5: findById(template_id)
+activate TemplateModel
+TemplateModel --> Controller : 5.1: (template_data)
+deactivate TemplateModel
+
+Controller -> SiteModel : 6: create(userId, data, default_content)
+activate SiteModel
+SiteModel --> Controller : 6.1: (new_site)
+deactivate SiteModel
+
+Controller --> UI : 7: HTTP 201 Created (new_site)
+deactivate Controller
+UI -> User : 8: redirect /dashboard/:site_path
+deactivate UI
+@enduml

@@ -1,0 +1,49 @@
+@startuml
+skinparam sequence {
+    ArrowColor #0055A4
+    ActorBorderColor #0055A4
+    LifeLineBorderColor #0055A4
+    LifeLineBackgroundColor #F0F8FF
+    ParticipantBorderColor #0055A4
+    ParticipantBackgroundColor #FDFDFD
+}
+
+actor ":Адміністратор" as Admin
+participant ":AdminDashboardPage" as UI
+participant ":adminController" as Controller
+participant ":Warning" as WarningModel
+participant ":User" as UserModel
+participant ":Site" as SiteModel
+
+Admin -> UI : 1: натискає "Призупинити"
+activate UI
+UI -> Controller : 2: POST /api/admin/sites/:id/suspend
+activate Controller
+
+Controller -> WarningModel : 3: create(userId, siteId, reason)
+activate WarningModel
+WarningModel --> Controller : 3.1: (warning)
+deactivate WarningModel
+
+Controller -> WarningModel : 4: countForUser(userId)
+activate WarningModel
+WarningModel --> Controller : 4.1: (return count)
+deactivate WarningModel
+
+alt 4.2: [count >= 3]
+    Controller -> UserModel : 5: deleteById(userId)
+    activate UserModel
+    UserModel --> Controller : 5.1: (success)
+    deactivate UserModel
+end
+
+Controller -> SiteModel : 6: updateStatus(siteId, 'suspended')
+activate SiteModel
+SiteModel --> Controller : 6.1: (success)
+deactivate SiteModel
+
+Controller --> UI : 7: HTTP 200 OK (data)
+deactivate Controller
+UI -> Admin : 8: оновлює UI (статус 'Suspended')
+deactivate UI
+@enduml

@@ -1,0 +1,70 @@
+@startuml
+skinparam linetype ortho
+skinparam nodesep 70
+skinparam ranksep 80
+skinparam defaultTextAlignment center
+
+' Мінімалістичний плоский стиль
+skinparam rectangle {
+    BackgroundColor #FFFFFF
+    BorderColor #0055A4
+    BorderThickness 1.5
+    RoundCorner 8
+    shadowing false
+}
+skinparam database {
+    BackgroundColor #F0F8FF
+    BorderColor #003366
+    BorderThickness 1.5
+    shadowing false
+}
+skinparam cloud {
+    BackgroundColor #FCFCFC
+    BorderColor #CCCCCC
+    BorderThickness 1
+    shadowing false
+}
+skinparam arrow {
+    Color #444444
+    Thickness 1.2
+}
+
+rectangle "Клієнтський пристрій" {
+    rectangle "Frontend Додаток\n(React SPA)" as SPA
+}
+
+cloud "Мережа Cloudflare" {
+    rectangle "WAF & CDN\n(Реверс-проксі)" as CF_Proxy
+}
+
+cloud "Vercel" {
+    rectangle "Статичний хостинг\n(React Build)" as Static
+}
+
+cloud "Render" {
+    rectangle "Backend API\n(Node.js / Express)" as API
+}
+
+cloud "Aiven" {
+    database "База даних KendrDB\n(MySQL 8.0)" as DB
+}
+
+cloud "Cloudinary" {
+    database "Оптимізовані\nмедіафайли" as Media
+}
+
+' Основний потік запитів
+SPA =down=> CF_Proxy : " HTTPS (443)\n Запити"
+
+CF_Proxy -down-> Static : " Маршрутизація UI"
+CF_Proxy -down-> API : " Проксіювання /api/*"
+
+' Робота з даними
+API -down-> DB : " TCP/SSL (3306)\n SQL-запити"
+API -right-> Media : " Завантаження API"
+
+' Повернення даних (пунктиром)
+Media -.up.-> SPA : " Доставка зображень"
+Static -.up.-> SPA : " Доставка бандлу"
+
+@enduml

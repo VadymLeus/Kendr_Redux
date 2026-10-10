@@ -1,0 +1,52 @@
+@startuml
+skinparam ActivityBackgroundColor #F0F8FF
+skinparam ActivityBorderColor #0055A4
+skinparam ActivityDiamondBackgroundColor #FDFDFD
+skinparam ActivityDiamondBorderColor #0055A4
+skinparam ArrowColor #0055A4
+
+|Користувач|
+start
+:Заходить на сторінку
+/dashboard/:site_path;
+
+|Система (Backend / БД)|
+:Завантажує дані сайту
+(включно з JSON `block_content`
+з табл. `pages`);
+
+|Система (Frontend)|
+:Відображає редактор
+з поточними блоками;
+
+|Користувач|
+:Взаємодіє з редактором;
+fork
+    :Додає новий блок
+    (напр. 'text' або 'hero');
+fork again
+    :Редагує вміст
+    існуючого блоку;
+fork again
+    :Змінює порядок блоків
+    (Drag-and-Drop);
+fork again
+    :Видаляє блок;
+end fork
+:Натискає "Зберегти";
+
+|Система (Frontend)|
+:Формує оновлений
+JSON `block_content`;
+
+|Система (Backend / БД)|
+:Отримує JSON;
+:Оновлює `block_content` в `pages`
+(UPDATE `pages` SET `block_content` = ?
+WHERE `site_id` = ?);
+
+|Система (Frontend)|
+:Відображає повідомлення
+"Успішно збережено";
+stop
+@enduml

@@ -1,0 +1,105 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam nodesep 10
+skinparam ranksep 90
+
+skinparam usecase {
+    BackgroundColor #F0F8FF
+    BorderColor #0055A4
+}
+skinparam actor {
+    BackgroundColor #FDFDFD
+    BorderColor #0055A4
+}
+' Робимо внутрішні колонки пунктирними для краси
+skinparam rectangle {
+    BorderColor #555555
+    BorderStyle dashed
+    BackgroundColor Transparent
+}
+
+actor "Гість" as Guest
+actor "Користувач" as User
+
+rectangle "Публічний та особистий простір" {
+    usecase "Реєстрація та\nАвторизація" as UC_Auth
+    usecase "Перегляд правил\nплатформи" as UC_Rules
+    usecase "Перегляд каталогу\nта пошук сайтів" as UC_Catalog
+    usecase "Подача скарг\nна сайти" as UC_Complain
+    usecase "Взаємодія з E-commerce" as UC_Shop
+    usecase "Звернення до\nпідтримки" as UC_Tickets
+}
+
+rectangle "Робочий простір" {
+    usecase "Створення та\nперегляд сайтів" as UC_Sites
+    usecase "Використання\nредактору сайтів" as UC_Editor
+    usecase "Завантаження\nмедіафайлів" as UC_Media
+    usecase "Створення особистих\nшаблонів" as UC_MyTpl
+    usecase "Налаштування профілю" as UC_Settings
+    usecase "Вихід з\nакаунта" as UC_Logout
+    usecase "Керування\nмультидоступом" as UC_Collab
+    usecase "Налаштування\nплатежів" as UC_Payments
+}
+
+rectangle "Простір адміністрування" {
+    usecase "Модерація таблиць\n(сайти, користувачі)" as UC_ModTables
+    usecase "Створення публічних\nшаблонів" as UC_PubTpl
+    usecase "Обробка тікетів\nта скарг" as UC_Resolve
+    usecase "Перегляд Дашборду\nплатформи" as UC_Dash
+    usecase "Панель керування\n(логи, транзакції)" as UC_AdminPanel
+}
+
+actor "Модератор" as Moderator
+actor "Адміністратор" as Admin
+
+' --- Зв'язки лівих акторів ---
+Guest --> UC_Auth
+Guest --> UC_Rules
+Guest --> UC_Catalog
+Guest --> UC_Complain
+
+User --> UC_Rules
+User --> UC_Catalog
+User --> UC_Complain
+User --> UC_Shop
+User --> UC_Tickets
+
+User --> UC_Sites
+User --> UC_Editor
+User --> UC_Media
+User --> UC_MyTpl
+User --> UC_Settings
+User --> UC_Logout
+User --> UC_Collab
+User --> UC_Payments
+
+
+UC_Sites <-- Moderator
+UC_Editor <-- Moderator
+UC_Media <-- Moderator
+UC_MyTpl <-- Moderator
+UC_Settings <-- Moderator
+UC_Logout <-- Moderator
+UC_Collab <-- Moderator
+UC_Payments <-- Moderator
+UC_ModTables <-- Moderator
+UC_PubTpl <-- Moderator
+UC_Resolve <-- Moderator
+UC_Dash <-- Moderator
+
+UC_Sites <-- Admin
+UC_Editor <-- Admin
+UC_Media <-- Admin
+UC_MyTpl <-- Admin
+UC_Settings <-- Admin
+UC_Logout <-- Admin
+UC_Collab <-- Admin
+UC_Payments <-- Admin
+UC_ModTables <-- Admin
+UC_PubTpl <-- Admin
+UC_Resolve <-- Admin
+UC_Dash <-- Admin
+UC_AdminPanel <-- Admin
+
+@enduml

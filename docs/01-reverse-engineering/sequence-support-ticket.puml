@@ -1,0 +1,33 @@
+@startuml
+skinparam sequence {
+    ArrowColor #0055A4
+    ActorBorderColor #0055A4
+    LifeLineBorderColor #0055A4
+    LifeLineBackgroundColor #F0F8FF
+    ParticipantBorderColor #0055A4
+    ParticipantBackgroundColor #FDFDFD
+}
+
+actor ":Користувач" as User
+participant ":NewTicketPage" as UI
+participant ":supportController" as Controller
+participant ":SupportTicket" as TicketModel
+
+User -> UI : 1: Заповнює форму (тема, опис, site_id)
+UI -> UI : 2: Валідація полів
+User -> UI : 3: Натискає "Відправити"
+
+activate UI
+UI -> Controller : 4: POST /api/support/tickets/new (data)
+activate Controller
+
+Controller -> TicketModel : 5: create(userId, data)
+activate TicketModel
+TicketModel --> Controller : 5.1: (new_ticket)
+deactivate TicketModel
+
+Controller --> UI : 6: HTTP 201 Created (new_ticket)
+deactivate Controller
+UI -> User : 7: redirect /support/my-tickets
+deactivate UI
+@enduml
