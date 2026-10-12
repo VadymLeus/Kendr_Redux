@@ -1,0 +1,127 @@
+@startuml checkout-sequence
+' Kendr v0 (as built): оформлення замовлення й оплата.
+' Джерело: frontend/src/modules/shop/CartPage.jsx:179-221; backend/controllers/orderController.js:50-402; routes/orderRoutes.js
+title Оформлення замовлення та оплата — «як є» (v0)\nНа діаграмі позначено місця, де розрахунок і перевірки виконує не сервер (див. docs/02-analysis/defects.md)
+
+skinparam defaultFontName DejaVu Sans
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam sequenceMessageAlign left
+skinparam sequenceArrowThickness 1.2
+skinparam noteBackgroundColor #FFF3CD
+skinparam noteBorderColor #C9A227
+skinparam ParticipantPadding 14
+skinparam BoxPadding 6
+
+actor "Покупець" as U
+participant "CartPage.jsx" as FE
+participant "Express\n(orderRoutes +\nverifyToken)" as R
+participant "orderController" as C
+database "MySQL" as DB
+participant "LiqPay" as LP
+participant "emailService\n(Resend)" as M
+
+== 1. Створення замовлення: POST /api/orders/checkout ==
+U -> FE : «Оформити»
+note over FE
+  Сума в кошику підсумовується на клієнті
+  (знижки, надбавки варіантів) — D-BIZ-01
+end note
+FE -> R : POST /api/orders/checkout\n{ siteId, items[{id, quantity, options}],\ncustomerData, paymentMethod }
+R -> C : processCheckout(req)
+C -> DB : SELECT billing_enabled FROM global_settings
+alt billing_enabled = 0
+  C --> FE : 403 «Прийом платежів призупинено»
+end
+C -> DB : getConnection(); BEGIN
+C -> DB : SELECT user_id, ключі LiqPay, прапорці оплати FROM sites
+alt магазин не знайдено → 404; покупець = власник → 403;\nпокупець = співавтор → 403; спосіб оплати вимкнено → 400
+  C -> DB : ROLLBACK
+  C --> FE : помилка (status з винятку)
+end
+C -> DB : SELECT з users; COUNT pending-замовлень (customer_id, email, телефон)
+alt ≥ 5 неоплачених замовлень
+  C -> DB : ROLLBACK
+  C --> FE : 429
+end
+
+loop для кожної позиції з items[]
+  C -> DB : SELECT price, type, stock_quantity FROM products\nWHERE id = ? AND site_id = ? AND is_available = 1
+  note right of C
+    Перевірка залишку: quantity > stock_quantity.
+    Блокування рядка (FOR UPDATE) немає,
+    залишок тут НЕ списується — D-BIZ-02
+  end note
+  note right of C
+    total += parseFloat(product.price) × quantity
+    Ціна з каталогу: знижки й надбавки варіантів
+    не враховуються — D-BIZ-01
+  end note
+end
+
+C -> C : адреса обов'язкова для фізичних товарів;\nцифрові товари не можна оплатити післяплатою
+C -> DB : INSERT INTO orders (status = 'pending', total_amount, payment_method)
+C -> DB : INSERT INTO order_items (знімок назви й ціни) — по одному на позицію
+C -> DB : COMMIT
+
+alt paymentMethod = 'online' і в магазину є ключі LiqPay
+  C -> C : decrypt(liqpay_private_key); data = base64(JSON);\nsignature = sha1(private + data + private)
+  note right of C
+    У параметрах платежу зашито sandbox: 1 — D-CFG-01
+  end note
+  C --> FE : 200 { liqpayData, liqpaySignature, orderId }
+  FE -> LP : форма на LiqPay checkout (data, signature)
+else післяплата (cod) або ключів LiqPay немає
+  C --> FE : 200 { orderId, paymentMethod }
+  note right of C
+    Замовлення залишається 'pending'.
+    Залишок не зменшується ніколи (для cod) — D-BIZ-02
+  end note
+end
+
+== 2а. Оплата через LiqPay: POST /api/orders/liqpay-callback (без токена) ==
+LP -> R : POST { data, signature }
+R -> C : liqpayCallback(req)
+C -> DB : SELECT order; SELECT liqpay_private_key FROM sites
+C -> C : перевірка підпису: sha1(private + data + private)
+alt підпис невірний
+  C --> LP : 403 Invalid signature
+else статус success / wait_accept / sandbox, замовлення 'pending'
+  C -> DB : UPDATE orders SET status = 'paid' (або 'completed' для цифрових)
+  C -> DB : UPDATE products SET stock_quantity = GREATEST(stock_quantity − qty, 0)
+  note right of C
+    Сума, яку сплатив покупець (amount у data),
+    з order.total_amount не звіряється — D-SEC-07
+  end note
+  opt є цифрові товари
+    C -> M : sendDigitalGoodsEmail(...)
+  end
+  C --> LP : 200 OK
+end
+
+== 2б. Оплата через Google Pay: POST /api/orders/:orderId/pay/gpay ==
+FE -> R : { paymentData }
+R -> C : processGooglePay(req)
+C -> DB : BEGIN; SELECT order; перевірка customer_id = користувач
+C -> DB : UPDATE orders SET status = 'paid' / 'completed'
+note right of C
+  Платіжний шлюз не викликається, токен paymentData
+  не перевіряється — будь-який власник замовлення
+  може позначити його оплаченим — D-SEC-02
+end note
+C -> DB : UPDATE products SET stock_quantity = GREATEST(stock_quantity − qty, 0)
+C -> DB : INSERT INTO transactions (user_id = власник сайту, status = 'success')
+C -> DB : COMMIT
+C --> FE : 200 { success: true }
+
+== 3. Керування замовленням власником сайту ==
+FE -> R : PUT /api/orders/:id/status { status }
+R -> C : updateOrderStatus(req)
+C -> DB : UPDATE orders SET status = ? WHERE id = ?
+note right of C
+  Лише verifyToken: власник сайту не перевіряється,
+  значення status не валідується — D-SEC-03
+  (так само GET /api/orders/site/:siteId)
+end note
+C --> FE : 200
+@enduml

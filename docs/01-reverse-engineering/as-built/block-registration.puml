@@ -1,0 +1,56 @@
+@startuml block-registration
+' Kendr v0 (as built): де описано тип блока редактора.
+' Джерело: frontend/src/modules/editor/core/{BlockRenderer.jsx, editorConfig.jsx}, ui/tabs/{SettingsTab,AddBlocksTab}.jsx, shared/utils/htmlGenerator.js
+title Реєстрація типу блока «як є» (v0)\nОдин тип блока описано в шести місцях, а відображається двома незалежними рендерерами
+
+skinparam defaultFontName DejaVu Sans
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam ArrowFontSize 11
+skinparam packageStyle rectangle
+skinparam nodesep 22
+skinparam ranksep 46
+skinparam noteBackgroundColor #FFF3CD
+skinparam noteBorderColor #C9A227
+skinparam package {
+  BorderColor #8a8a8a
+  FontColor #333333
+}
+
+rectangle "**Дані**\npages.block_content (JSON)\n[ { block_id, type: 'hero', data: {…} }, … ]\nГлобальні хедер і футер — окремо:\nsites.header_content, sites.footer_content" as json #E3F2FD
+
+package "Редактор: додавання й налаштування блока" as ed #F5F5F5 {
+  rectangle "**① BLOCK_LIBRARY**\neditorConfig.jsx:5–31\n15 типів: type, назва, іконка, presets" as lib #FFFFFF
+  rectangle "**⑤ Категорії палітри**\nAddBlocksTab.jsx:175–178\n4 списки типів, записані вручну" as cat #FFFFFF
+  rectangle "**② getDefaultBlockData()**\neditorConfig.jsx:65–224\nswitch: 15 case" as defs #FFFFFF
+  rectangle "**④ SettingsComponentMap**\nSettingsTab.jsx:22–40\n17 ключів → XxxSettings" as set #FFFFFF
+}
+
+package "Рендерер 1: React\n(полотно редактора, публічний сайт, прев'ю, сторінка товару)" as r1 #E8F5E9 {
+  rectangle "**③ blockMap**\nBlockRenderer.jsx:23–40\n16 ключів → lazy(XxxBlock)\nневідомий type → червоний блок «Невідомий тип»" as bm #FFFFFF
+}
+
+package "Рендерер 2: експорт сайту в ZIP (статичний HTML)" as r2 #FDECEA {
+  rectangle "**⑥ generateBlockHTML()**\nhtmlGenerator.js:116–335\nswitch: 15 case; кожен блок описано заново\ncatalog і showcase — заглушки;\nневідомий type → порожній рядок" as html #FFFFFF
+}
+
+rectangle "BlockSettingsModal.jsx:3–12\nне імпортується ніде (D-DEAD-03)" as dead #DDDDDD
+
+lib --> cat : фільтр за type
+cat --> defs : onAddBlock(type)
+defs --> json : новий блок\n{ block_id, type, data }
+json <--> set : type виділеного блока /\nonUpdateBlockData
+json --> bm : type
+json --> html : type
+
+note bottom of r2
+  У JSON тип блока один, але відповідність «type → код» задана
+  шістьма незалежними структурами; узгодженість підтримується вручну.
+  Псевдоніми header / global-header і footer / global-footer
+  у наборах різні (див. block-map.md).
+end note
+note bottom of dead
+  Мертвий файл: сім його імпортів
+  вказують на неіснуючі шляхи
+end note
+@enduml

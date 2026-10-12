@@ -12,7 +12,6 @@ skinparam actor {
     BackgroundColor #FDFDFD
     BorderColor #0055A4
 }
-' Робимо внутрішні колонки пунктирними для краси
 skinparam rectangle {
     BorderColor #555555
     BorderStyle dashed

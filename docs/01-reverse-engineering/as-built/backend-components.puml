@@ -1,0 +1,71 @@
+@startuml backend-components
+' Kendr v0 (as built): компоненти backend.
+' Джерело: backend/ (74 файли, 6 894 SLOC), docs/01-reverse-engineering/api-catalog.md
+title Backend Kendr v0 — компоненти «як є»\nЗадум: контролер → модель → БД. Факт: 14 із 21 контролера виконують SQL напряму (196 викликів)
+
+skinparam defaultFontName DejaVu Sans
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam componentStyle rectangle
+skinparam ArrowFontSize 11
+skinparam packageStyle rectangle
+skinparam nodesep 30
+skinparam ranksep 36
+skinparam package {
+  BorderColor #8a8a8a
+  FontColor #333333
+}
+
+actor "Клієнт\n(React SPA)" as client
+
+package "server.js — глобальний ланцюжок" as srv #F5F5F5 {
+  [helmet → cors → json (50 МБ) → passport →\nverifyTokenOptional → checkMaintenance] as globalmw
+}
+
+package "routes — 22 файли, 142 ендпоінти" as routes #EAF2FB {
+  [Доступ: 32 публічні · 85 за токеном (verifyToken) · 21 admin/moderator (verifyAdmin) ·\n4 лише admin (verifyStrictAdmin). Також: verifyTurnstile, upload (multer + Cloudinary), trackVisit] as routefiles
+}
+
+package "controllers — 21 файл" as ctrl #FFFFFF {
+  package "Лише через моделі (7)" as okc #E8F5E9 {
+    [categoryController\nfavoriteController\nsavedBlockController\ntagController\nuploadController\nsettingsController (маршрут не підключено)\ndeliveryController (лише API Нової пошти)] as c_ok
+  }
+  package "SQL напряму (14 контролерів, 196 викликів)" as badc #FDECEA {
+    [adminController — 43\nteamController — 30\norderController — 29\nsiteController — 28\nauthController — 14\ntransactionController — 14\nmediaController — 10\nuserController — 6\npageController — 6\nuserTemplateController — 5\nproductController — 3\nformController — 3\nsupportController — 3\nreportController — 2] as c_bad
+  }
+}
+
+package "models — 13 файлів" as models #FFF8E1 {
+  [User · Site · Page · Product · Category · Media · Warning ·\nSupportTicket · FormSubmission · Favorite · SavedBlock · Tag\n(12 використовуються)] as m_used
+  [UserTemplate — ніде не підключено] as m_ut #DDDDDD
+}
+
+package "config / utils" as cfg #F5F5F5 {
+  [config/db.js — пул mysql2\n(модуль, не клас Database)] as db
+  [config/cloudinary, config/passport,\nemailService, encryption, fileUtils, adminLogger] as utils
+}
+
+database "MySQL 8\n27 таблиць у SQL-запитах" as mysql
+cloud "Cloudinary · LiqPay · Resend ·\nNova Poshta · Turnstile · Google OAuth" as ext
+
+client --> globalmw : HTTPS /api/*
+globalmw --> routefiles
+routefiles --> ctrl : 142 ендпоінти
+
+c_ok --> m_used
+c_bad --> m_used : 9 із 14 частково\nчерез моделі
+c_bad -[#C62828,thickness=3]-> db : 196 прямих\nSQL-викликів
+m_used --> db
+db --> mysql
+ctrl ..> utils
+utils ..> ext
+
+c_ok -[hidden]right-> c_bad
+m_used -[hidden]right-> m_ut
+
+note bottom of models
+  Транзакції відкриваються у 5 контролерах
+  (order, site, support, team, transaction)
+  і у двох моделях (Page, Site)
+end note
+@enduml

@@ -1,26 +1,28 @@
 # Реєстр дефектів вихідної версії (v0)
+
+
 Станом на 11.10.2026, код на теґу `v0`. Метод: читання вихідного коду, каталог API, звіти jscpd і madge (`metrics-before.md`, `../01-reverse-engineering/api-catalog.md`). **Жоден дефект поки не відтворено запуском**: колонка «Підтвердження» показує, чим він підтверджений; відтворення тестами виконується на етапі ADR-005, де кожен тест позначається `// KNOWN-DEFECT D-…`.
 
 Номери рядків відповідають файлам на теґу `v0` і виводяться з вивантаження коду; перед цитуванням у звіті їх варто звірити на диску.
 
 ## Підсумок
 
-Усього дефектів: **51**.
+Усього дефектів: **53**.
 
 | Серйозність | Кількість |
 |---|---|
 | Критична | 2 |
 | Висока | 10 |
-| Середня | 16 |
-| Низька | 23 |
+| Середня | 17 |
+| Низька | 24 |
 
 | Категорія | Кількість |
 |---|---|
 | Безпека та контроль доступу (`SEC`) | 13 |
 | Бізнес-логіка (`BIZ`) | 6 |
 | Архітектура backend (`ARC`) | 7 |
-| Редактор блоків (`BLK`) | 4 |
-| Дублювання коду (frontend) (`DUP`) | 6 |
+| Редактор блоків (`BLK`) | 5 |
+| Дублювання коду (frontend) (`DUP`) | 7 |
 | Розбіжності клієнта й сервера (`CON`) | 7 |
 | Мертвий код (`DEAD`) | 4 |
 | Тестування (`TST`) | 2 |
@@ -29,9 +31,9 @@
 | Планове виправлення | Кількість |
 |---|---|
 | до v1.0 | 2 |
-| v1.0 | 17 |
+| v1.0 | 18 |
 | v1.0 → v2.0 | 1 |
-| v2.0 | 19 |
+| v2.0 | 20 |
 | Перспективи | 12 |
 
 Шкала серйозності: **критична**: обхід оплати або автентифікації без особливих умов; **висока**: доступ до чужих даних, втрата коштів чи функції, що вимагає лише звичайного облікового запису; **середня**: ризик за додаткових умов або помітна функціональна помилка; **низька**: підтримуваність, дрібні помилки.
@@ -87,6 +89,7 @@
 | D-BLK-02 | Середня | `frontend/src/shared/utils/htmlGenerator.js:116,315`; `shared/utils/siteExporter.js` | Експорт сайту фактично є другим рендерером: кожен блок описано повторно у `switch`. Блоки «Каталог» і «Вітрина» в експорті замінено заглушкою (`Dynamic catalog requires backend connection.`). | читання коду | v1.0 (ADR-002) |
 | D-BLK-03 | Низька | `BlockRenderer.jsx:13`; `blocks/Layout/LayoutBlock.jsx:6`; `ui/EditableBlockWrapper.jsx` | Два цикли залежностей (madge): `BlockRenderer` → `LayoutBlock` → `BlockRenderer` та через `EditableBlockWrapper`. Для `LayoutBlock` застосовано `React.lazy`, тому на роботу це не впливає, але вказує на відсутність спільного реєстру. | madge | v1.0 (ADR-002) |
 | D-BLK-04 | Низька | `frontend/src/modules/editor/blocks/{Accordion,Button,Features,Footer,Form,Hero,Image,ShowCase,SocialIcons,Text,Video}Block.jsx` | Одинадцять блоків обгорнуто в `React.memo` з порівнянням `JSON.stringify(prev.blockData) === JSON.stringify(next.blockData)`: серіалізація при кожному рендері. Утиліти `blockUtils` вже працюють з незмінними структурами (immer). | читання коду | v1.0 (ADR-002) |
+| D-BLK-05 | Середня | `backend/controllers/pageController.js:74–96` (`updatePageContent`); `routes/pageRoutes.js`; `backend/server.js:49` | `PUT /api/pages/:pageId/content` перевіряє лише права на сторінку, а `block_content` зберігає як є (`block_content \|\| []`): ні типу значення (масив чи ні), ні переліку допустимих `type`, ні форми `data`, ні розміру (крім загального ліміту тіла 50 МБ). Специфікація в дипломі (табл. 2.3, кроки 8 і 8а) передбачає серверну валідацію JSON і відхилення запиту; у коді її немає. Некоректний JSON, збережений через API, ламає відображення сторінки на публічному сайті й у редакторі. | читання коду | v2.0 (ADR-002) |
 
 ## Дублювання коду (frontend) (`DUP`)
 
@@ -98,12 +101,13 @@
 | D-DUP-04 | Низька | `SiteDashboardPage.jsx:26,83` ↔ `SitePreviewer.jsx:12`, `BlockEditor.jsx:13` | Компонент `DeviceIframe` та хук `useDragAutoScroll` скопійовано (jscpd: клони 36 і 45 рядків). | jscpd | v1.0 (за наявності часу) |
 | D-DUP-05 | Низька | `shared/hooks/useConfirm.js` та `app/providers/ConfirmContext.jsx`; `shared/hooks/useConfirmDialog.js` (`MyTicketsPage.jsx:10,48`; `TicketDetailPage.jsx:9,31`) | Два механізми підтвердження дій: контекстний `useConfirm` (використовується широко) і локальний `useConfirmDialog` (дві сторінки). | читання коду | Перспективи |
 | D-DUP-06 | Низька | `OrdersTab.jsx` ↔ `MyOrdersPage.jsx` (23 рядки); `MediaPickerModal.jsx` ↔ `MediaLibraryPage.jsx` (23 + 10 + 10); `NewTicketPage.jsx` ↔ `TicketDetailPage.jsx` (24 + 11); `AdminUsersSitesPage.jsx` ↔ `ProfilePage.jsx` (14 + 18 + 10); `CatalogSettings.jsx` ↔ `ShowCaseSettings.jsx` | Решта значних клонів за звітом jscpd (повний перелік у `raw/jscpd/jscpd-report.json`). | jscpd | Перспективи |
+| D-DUP-07 | Низька | `SiteDashboardPage.jsx:417–428`; `SiteDisplayPage.jsx:111–127`; `ProductDetailPage.jsx:78–95`; `SitePreviewer.jsx:240,271` | Перетворення глобальних хедера й футера (`type: header \| footer` → `global-header \| global-footer`, дані з `sites.header_content` / `footer_content`, запасний варіант із `getDefaultBlockData`) скопійовано у чотирьох місцях з однаковою логікою розбору JSON. Бекенд при створенні сайту записує тип `header` (`siteController.js:168,380,512`), редактор і рендерер перейменовують його на льоту. | читання коду | v1.0 (ADR-002) |
 
 ## Розбіжності клієнта й сервера (`CON`)
 
 | ID | Серйозність | Місце | Опис | Підтвердження | Виправлення |
 |---|---|---|---|---|---|
-| D-CON-01 | Висока | `frontend/src/modules/admin/pages/AdminTicketsReportsPage.jsx:99,105`; `backend/routes/supportRoutes.js:26`; `controllers/supportController.js:143–170` | Адмін-панель викликає `PUT /support/admin/:id/status`, а на сервері є лише `PUT /support/:ticketId/status`: закриття й відновлення тікета з адмінки повертає 404. Навіть після виправлення шляху модератор отримає 403, бо контролер вважає адміністратором лише роль `admin` (рядок 154). | читання коду; каталог API | v2.0 |
+| D-CON-01 | Висока | `frontend/src/modules/admin/pages/AdminTicketsReportsPage.jsx:99,105`; `backend/routes/supportRoutes.js:26`; `controllers/supportController.js:89,111,143–170` | Адмін-панель викликає `PUT /support/admin/:id/status`, а на сервері є лише `PUT /support/:ticketId/status`: закриття й відновлення тікета з адмінки повертає 404. Навіть після виправлення шляху модератор отримає 403, бо контролер вважає адміністратором лише роль `admin` (рядок 154). Те саме в `getTicketById` (рядок 89) та `addReply` (рядок 111): модератор бачить список тікетів (`verifyAdmin` пускає й `moderator`), але не може відкрити тікет чи відповісти, хоча за дипломом (табл. 2.1, рис. 2.1) обробляє звернення. Чи має модератор працювати з тікетами, — рішення за власником продукту. | читання коду; каталог API | v2.0 |
 | D-CON-02 | Середня | `frontend/src/modules/profile/tabs/ProfileGeneralTab.jsx:131`; `modules/dashboard/pages/SiteDashboardPage.jsx:267`; `app/App.jsx:114` | Виклики `navigate('/auth')` (після виходу з системи) і `navigate('/dashboard')` (заблокований сайт) ведуть на адреси, яких немає в маршрутизації (є `/login`, `/auth/success`, `/dashboard/:site_path`), тому користувач потрапляє на сторінку 404. | читання коду | v2.0 |
 | D-CON-03 | Низька | `frontend/src/pages/InvitePage.jsx:44`; `modules/auth/AuthPage.jsx:97`; `AuthSuccessPage.jsx:33–43` | `InvitePage` зберігає адресу повернення під ключем `redirectAfterAuth`, а читають її з ключа `redirectAfterLogin`: після входу за запрошенням користувача не повертає до запрошення. | читання коду | v2.0 |
 | D-CON-04 | Низька | `frontend/src/modules/support/TicketDetailPage.jsx:17,205` | Адреса `http://localhost:5000` зашита в коді для вкладень тікета, тоді як решта застосунку використовує `BASE_URL` зі змінної середовища (`shared/config/index.js:2`). | читання коду | v2.0 |
@@ -154,4 +158,7 @@
 - `frontend/src/shared/utils/htmlGenerator.js:5–7`: у карті екранування `escapeHTML` значення для `&`, `<`, `>` збігаються з ключами (`'<': '<'`). Імовірно, це артефакт вивантаження (сутності могли декодуватися), але перевірте файл на диску: якщо це так і є, експортований сайт не екранує текст.
 - Чи задано `JWT_SECRET` на розгортанні (від цього залежить вплив D-SEC-09).
 - Версія React і поведінка `javascript:`-посилань у ній (вплив D-SEC-11).
-- Твердження з попереднього огляду, які не підтверджувались у цьому проході й тому в реєстр не внесені: що `Layout` завантажує сайт «з усіма товарами» (підтверджено лише повторне завантаження даних сайту, D-CON-07); що кольори теми в копіях розходяться; дублювання `FontPicker` і `FontSelector`, `FontLoader` і `useBlockFonts`; поведінка `useAutoSave`.
+- Твердження з попереднього огляду, які не підтверджувались у цьому проході й тому в реєстр не внесені: що `Layout` завантажує сайт «з усіма товарами» (підтверджено лише повторне завантаження даних сайту, D-CON-07); що кольори теми в копіях розходяться; дублювання `FontPicker` і `FontSelector`, `FontLoader` і `useBlockFonts`.
+- `useAutoSave` перевірено в `gap-analysis.md`: у редакторі блоків він не використовується (лише `GeneralSettingsTab.jsx`), дефектом не є.
+- `deletion_scheduled_for`: бекенд виставляє дату (+7 днів при призупиненні сайту) і показує її власнику, але в коді backend немає ні планувальника (`setInterval`, `node-cron`), ні запиту, що видаляє сайти після цієї дати (0 збігів). Перевірте `db/schema.sql` на подію MySQL (`CREATE EVENT`): якщо її немає, строк «7 днів» лише інформаційний. Для акаунтів 14-денний строк перевіряється ліниво, під час входу (`authController.js:88–95,146–152`).
+- CSS-клас області видимості блоків (`text-scope-…`, `btn-scope-…`, `accordion-scope-…` та ін.) будується з `blockData.block_id || blockData.id || 'preview'`, але `blockData` — це `block.data`, а `block_id` лежить на самому блоці (`BlockRenderer.jsx:136,155`). Тож клас, імовірно, завжди `…-preview`. Вплив залежить від того, що саме задають ці стилі (`<style>.клас { змінні шрифту }`): перевірте в браузері сторінку з двома текстовими блоками з різними шрифтами.
