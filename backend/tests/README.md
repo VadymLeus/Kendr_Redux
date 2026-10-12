@@ -7,9 +7,9 @@
 З кореня репозиторію:
 
 ```bash
-docker compose up -d
+docker compose up -d          # тестова MySQL 8 на порту 3307; дочекайтеся статусу healthy (docker compose ps)
 cd backend
-npm install
+npm install --legacy-peer-deps   # без прапорця npm падає з помилкою "edgesOut" (імовірно через react-dnd у залежностях backend, D-DEAD-07)
 npm test                      # усі тести
 npm test -- app.smoke         # лише один файл
 npm run test:coverage         # покриття (v8)
@@ -40,7 +40,10 @@ npm run test:coverage         # покриття (v8)
 | D-SEC-03 | `orders.access.test.js` | сторонній користувач читає замовлення чужого сайту й змінює їхній статус |
 | D-SEC-07 | `orders.payment.test.js`, `transactions.upgrade.test.js` | сума й валюта callback не порівнюються |
 | D-BIZ-01 | `orders.checkout.test.js` | сервер ігнорує знижку, надбавки варіантів і ціну з клієнта |
-| D-BIZ-02 | `orders.stock.test.js` | залишок не списується при оформленні, перепродаж можливий |
+| D-BIZ-02 | `orders.stock.test.js`, `orders.checkout.input.test.js` | залишок не списується при оформленні, перепродаж можливий (також через дубль товару в позиціях) |
+| D-BIZ-08 | `orders.payment.test.js` | Google Pay «оплачує» скасовані, відправлені й післяплатні замовлення |
+| D-BIZ-09 | `orders.checkout.input.test.js` | від'ємна й нульова кількість у замовленні приймаються |
+| D-ARC-10 | `orders.checkout.input.test.js` | збій SQL повертається клієнту як 400 із текстом помилки БД |
 | D-CFG-01 | `orders.payment.test.js`, `transactions.upgrade.test.js` | статус `sandbox` приймається як успішна оплата |
 
 Не покрито: одночасні замовлення (друга частина D-BIZ-02, відсутність `FOR UPDATE`) — недетермінований сценарій, фіксується послідовним перепродажем; D-SEC-04..06, D-CON-01, D-BIZ-06 — наступні файли.

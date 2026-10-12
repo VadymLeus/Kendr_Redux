@@ -195,9 +195,13 @@ describe('POST /api/orders/:orderId/pay/gpay', () => {
     );
   });
 
-  // Спостереження поза реєстром дефектів: блокуються лише статуси paid і completed.
-  it('скасоване замовлення теж можна «оплатити»', async () => {
-    const order = await physicalOrder({ status: 'cancelled' });
+  // KNOWN-DEFECT D-BIZ-08: блокуються лише статуси paid і completed; тип оплати не перевіряється.
+  it.each([
+    ['скасоване замовлення', { status: 'cancelled' }],
+    ['відправлене замовлення', { status: 'shipped' }],
+    ['замовлення з післяплатою', { payment_method: 'cod' }],
+  ])('KNOWN-DEFECT D-BIZ-08: %s теж можна «оплатити»', async (_title, overrides) => {
+    const order = await physicalOrder(overrides);
     const res = await gpay(buyer, order.id, {});
     expect(res.status).toBe(200);
     expect((await getOrder(order.id)).status).toBe('paid');

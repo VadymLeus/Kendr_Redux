@@ -169,3 +169,33 @@ Vitest 4.1.2 і `@vitest/coverage-v8` 4.1.2; у підрахунок включ�
 Автоматизованих тестів: 12 (9 unit у `validationUtils.test.js`, 3 інтеграційні в `InputWithCounter.test.jsx`), усі проходять. Додатково є один e2e-тест Playwright (`tests/e2e/example.spec.js`: вхід, створення сайту, увімкнення cookie, видалення); він потребує запущених застосунку й БД і в замірі не виконувався. Покриття backend: тестів немає, 0 %.
 
 Відтворення замірів 7–9: `node tools/measure.mjs` з кореня репозиторію.
+
+## 10. Характеризаційні тести backend (`v0.1`)
+
+Це не замір `v0`: тести додано до незмінного коду `v0` (змінено лише винесення `app.js` із `server.js`), щоб мати базу для порівняння з `v1.0` і `v2.0` (ADR-005). Заміри 12.10.2026: Vitest 4.1.11, supertest, `@vitest/coverage-v8` (v8), тестова MySQL 8.0 у Docker (`docker-compose.yml`). Стан проміжний: готові тести замовлень і тарифу, тести сайтів, сторінок і автентифікації ще попереду.
+
+| Файл (`backend/tests/characterization/`) | Тестів | Область |
+|------------------------------------------|--------|---------|
+| `app.smoke.test.js` | 13 | каркас застосунку, `verifyToken` |
+| `orders.checkout.test.js` | 27 | оформлення замовлення, ціна |
+| `orders.checkout.input.test.js` | 5 | кількість у позиціях, помилки без статусу |
+| `orders.stock.test.js` | 9 | списання залишків |
+| `orders.payment.test.js` | 25 | callback LiqPay, Google Pay |
+| `orders.access.test.js` | 12 | доступ до замовлень, статуси |
+| `transactions.upgrade.test.js` | 12 | тариф PLUS |
+| **Разом** | **103** | усі проходять |
+
+Відтворено 10 дефектів із 64 (обидва критичні, 4 із 11 високих): D-SEC-01, D-SEC-02, D-SEC-03, D-SEC-07, D-BIZ-01, D-BIZ-02, D-BIZ-08, D-BIZ-09, D-ARC-10, D-CFG-01.
+
+Покриття backend (файли `app.js`, `config/`, `controllers/`, `middleware/`, `models/`, `routes/`, `utils/`, перелік у `backend/vitest.config.mjs`):
+
+| Метрика | Покрито | Усього | Частка |
+|---------|---------|--------|--------|
+| Рядки | 1 052 | 3 814 | 27,58 % |
+| Оператори | 1 062 | 4 094 | 25,94 % |
+| Функції | 94 | 365 | 25,75 % |
+| Гілки | 251 | 2 284 | 10,99 % |
+
+Vitest виводить частку гілок із усіканням (10,98 %); наведено точне значення. Для порівняння: на `v0` покриття backend дорівнювало 0 % (тестів не було).
+
+Відтворення: `docker compose up -d`, далі в `backend/` — `npm install --legacy-peer-deps` і `npm run test:coverage`.
