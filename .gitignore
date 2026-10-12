@@ -9,3 +9,4 @@
 /playwright/.auth/
 /ztxt
 .env
+/backend/coverage/
