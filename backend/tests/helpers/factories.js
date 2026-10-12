@@ -5,27 +5,31 @@ import { createRequire } from 'node:module';
 import { query } from './testDb.js';
 
 const require = createRequire(import.meta.url);
-const { encrypt } = require('../../utils/encryption');
+const { encrypt, decrypt } = require('../../utils/encryption');
+const bcrypt = require('bcrypt');
 
 let counter = 0;
 const next = () => ++counter;
 
+// overrides.password: якщо задано, зберігається bcrypt-хеш (потрібен для передачі сайту); інакше хеш-заглушка.
 export async function createUser(overrides = {}) {
   const i = next();
+  const { password, ...rest } = overrides;
   const user = {
     username: `user_${i}`,
     email: `user${i}@test.local`,
     role: 'user',
     plan: 'FREE',
     status: 'active',
-    ...overrides,
+    ...rest,
   };
+  const passwordHash = password ? bcrypt.hashSync(password, 4) : 'not-a-real-hash';
   const result = await query(
     `INSERT INTO users (username, email, password_hash, role, plan, status, is_verified, token_version)
-     VALUES (?, ?, 'not-a-real-hash', ?, ?, ?, 1, 0)`,
-    [user.username, user.email, user.role, user.plan, user.status]
+     VALUES (?, ?, ?, ?, ?, ?, 1, 0)`,
+    [user.username, user.email, passwordHash, user.role, user.plan, user.status]
   );
-  return { id: result.insertId, token_version: 0, ...user };
+  return { id: result.insertId, token_version: 0, password, ...user };
 }
 
 // overrides.liqpay = { publicKey, privateKey }: приватний ключ шифрується так само, як при збереженні в застосунку.
@@ -77,11 +81,77 @@ export async function createProduct(site, overrides = {}) {
   return { id: result.insertId, site_id: site.id, ...product };
 }
 
-export async function addCollaborator(site, user, role = 'editor') {
+// permissions за замовчуванням порожній об'єкт: застосунок їх не перевіряє (D-SEC-06), тест передає значення явно.
+export async function addCollaborator(site, user, role = 'editor', permissions = {}) {
   await query(
     `INSERT INTO site_collaborators (site_id, user_id, role, permissions) VALUES (?, ?, ?, ?)`,
-    [site.id, user.id, role, JSON.stringify({})]
+    [site.id, user.id, role, JSON.stringify(permissions)]
   );
+}
+
+export async function createPage(site, overrides = {}) {
+  const i = next();
+  const page = {
+    name: `Сторінка ${i}`,
+    slug: `page-${i}`,
+    block_content: [],
+    is_homepage: 0,
+    seo_title: null,
+    ...overrides,
+  };
+  const result = await query(
+    `INSERT INTO pages (site_id, name, slug, block_content, is_homepage, seo_title) VALUES (?, ?, ?, ?, ?, ?)`,
+    [site.id, page.name, page.slug, JSON.stringify(page.block_content), page.is_homepage, page.seo_title]
+  );
+  return { id: result.insertId, site_id: site.id, ...page };
+}
+
+export async function createCategory(site, overrides = {}) {
+  const i = next();
+  const category = { name: `Категорія ${i}`, discount_percentage: 0, icon: 'folder', ...overrides };
+  const result = await query(
+    `INSERT INTO categories (site_id, name, discount_percentage, icon) VALUES (?, ?, ?, ?)`,
+    [site.id, category.name, category.discount_percentage, category.icon]
+  );
+  return { id: result.insertId, site_id: site.id, ...category };
+}
+
+// owner = null для системного шаблону. content — значення default_block_content (об'єкт або масив).
+export async function createTemplate(owner, overrides = {}) {
+  const i = next();
+  const template = {
+    name: `Шаблон ${i}`,
+    type: 'system',
+    is_ready: 1,
+    access_level: 'public',
+    content: { pages: [{ title: 'Головна', slug: 'home', blocks: [] }] },
+    ...overrides,
+  };
+  const result = await query(
+    `INSERT INTO templates (user_id, name, default_block_content, type, is_ready, access_level)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [owner ? owner.id : null, template.name, JSON.stringify(template.content), template.type, template.is_ready, template.access_level]
+  );
+  return { id: result.insertId, ...template };
+}
+
+// overrides.hours: через скільки годин спливає запрошення (від'ємне значення — вже спливло).
+export async function createInvite(site, creator, overrides = {}) {
+  const invite = { token: crypto.randomBytes(16).toString('hex'), role: 'editor', hours: 48, ...overrides };
+  const expiresAt = new Date(Date.now() + invite.hours * 3600 * 1000);
+  await query(
+    `INSERT INTO site_invites (token, site_id, created_by, role, expires_at) VALUES (?, ?, ?, ?, ?)`,
+    [invite.token, site.id, creator.id, invite.role, expiresAt]
+  );
+  return invite;
+}
+
+// Блокування редагування сайту користувачем на ms мілісекунд від зараз (від'ємне значення — блокування вже спливло).
+// Час передається з Node (а не через NOW()), щоб результат не залежав від часового поясу сервера БД.
+export async function setSiteLock(site, user, ms) {
+  await query('UPDATE sites SET locked_by_user_id = ?, locked_until = ? WHERE id = ?', [
+    user.id, new Date(Date.now() + ms), site.id,
+  ]);
 }
 
 // overrides.items = [{ product, quantity }]; сума замовлення — за каталожними цінами товарів.
@@ -135,6 +205,12 @@ export async function countOrders() {
   return rows[0].count;
 }
 
+// Кількість рядків таблиці (за потреби з умовою): countRows('pages', 'site_id = ?', [site.id]).
+export async function countRows(table, where = '1 = 1', params = []) {
+  const rows = await query(`SELECT COUNT(*) AS count FROM \`${table}\` WHERE ${where}`, params);
+  return rows[0].count;
+}
+
 export async function getProduct(id) {
   const rows = await query('SELECT * FROM products WHERE id = ?', [id]);
   return rows[0];
@@ -145,6 +221,39 @@ export async function getUser(id) {
   return rows[0];
 }
 
+export async function getSite(id) {
+  const rows = await query('SELECT * FROM sites WHERE id = ?', [id]);
+  return rows[0];
+}
+
+export async function getPage(id) {
+  const rows = await query('SELECT * FROM pages WHERE id = ?', [id]);
+  return rows[0];
+}
+
+export async function getPages(siteId) {
+  return query('SELECT * FROM pages WHERE site_id = ? ORDER BY id', [siteId]);
+}
+
+export async function getCategory(id) {
+  const rows = await query('SELECT * FROM categories WHERE id = ?', [id]);
+  return rows[0];
+}
+
+export async function getCollaboratorRows(siteId) {
+  return query('SELECT * FROM site_collaborators WHERE site_id = ? ORDER BY user_id', [siteId]);
+}
+
+export async function getReview(id) {
+  const rows = await query('SELECT * FROM product_reviews WHERE id = ?', [id]);
+  return rows[0];
+}
+
 export async function getTransactions() {
   return query('SELECT * FROM transactions ORDER BY created_at, id');
+}
+
+// Розшифрований приватний ключ LiqPay із рядка sites.liqpay_private_key.
+export function decryptKey(value) {
+  return decrypt(value);
 }
