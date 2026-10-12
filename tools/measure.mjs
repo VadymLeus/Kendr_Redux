@@ -115,12 +115,8 @@ if (vitestVersion) {
 if (!dry) {
   console.log('\n===== Підсумок =====');
   for (const r of results) console.log(`${r.ok ? 'OK     ' : 'ПОМИЛКА'}  ${r.id}${r.problem ? ' — ' + r.problem : ''}`);
-  if (!only) {
-    writeFileSync(path.join(raw, 'measure-summary.txt'),
-      results.map((r) => `${r.ok ? 'OK' : 'ПОМИЛКА'} | ${r.id}${r.problem ? ' | ' + r.problem : ''}`).join('\n') + '\n', 'utf8');
-  }
   if (results.some((r) => !r.ok)) {
-    console.log('\nДеякі кроки не вдалися. Надішліть файли docs/02-analysis/raw/measure-*.log (і measure-summary.txt).');
+    console.log('\nДеякі кроки не вдалися. Надішліть файли docs/02-analysis/raw/measure-*.log.');
     process.exitCode = 1;
   }
 }

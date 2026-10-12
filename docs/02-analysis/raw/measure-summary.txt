@@ -1,7 +1,0 @@
-OK | install-frontend | пропущено
-OK | install-backend | пропущено
-OK | knip-frontend
-OK | knip-backend
-OK | eslint-complexity
-ПОМИЛКА | coverage-pkg | код виходу 1
-ПОМИЛКА | coverage-frontend | порожній вивід
