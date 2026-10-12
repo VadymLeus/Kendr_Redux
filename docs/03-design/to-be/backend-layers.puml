@@ -1,0 +1,86 @@
+@startuml backend-layers
+' Kendr (to be): шарова архітектура backend. Рішення: ADR-003 (шари, withTransaction), ADR-004 (політики), ADR-005 (app для тестів), ADR-006 (платежі).
+title Backend Kendr — цільова архітектура (to-be)\nroutes → controllers → services → repositories → БД; у v1.0 шари вводяться для зрізу order, site, page, product (66 із 196 SQL-викликів)
+
+skinparam defaultFontName DejaVu Sans
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam componentStyle rectangle
+skinparam ArrowFontSize 11
+skinparam packageStyle rectangle
+skinparam nodesep 26
+skinparam ranksep 34
+skinparam package {
+  BorderColor #8a8a8a
+  FontColor #333333
+}
+
+actor "Клієнт\n(React SPA)" as client
+
+package "app.js / server.js" as app #F5F5F5 {
+  [app.js: createApp() — глобальні middleware і маршрути,\nекспортується для supertest (D-TST-02)\nserver.js: лише app.listen()] as appjs #D7EFD9
+}
+
+package "routes + middleware" as rt #EAF2FB {
+  [routes: 22 файли, 142 ендпоінти\nверифікація токена, ролі, капча, завантаження файлів] as routes
+  [requireSiteAccess(permission) — v1.0: наявні перевірки, логіка та сама\nv2.0: власник або співавтор із потрібним правом\n(D-SEC-03, D-SEC-06; ADR-004)] as rsa #D7EFD9
+}
+
+package "controllers — тонкий шар: розібрати запит → викликати сервіс → сформувати відповідь" as ctrl #FFFFFF {
+  [order · site · page · product\nбез SQL і без імпорту config/db] as c_slice #D7EFD9
+  [решта 17 контролерів\nadmin, team, transaction, media, auth, user, support, …] as c_rest #EEEEEE
+}
+
+package "services — бізнес-правила і транзакції" as svc #FFFFFF {
+  [OrderService · SiteService ·\nPageService · ProductService] as s_slice #D7EFD9
+  [PricingService — єдиний розрахунок ціни\nv1.0: поточна формула; v2.0: єдина формула (D-BIZ-01)] as s_price #D7EFD9
+  [PaymentService — перевірка платежів LiqPay / Google Pay\n(модуль шару сервісів, не окремий сервіс)\nD-SEC-01, 02, 07; ADR-006] as s_pay #FFE9A8
+  [PlanPolicy.getLimits(plan) — v1.0: обгортка над PLAN_LIMITS\nv2.0: ліміти застосовано при створенні сайту,\nтовару й категорії (D-BIZ-03; ADR-004)] as s_pol #D7EFD9
+}
+
+package "repositories — увесь SQL зрізу" as repo #FFFFFF {
+  [OrderRepository · SiteRepository ·\nPageRepository · ProductRepository] as r_slice #D7EFD9
+  [моделі User, Category, Media, … (без змін)] as r_models #EEEEEE
+}
+
+package "інфраструктура" as infra #F5F5F5 {
+  [config/db.js: пул mysql2 і\nwithTransaction(fn) — єдине місце\nBEGIN / COMMIT / ROLLBACK] as db #D7EFD9
+  [наявні утиліти й клієнти зовнішніх сервісів:\nutils/emailService.js, config/cloudinary.js, … — без змін] as adapters #EEEEEE
+}
+
+database "MySQL 8" as mysql
+cloud "LiqPay · Cloudinary · Resend" as ext
+
+client --> appjs : HTTPS /api/*
+appjs --> routes
+routes --> rsa
+routes --> c_slice
+routes --> c_rest
+c_slice --> s_slice
+s_slice --> s_price
+s_slice --> s_pay
+s_slice --> s_pol
+s_slice --> r_slice
+s_pay ..> ext : запити до LiqPay
+r_slice --> db
+db --> mysql
+adapters ..> ext
+c_rest -[#C62828,dashed]-> db : прямий SQL — 130 викликів\n(поза зрізом, Перспективи)
+c_rest --> r_models
+r_models --> db
+
+package "Умовні позначення" as lg #FFFFFF {
+  rectangle "v1.0: зміна структури,\nповедінка не змінюється" as l1 #D7EFD9
+  rectangle "v2.0: зміна поведінки\n(виправлення дефектів)" as l2 #FFE9A8
+  rectangle "поза зрізом: без змін" as l3 #EEEEEE
+}
+l1 -[hidden]right-> l2
+l2 -[hidden]right-> l3
+mysql -[hidden]down-> lg
+
+note bottom of ctrl
+  Правило залежностей:
+  controllers → services → repositories → db.
+  Контролер не імпортує config/db, репозиторій не знає про req/res.
+end note
+@enduml

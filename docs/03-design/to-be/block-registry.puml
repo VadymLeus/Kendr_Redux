@@ -1,0 +1,87 @@
+@startuml block-registry
+' Kendr (to be): реєстр блоків редактора. Рішення: ADR-002 (єдиний реєстр; v2.0 — серверна валідація), ADR-005 (тести).
+' Парна діаграма до as-built/block-registration.puml
+title Реєстр блоків редактора — цільова архітектура (to-be)\nОдин дескриптор на тип блока замість шести місць опису; React-рендер, налаштування й експорт читають одне джерело
+
+skinparam defaultFontName DejaVu Sans
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam ArrowFontSize 11
+skinparam packageStyle rectangle
+skinparam nodesep 24
+skinparam ranksep 40
+skinparam package {
+  BorderColor #8a8a8a
+  FontColor #333333
+}
+
+rectangle "**Дані** (формат не змінюється)\npages.block_content: [ { block_id, type, data }, … ]\nsites.header_content · sites.footer_content" as json #EEEEEE
+
+package "Сторінки, що завантажують блоки" as pages #FFFFFF {
+  rectangle "SiteDashboardPage · SiteDisplayPage ·\nProductDetailPage · SitePreviewer\nчотири копії нормалізації → один виклик (D-DUP-07)" as pg #D7EFD9
+  rectangle "**normalizeGlobalBlocks(blocks, site)**\nheader → global-header, footer → global-footer,\nдані з header_content / footer_content" as norm #D7EFD9
+}
+
+package "Реєстр блоків — frontend/src/modules/editor/blocks/registry.js" as reg #FFFFFF {
+  rectangle "**Файли блока** (наявні компоненти лишаються на місці)\nHero/HeroBlock.jsx · Hero/HeroSettings.jsx\nдля нового типу — два нових файли" as files #D7EFD9
+  rectangle "**registry.js — один запис на тип**\n{ type, label, icon, category, getDefaults(options),\nComponent: lazy(…), Settings: lazy(…), toHtml(data, ctx) }\ngetBlock(type) · listBlocks(category)\nпсевдоніми header → global-header, footer → global-footer" as registry #D7EFD9
+  rectangle "**areBlockPropsEqual**\nодин компаратор для React.memo замість\nодинадцяти копій JSON.stringify (D-BLK-04)" as cmp #D7EFD9
+}
+
+package "Споживачі реєстру: кожен читає дескриптор, а не власну таблицю" as cons #FFFFFF {
+  rectangle "**AddBlocksTab**\nlistBlocks(category) замість\nчотирьох ручних списків" as c1 #D7EFD9
+  rectangle "**getDefaultBlockData**\nчитає getDefaults() з реєстру" as c2 #D7EFD9
+  rectangle "**BLOCK_LIBRARY**\nпохідний від реєстру" as c6 #D7EFD9
+  rectangle "**BlockRenderer**\nComponent з реєстру" as c3 #D7EFD9
+  rectangle "**SettingsTab**\nSettings з реєстру" as c4 #D7EFD9
+  rectangle "**htmlGenerator**\ntoHtml(data, ctx) з реєстру\ncatalog і showcase — заглушки, як у v0" as c5 #D7EFD9
+}
+
+rectangle "**LayoutBlock**\nотримує renderBlock від BlockRenderer\nі не імпортує його (D-BLK-03)" as layout #D7EFD9
+rectangle "**FooterBlock**: href посилань\nпроходить resolveSiteLink (D-SEC-11)" as foot #FFE9A8
+rectangle "BlockSettingsModal.jsx\nвидаляється (D-DEAD-03)" as dead #D7EFD9
+
+package "backend" as be #FFFFFF {
+  rectangle "pageRoutes: PUT /api/pages/:pageId/content\nперевірка прав на сторінку — без змін" as pr #EEEEEE
+  rectangle "**PageService.updateContent → validateBlockContent**\nмасив; у кожному блоці block_id, type, data;\ntype ∈ blockTypes; обмеження розміру;\nрекурсія в layout.data.columns; інакше 400\n(D-BLK-05)" as val #FFE9A8
+  rectangle "**config/blockTypes.js**\nперелік типів і псевдонімів" as bt #FFE9A8
+}
+
+rectangle "**Контрактний тест**\nтипи реєстру збігаються з blockTypes.js" as ct #FFE9A8
+
+json --> pg : завантаження сторінки
+pg --> norm
+pg --> c3 : нормалізовані блоки
+files --> registry : lazy import
+files ..> cmp : React.memo
+registry --> c1
+registry --> c2
+registry --> c3
+registry --> c4
+registry --> c6
+registry --> c5
+c3 --> layout : renderBlock
+c2 --> json : новий блок
+pr --> val
+val --> bt : type ∈ …
+registry ..> ct
+bt ..> ct
+dead -[hidden]down-> registry
+layout -[hidden]right-> foot
+
+package "Умовні позначення" as lg #FFFFFF {
+  rectangle "v1.0: зміна структури,\nповедінка не змінюється" as l1 #D7EFD9
+  rectangle "v2.0: зміна поведінки\n(виправлення дефектів)" as l2 #FFE9A8
+  rectangle "без змін" as l3 #EEEEEE
+}
+l1 -[hidden]right-> l2
+l2 -[hidden]right-> l3
+ct -[hidden]down-> lg
+
+note bottom of cons
+  Додавання нового типу блока
+  v0: 7 файлів — 5 наявних (6 правок) і 2 нових; місць опису типу — 6
+  v1.0: 2 нових файли й один запис у registry.js; місце опису типу — 1
+  v2.0: те саме й один рядок у backend/config/blockTypes.js (нагадує контрактний тест)
+end note
+@enduml
