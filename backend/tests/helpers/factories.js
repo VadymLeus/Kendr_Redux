@@ -190,6 +190,71 @@ export async function setGlobalSetting(name, value) {
   await query(`UPDATE global_settings SET \`${name}\` = ? WHERE id = 1`, [value]);
 }
 
+// Змінює стовпці користувача, яких не задає createUser: slug, google_id, password_hash (null — акаунт лише через Google),
+// is_verified, otp_*, token_version, deleted_at, профіль. Дати передаються з Node (не через NOW()), як у setSiteLock.
+const PATCHABLE_USER_COLUMNS = new Set([
+  'slug', 'google_id', 'password_hash', 'is_verified', 'otp_code', 'otp_expires', 'otp_purpose', 'token_version',
+  'status', 'role', 'plan', 'deleted_at', 'last_login_at', 'avatar_url', 'bio', 'phone_number', 'is_profile_public',
+  'social_telegram', 'social_instagram', 'social_website',
+]);
+
+export async function patchUser(user, fields) {
+  const columns = Object.keys(fields);
+  for (const column of columns) {
+    if (!PATCHABLE_USER_COLUMNS.has(column)) throw new Error(`patchUser: стовпець ${column} не підтримується`);
+  }
+  await query(
+    `UPDATE users SET ${columns.map((column) => `\`${column}\` = ?`).join(', ')} WHERE id = ?`,
+    [...columns.map((column) => fields[column]), user.id]
+  );
+}
+
+// Очікує код підтвердження в БД: purpose — призначення коду, minutes — через скільки хвилин він спливає (від'ємне — уже сплив).
+export async function setOtp(user, { code = '123456', purpose = 'VERIFY_EMAIL', minutes = 15 } = {}) {
+  await patchUser(user, { otp_code: code, otp_purpose: purpose, otp_expires: new Date(Date.now() + minutes * 60 * 1000) });
+  return code;
+}
+
+// Звернення до підтримки напряму в БД. minutesAgo — вік звернення (для обмеження «раз на 20 хвилин» і сортування).
+export async function createTicket(user, overrides = {}) {
+  const i = next();
+  const ticket = {
+    subject: `Тема ${i}`,
+    body: `Текст звернення ${i}`,
+    type: 'general',
+    status: 'open',
+    closed_by: null,
+    minutesAgo: 60,
+    ...overrides,
+  };
+  const createdAt = new Date(Date.now() - ticket.minutesAgo * 60 * 1000);
+  const result = await query(
+    `INSERT INTO support_tickets (user_id, subject, body, attachments, type, status, closed_by, created_at, updated_at)
+     VALUES (?, ?, ?, '[]', ?, ?, ?, ?, ?)`,
+    [user.id, ticket.subject, ticket.body, ticket.type, ticket.status, ticket.closed_by, createdAt, createdAt]
+  );
+  return { id: result.insertId, user_id: user.id, ...ticket };
+}
+
+export async function addTicketReply(ticket, author, overrides = {}) {
+  const i = next();
+  const reply = { body: `Відповідь ${i}`, minutesAgo: 30, ...overrides };
+  const createdAt = new Date(Date.now() - reply.minutesAgo * 60 * 1000);
+  const result = await query(
+    `INSERT INTO ticket_replies (ticket_id, user_id, body, attachments, created_at) VALUES (?, ?, ?, '[]', ?)`,
+    [ticket.id, author.id, reply.body, createdAt]
+  );
+  return { id: result.insertId, ticket_id: ticket.id, user_id: author.id, ...reply };
+}
+
+// Попередження користувачу (страйк) через сайт.
+export async function createWarning(user, site, reason = null) {
+  const result = await query('INSERT INTO user_warnings (user_id, site_id, reason_note) VALUES (?, ?, ?)', [
+    user.id, site ? site.id : null, reason,
+  ]);
+  return { id: result.insertId };
+}
+
 // ---- Читання стану БД для перевірок ----
 export async function getOrder(id) {
   const rows = await query('SELECT * FROM orders WHERE id = ?', [id]);
@@ -219,6 +284,20 @@ export async function getProduct(id) {
 export async function getUser(id) {
   const rows = await query('SELECT * FROM users WHERE id = ?', [id]);
   return rows[0];
+}
+
+export async function getUserByEmail(email) {
+  const rows = await query('SELECT * FROM users WHERE email = ?', [email]);
+  return rows[0];
+}
+
+export async function getTicket(id) {
+  const rows = await query('SELECT * FROM support_tickets WHERE id = ?', [id]);
+  return rows[0];
+}
+
+export async function getTicketReplies(ticketId) {
+  return query('SELECT * FROM ticket_replies WHERE ticket_id = ? ORDER BY created_at, id', [ticketId]);
 }
 
 export async function getSite(id) {

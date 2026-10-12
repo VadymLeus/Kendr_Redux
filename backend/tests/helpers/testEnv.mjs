@@ -32,6 +32,13 @@ export const testEnv = {
   BACKEND_URL: 'http://localhost:5000',
   // Порожнє значення не дає dotenv підставити NGROK_URL з локального .env
   NGROK_URL: '',
+  // Ліміти частоти запитів автентифікації закріплено на значеннях за замовчуванням, щоб локальний .env їх не змінював.
+  RATE_LIMIT_LOGIN_MINUTES: '15',
+  RATE_LIMIT_LOGIN_MAX: '5',
+  RATE_LIMIT_REGISTER_MINUTES: '60',
+  RATE_LIMIT_REGISTER_MAX: '5',
+  RATE_LIMIT_FORGOT_MINUTES: '60',
+  RATE_LIMIT_FORGOT_MAX: '3',
 };
 
 // Захист: тести викликають DELETE по всіх таблицях, тому працюють лише з тестовою БД.

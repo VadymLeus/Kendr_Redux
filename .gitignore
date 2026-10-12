@@ -10,3 +10,4 @@
 /ztxt
 .env
 /backend/coverage/
+/backend/tests/.tmp/
