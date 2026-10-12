@@ -1,0 +1,266 @@
+
+[1m[46m RUN [49m[22m [36mv4.1.2 [39m[90mD:/Studying/Otrabotono/Y5S1/Course Work/Kendr_Redux/frontend[39m
+      [2mCoverage enabled with [22m[33mv8[39m
+
+ [32m✓[39m tests/unit/validationUtils.test.js [2m([22m[2m9 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/integration/InputWithCounter.test.jsx [2m([22m[2m3 tests[22m[2m)[22m[32m 76[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m12 passed[39m[22m[90m (12)[39m
+[2m   Start at [22m 18:15:55
+[2m   Duration [22m 24.89s[2m (transform 215ms, setup 0ms, import 5.87s, tests 81ms, environment 33.30s)[22m
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |    0.72 |     0.76 |     0.4 |    0.73 |                   
+ app               |       0 |        0 |       0 |       0 |                   
+  App.jsx          |       0 |        0 |       0 |       0 | 43-56             
+  main.jsx         |       0 |      100 |     100 |       0 | 16                
+ app/guards        |       0 |        0 |       0 |       0 |                   
+  ...ctedRoute.jsx |       0 |        0 |       0 |       0 | 6-55              
+ app/providers     |       0 |        0 |       0 |       0 |                   
+  AuthContext.jsx  |       0 |        0 |       0 |       0 | 5-110             
+  CartContext.jsx  |       0 |        0 |       0 |       0 | 6-80              
+  ...rmContext.jsx |       0 |        0 |       0 |       0 | 5-47              
+  ...esContext.jsx |       0 |        0 |       0 |       0 | 6-43              
+  ThemeContext.jsx |       0 |        0 |       0 |       0 | 6-85              
+ app/router        |       0 |        0 |       0 |       0 |                   
+  routesConfig.js  |       0 |        0 |       0 |       0 | 2-51              
+ ...min/components |       0 |        0 |       0 |       0 |                   
+  ...nLogsPage.jsx |       0 |        0 |       0 |       0 | 13-200            
+  ...ageLayout.jsx |       0 |        0 |       0 |       0 | 6-46              
+  ...omponents.jsx |       0 |        0 |       0 |       0 | 7-111             
+  ...ailsPanel.jsx |       0 |        0 |       0 |       0 | 6-7               
+  ...ailsPanel.jsx |       0 |        0 |       0 |       0 | 10-133            
+  ...ailsPanel.jsx |       0 |        0 |       0 |       0 | 10-332            
+  ...ailsPanel.jsx |       0 |        0 |       0 |       0 | 9-140             
+ ...es/admin/pages |       0 |        0 |       0 |       0 |                   
+  ...llingPage.jsx |       0 |        0 |       0 |       0 | 16-391            
+  ...ntrolPage.jsx |       0 |        0 |       0 |       0 | 9-383             
+  ...boardPage.jsx |       0 |        0 |       0 |       0 | 13-426            
+  ...latesPage.jsx |       0 |        0 |       0 |       0 | 16-189            
+  ...portsPage.jsx |       0 |        0 |       0 |       0 | 18-402            
+  ...SitesPage.jsx |       0 |        0 |       0 |       0 | 20-603            
+ modules/auth      |       0 |        0 |       0 |       0 |                   
+  ...LoginPage.jsx |       0 |        0 |       0 |       0 | 13-134            
+  AuthPage.jsx     |       0 |        0 |       0 |       0 | 19-505            
+  ...ccessPage.jsx |       0 |        0 |       0 |       0 | 9-51              
+  ...countPage.jsx |       0 |        0 |       0 |       0 | 9-37              
+ ...ard/components |       0 |        0 |       0 |       0 |                   
+  ...ardHeader.jsx |       0 |        0 |       0 |       0 | 7-195             
+  ...ckerModal.jsx |       0 |        0 |       0 |       0 | 10-531            
+  ...lateModal.jsx |       0 |        0 |       0 |       0 | 12-251            
+ ...tures/commerce |       0 |        0 |       0 |       0 |                   
+  CommerceTab.jsx  |       0 |        0 |       0 |       0 | 13-65             
+ ...rce/components |       0 |        0 |       0 |       0 |                   
+  ...ryManager.jsx |       0 |        0 |       0 |       0 | 16-429            
+  ...ttingsTab.jsx |       0 |        0 |       0 |       0 | 9-177             
+  OrdersTab.jsx    |       0 |        0 |       0 |       0 | 13-352            
+  ...ctManager.jsx |       0 |        0 |       0 |       0 | 19-795            
+  ReviewsTab.jsx   |       0 |        0 |       0 |       0 | 14-367            
+ ...tures/overview |       0 |        0 |       0 |       0 |                   
+  OverviewTab.jsx  |       0 |        0 |       0 |       0 | 8-42              
+ ...iew/components |       0 |        0 |       0 |       0 |                   
+  AnalyticsTab.jsx |       0 |        0 |       0 |       0 | 8-115             
+  ...ssionsTab.jsx |       0 |        0 |       0 |       0 | 13-314            
+ ...tures/settings |       0 |        0 |       0 |       0 |                   
+  ...ttingsTab.jsx |       0 |        0 |       0 |       0 | 19-205            
+  ...agerModal.jsx |       0 |        0 |       0 |       0 | 11-357            
+  ...ttingsTab.jsx |       0 |        0 |       0 |       0 | 8-106             
+ ...ngs/components |       0 |        0 |       0 |       0 |                   
+  ...tySection.jsx |       0 |        0 |       0 |       0 | 14-254            
+  ...esSection.jsx |       0 |        0 |       0 |       0 | 20-258            
+  ...lsSection.jsx |       0 |        0 |       0 |       0 | 7-172             
+  ...gsSection.jsx |       0 |        0 |       0 |       0 | 11-445            
+ ...ashboard/pages |       0 |        0 |       0 |       0 |                   
+  ...eSitePage.jsx |       0 |        0 |       0 |       0 | 24-364            
+  MySitesPage.jsx  |       0 |        0 |       0 |       0 | 14-205            
+  ...boardPage.jsx |       0 |        0 |       0 |       0 | 26-827            
+ ...ocks/Accordion |       0 |        0 |       0 |       0 |                   
+  ...dionBlock.jsx |       0 |        0 |       0 |       0 | 7-81              
+  ...rdionItem.jsx |       0 |        0 |       0 |       0 | 5-73              
+  ...nSettings.jsx |       0 |        0 |       0 |       0 | 12-147            
+ .../blocks/Button |       0 |        0 |       0 |       0 |                   
+  ButtonBlock.jsx  |       0 |        0 |       0 |       0 | 8-147             
+  ...nSettings.jsx |       0 |        0 |       0 |       0 | 8-24              
+ ...blocks/Catalog |       0 |        0 |       0 |       0 |                   
+  CatalogBlock.jsx |       0 |        0 |       0 |       0 | 9-399             
+  ...gSettings.jsx |       0 |        0 |       0 |       0 | 11-135            
+ ...locks/Features |       0 |        0 |       0 |       0 |                   
+  ...uresBlock.jsx |       0 |        0 |       0 |       0 | 6-161             
+  ...sSettings.jsx |       0 |        0 |       0 |       0 | 12-299            
+ .../blocks/Footer |       0 |        0 |       0 |       0 |                   
+  FooterBlock.jsx  |       0 |        0 |       0 |       0 | 7-149             
+  ...rSettings.jsx |       0 |        0 |       0 |       0 | 14-227            
+ ...or/blocks/Form |       0 |        0 |       0 |       0 |                   
+  FormBlock.jsx    |       0 |        0 |       0 |       0 | 8-274             
+  FormSettings.jsx |       0 |        0 |       0 |       0 | 9-92              
+ .../blocks/Header |       0 |        0 |       0 |       0 |                   
+  HeaderBlock.jsx  |       0 |        0 |       0 |       0 | 11-210            
+  ...rSettings.jsx |       0 |        0 |       0 |       0 | 15-222            
+ ...or/blocks/Hero |       0 |        0 |       0 |       0 |                   
+  HeroBlock.jsx    |       0 |        0 |       0 |       0 | 7-195             
+  HeroSettings.jsx |       0 |        0 |       0 |       0 | 13-257            
+ ...r/blocks/Image |       0 |        0 |       0 |       0 |                   
+  ImageBlock.jsx   |       0 |        0 |       0 |       0 | 12-226            
+  ...eSettings.jsx |       0 |        0 |       0 |       0 | 11-199            
+ .../blocks/Layout |       0 |        0 |       0 |       0 |                   
+  LayoutBlock.jsx  |       0 |        0 |       0 |       0 | 10-246            
+  ...tSettings.jsx |       0 |        0 |       0 |       0 | 10-208            
+ ...tor/blocks/Map |       0 |        0 |       0 |       0 |                   
+  MapBlock.jsx     |       0 |        0 |       0 |       0 | 5-76              
+  MapSettings.jsx  |       0 |        0 |       0 |       0 | 7-32              
+ ...locks/ShowCase |       0 |        0 |       0 |       0 |                   
+  ...CaseBlock.jsx |       0 |        0 |       0 |       0 | 8-195             
+  ...eSettings.jsx |       0 |        0 |       0 |       0 | 13-155            
+ ...ks/SocialIcons |       0 |        0 |       0 |       0 |                   
+  ...consBlock.jsx |       0 |        0 |       0 |       0 | 5-125             
+  ...sSettings.jsx |       0 |        0 |       0 |       0 | 7-55              
+ ...or/blocks/Text |       0 |        0 |       0 |       0 |                   
+  TextBlock.jsx    |       0 |        0 |       0 |       0 | 5-95              
+  TextSettings.jsx |       0 |        0 |       0 |       0 | 8-131             
+ ...r/blocks/Video |       0 |        0 |       0 |       0 |                   
+  VideoBlock.jsx   |       0 |        0 |       0 |       0 | 6-160             
+  ...oSettings.jsx |       0 |        0 |       0 |       0 | 10-117            
+ ...es/editor/core |       0 |        0 |       0 |       0 |                   
+  BlockEditor.jsx  |       0 |        0 |       0 |       0 | 13-180            
+  ...kRenderer.jsx |       0 |        0 |       0 |       0 | 8-195             
+  blockUtils.js    |       0 |        0 |       0 |       0 | 5-99              
+  editorConfig.jsx |       0 |        0 |       0 |       0 | 5-255             
+  useBlockDrop.js  |       0 |        0 |       0 |       0 | 5-103             
+ modules/editor/ui |       0 |        0 |       0 |       0 |                   
+  ...LayerItem.jsx |       0 |        0 |       0 |       0 | 10-99             
+  ContextMenu.jsx  |       0 |        0 |       0 |       0 | 5-81              
+  ...BlockItem.jsx |       0 |        0 |       0 |       0 | 6-36              
+  ...ckWrapper.jsx |       0 |        0 |       0 |       0 | 13-243            
+  ...orSidebar.jsx |       0 |        0 |       0 |       0 | 9-100             
+ .../ui/components |       0 |        0 |       0 |       0 |                   
+  ...ntControl.jsx |       0 |        0 |       0 |       0 | 6-50              
+  ButtonEditor.jsx |       0 |        0 |       0 |       0 | 11-184            
+  FontSelector.jsx |       0 |        0 |       0 |       0 | 8-70              
+  ...ayControl.jsx |       0 |        0 |       0 |       0 | 6-106             
+  ProductCard.jsx  |       0 |        0 |       0 |       0 | 11-170            
+ .../configuration |       0 |        0 |       0 |       0 |                   
+  ...nSettings.jsx |       0 |        0 |       0 |       0 | 8-93              
+  ...ingsGroup.jsx |       0 |        0 |       0 |       0 | 5-21              
+  SettingsUI.jsx   |       0 |        0 |       0 |       0 | 4-91              
+  ...ngControl.jsx |       0 |        0 |       0 |       0 | 6-90              
+ ...itor/ui/modals |       0 |        0 |       0 |       0 |                   
+  ...lockModal.jsx |       0 |        0 |       0 |       0 | 11-123            
+ ...editor/ui/tabs |       0 |        0 |       0 |       0 |                   
+  AddBlocksTab.jsx |       0 |        0 |       0 |       0 | 11-321            
+  ...ttingsTab.jsx |       0 |        0 |       0 |       0 | 10-52             
+  LayersTab.jsx    |       0 |        0 |       0 |       0 | 6-49              
+  SettingsTab.jsx  |       0 |        0 |       0 |       0 | 22-93             
+ ...dia/components |       0 |        0 |       0 |       0 |                   
+  ...aGridItem.jsx |       0 |        0 |       0 |       0 | 6-57              
+  ...Inspector.jsx |       0 |        0 |       0 |       0 | 10-252            
+  ...ckerModal.jsx |       0 |        0 |       0 |       0 | 14-396            
+ ...es/media/pages |       0 |        0 |       0 |       0 |                   
+  ...braryPage.jsx |       0 |        0 |       0 |       0 | 19-480            
+ .../profile/pages |       0 |        0 |       0 |       0 |                   
+  ProfilePage.jsx  |       0 |        0 |       0 |       0 | 18-421            
+  SettingsPage.jsx |       0 |        0 |       0 |       0 | 11-45             
+ ...s/profile/tabs |       0 |        0 |       0 |       0 |                   
+  ...aranceTab.jsx |       0 |      100 |       0 |       0 | 8-10              
+  ...eneralTab.jsx |       0 |        0 |       0 |       0 | 15-366            
+  ...PublicTab.jsx |       0 |        0 |       0 |       0 | 10-78             
+  ...curityTab.jsx |       0 |        0 |       0 |       0 | 13-107            
+ ...rer/components |       0 |        0 |       0 |       0 |                   
+  ...onWrapper.jsx |       0 |        0 |       0 |       0 | 5-43              
+  CookieBanner.jsx |       0 |        0 |       0 |       0 | 4-159             
+  FontLoader.jsx   |       0 |        0 |       0 |       0 | 6-49              
+  FontPicker.jsx   |       0 |        0 |       0 |       0 | 12-535            
+  SiteControls.jsx |       0 |        0 |       0 |       0 | 11-118            
+ ...renderer/pages |       0 |        0 |       0 |       0 |                   
+  CatalogPage.jsx  |       0 |        0 |       0 |       0 | 15-146            
+  ...splayPage.jsx |       0 |        0 |       0 |       0 | 20-230            
+ modules/shop      |       0 |        0 |       0 |       0 |                   
+  CartPage.jsx     |       0 |        0 |       0 |       0 | 18-610            
+  MyOrdersPage.jsx |       0 |        0 |       0 |       0 | 15-508            
+  ...etailPage.jsx |       0 |        0 |       0 |       0 | 23-687            
+ modules/support   |       0 |        0 |       0 |       0 |                   
+  AppealPage.jsx   |       0 |        0 |       0 |       0 | 10-98             
+  ...cketsPage.jsx |       0 |        0 |       0 |       0 | 15-258            
+  ...icketPage.jsx |       0 |        0 |       0 |       0 | 13-253            
+  SupportPage.jsx  |       0 |      100 |       0 |       0 | 8-48              
+  ...etailPage.jsx |       0 |        0 |       0 |       0 | 17-490            
+ pages             |       0 |        0 |       0 |       0 |                   
+  HomePage.jsx     |       0 |      100 |       0 |       0 | 7-8               
+  InvitePage.jsx   |       0 |        0 |       0 |       0 | 10-101            
+  ...nancePage.jsx |       0 |        0 |       0 |       0 | 6-99              
+  NotFoundPage.jsx |       0 |      100 |       0 |       0 | 7-39              
+  RulesPage.jsx    |       0 |      100 |       0 |       0 | 6-12              
+  UpgradePage.jsx  |       0 |        0 |       0 |       0 | 10-135            
+ shared/api        |       0 |        0 |       0 |       0 |                   
+  api.js           |       0 |        0 |       0 |       0 | 6-88              
+ shared/config     |   33.33 |        0 |     100 |   33.33 |                   
+  index.js         |       0 |        0 |     100 |       0 | 2-5               
+  limits.js        |     100 |      100 |     100 |     100 |                   
+ shared/hooks      |       0 |        0 |       0 |       0 |                   
+  useAutoSave.js   |       0 |        0 |       0 |       0 | 7-53              
+  ...lockFonts.jsx |       0 |        0 |       0 |       0 | 5-96              
+  useConfirm.js    |       0 |        0 |       0 |       0 | 5-10              
+  ...firmDialog.js |       0 |        0 |       0 |       0 | 4-32              
+  useCooldown.js   |       0 |        0 |       0 |       0 | 3-29              
+  useDataList.js   |       0 |        0 |       0 |       0 | 6-40              
+  useHistory.js    |       0 |        0 |       0 |       0 | 4-39              
+  ...rollToHash.js |       0 |        0 |       0 |       0 | 5-17              
+  ...ateManager.js |       0 |        0 |       0 |       0 | 6-146             
+ shared/ui/complex |    0.29 |     0.09 |    0.39 |    0.33 |                   
+  ...rSelector.jsx |       0 |        0 |       0 |       0 | 6-98              
+  CategoryTabs.jsx |       0 |        0 |       0 |       0 | 5-11              
+  ConfirmModal.jsx |       0 |        0 |       0 |       0 | 7-153             
+  ...opWrapper.jsx |       0 |        0 |       0 |       0 | 4-46              
+  EmptyState.jsx   |       0 |        0 |       0 |       0 | 5-11              
+  ...pperModal.jsx |       0 |        0 |       0 |       0 | 14-201            
+  ...adTrigger.jsx |       0 |        0 |       0 |       0 | 7-62              
+  ...thCounter.jsx |     100 |       25 |     100 |     100 | 11                
+  LoadingState.jsx |       0 |        0 |       0 |       0 | 5-16              
+  ...nceScreen.jsx |       0 |        0 |       0 |       0 | 5-65              
+  ...lePreview.jsx |       0 |        0 |       0 |       0 | 6-64              
+  ...aDelivery.jsx |       0 |        0 |       0 |       0 | 7-141             
+  ...aMapModal.jsx |       0 |        0 |       0 |       0 | 14-212            
+  OtpInput.jsx     |       0 |        0 |       0 |       0 | 4-66              
+  ...ngthMeter.jsx |       0 |        0 |       0 |       0 | 6-47              
+  ...thodModal.jsx |       0 |        0 |       0 |       0 | 7-26              
+  ReportModal.jsx  |       0 |        0 |       0 |       0 | 10-104            
+  ...erDisplay.jsx |       0 |        0 |       0 |       0 | 5-76              
+  SiteFilters.jsx  |       0 |        0 |       0 |       0 | 7-153             
+  SiteGridCard.jsx |       0 |        0 |       0 |       0 | 14-439            
+  ...Previewer.jsx |       0 |        0 |       0 |       0 | 12-391            
+  ...lateBadge.jsx |       0 |        0 |       0 |       0 | 5-29              
+  TemplateCard.jsx |       0 |        0 |       0 |       0 | 6-66              
+  ...teFilters.jsx |       0 |        0 |       0 |       0 | 8-58              
+  ...eSelector.jsx |       0 |        0 |       0 |       0 | 6-44              
+  ...ediaInput.jsx |       0 |        0 |       0 |       0 | 10-224            
+ ...ed/ui/elements |   19.58 |    19.37 |    12.5 |   20.35 |                   
+  Avatar.jsx       |       0 |        0 |       0 |       0 | 5-54              
+  Button.jsx       |       0 |        0 |       0 |       0 | 4-31              
+  CustomSelect.jsx |       0 |        0 |       0 |       0 | 6-174             
+  ...ngePicker.jsx |       0 |        0 |       0 |       0 | 5-50              
+  Input.jsx        |      76 |    62.22 |    62.5 |   82.92 | 40-45,51,64,128   
+  RangeSlider.jsx  |       0 |        0 |       0 |       0 | 4-32              
+  Switch.jsx       |       0 |        0 |       0 |       0 | 3-17              
+  index.js         |       0 |        0 |       0 |       0 |                   
+ shared/ui/layouts |       0 |        0 |       0 |       0 |                   
+  Footer.jsx       |       0 |      100 |       0 |       0 | 4-6               
+  Layout.jsx       |       0 |        0 |       0 |       0 | 14-210            
+  ...rmSidebar.jsx |       0 |        0 |       0 |       0 | 9-46              
+  SiteHeader.jsx   |       0 |        0 |       0 |       0 | 6-43              
+  ...iewLayout.jsx |       0 |        0 |       0 |       0 | 5-44              
+  TitleManager.jsx |       0 |        0 |       0 |       0 | 7-29              
+  UserMenu.jsx     |       0 |        0 |       0 |       0 | 10-68             
+ shared/utils      |    7.48 |     4.78 |    7.69 |     7.3 |                   
+  canvasUtils.js   |       0 |        0 |       0 |       0 | 2-69              
+  exportToCsv.js   |       0 |        0 |       0 |       0 | 2-39              
+  htmlGenerator.js |       0 |        0 |       0 |       0 | 2-357             
+  linkUtils.js     |       0 |        0 |       0 |       0 | 2-25              
+  mediaUtils.js    |       0 |        0 |       0 |       0 | 5-68              
+  siteExporter.js  |       0 |        0 |       0 |       0 | 8-194             
+  templateUtils.js |       0 |        0 |       0 |       0 | 4-48              
+  themeUtils.js    |       0 |        0 |       0 |       0 | 2-43              
+  ...ationUtils.js |   84.09 |    81.25 |     100 |   88.88 | 57,70-71,75       
+-------------------|---------|----------|---------|---------|-------------------
