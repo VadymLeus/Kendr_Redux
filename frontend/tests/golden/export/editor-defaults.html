@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Блоки - Значення за замовчуванням</title>
+    <meta name="description" content="">
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        * { box-sizing: border-box; }
+        details > summary { list-style: none; }
+        details > summary::-webkit-details-marker { display: none; }
+    </style>
+</head>
+<body>
+    
+        <section style="position: relative; min-height: 500px; display: flex; align-items: center; justify-content: center; overflow: hidden; color: var(--site-text-primary); text-align: center; padding-top: 40px; padding-bottom: 40px;">
+            <div style="position: absolute; inset: 0; background: var(--site-bg) center/cover no-repeat; z-index: 0;">
+                
+            </div>
+            <div style="position: absolute; inset: 0; background-color: rgba(0, 0, 0, 0.5); opacity: 0.5; z-index: 1;"></div>
+            <div class="container" style="position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center;">
+                <h1 style="font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 800; margin-bottom: 1rem; line-height: 1.1;">Заголовок обкладинки</h1>
+                <p style="font-size: clamp(1rem, 2vw, 1.25rem); margin-bottom: 2rem; opacity: 0.9; max-width: 600px;">Напишіть тут короткий опис вашої пропозиції або компанії. Це перше, що побачать відвідувачі.</p>
+                <a href="#" target="_self" style="
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        background: var(--site-accent); color: #ffffff; border: 2px solid transparent;
+        padding: 12px 24px;
+        font-size: 1rem;
+        border-radius: 4px;
+        width: auto;
+        text-decoration: none; font-weight: 600; cursor: pointer;
+        transition: opacity 0.2s; 
+    ">
+        
+        <span>Дізнатись більше</span>
+        
+    </a>
+            </div>
+        </section>
+
+        <div style="text-align: left; color: var(--site-text-primary); padding-top: 40px; padding-bottom: 40px;">
+            <div class="container">
+                
+                    <p style="font-size: 1rem; font-weight: 400; font-style: normal; text-decoration: none; margin-bottom: 0.5em;">
+                        Вставте сюди свій текст.
+                    </p>
+                
+            </div>
+        </div>
+
+
+        <div style="display: flex; justify-content: center; padding-top: 40px; padding-bottom: 40px;">
+            <div class="container">
+                <a href="#" target="_self" style="
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        background: var(--site-accent); color: #ffffff; border: 2px solid transparent;
+        padding: 12px 24px;
+        font-size: 1rem;
+        border-radius: 4px;
+        width: auto;
+        text-decoration: none; font-weight: 600; cursor: pointer;
+        transition: opacity 0.2s; 
+    ">
+        
+        <span>Натисніть тут</span>
+        
+    </a>
+            </div>
+        </div>
+
+        <section style="padding-top: 40px; padding-bottom: 40px;">
+            <div class="container">
+                <h2 style="text-align: center; font-size: 2rem; margin-bottom: 2rem; color: var(--site-text-primary);">Хіти продажів</h2>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px;">
+                     
+                        <div style="background: var(--site-card-bg); border: 1px solid var(--site-border-color); border-radius: 12px; overflow: hidden;">
+                            <div style="height: 250px; background: #eee; display: flex; align-items: center; justify-content: center; color: #999;">
+                                <i data-lucide="shopping-bag" class="" style="width: 48px; height: 48px; opacity: 0.5;"></i>
+                            </div>
+                            <div style="padding: 16px;">
+                                <div style="height: 20px; background: #eee; width: 70%; margin-bottom: 10px; border-radius: 4px;"></div>
+                                <div style="height: 16px; background: #eee; width: 40%; border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                     
+                        <div style="background: var(--site-card-bg); border: 1px solid var(--site-border-color); border-radius: 12px; overflow: hidden;">
+                            <div style="height: 250px; background: #eee; display: flex; align-items: center; justify-content: center; color: #999;">
+                                <i data-lucide="shopping-bag" class="" style="width: 48px; height: 48px; opacity: 0.5;"></i>
+                            </div>
+                            <div style="padding: 16px;">
+                                <div style="height: 20px; background: #eee; width: 70%; margin-bottom: 10px; border-radius: 4px;"></div>
+                                <div style="height: 16px; background: #eee; width: 40%; border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                     
+                        <div style="background: var(--site-card-bg); border: 1px solid var(--site-border-color); border-radius: 12px; overflow: hidden;">
+                            <div style="height: 250px; background: #eee; display: flex; align-items: center; justify-content: center; color: #999;">
+                                <i data-lucide="shopping-bag" class="" style="width: 48px; height: 48px; opacity: 0.5;"></i>
+                            </div>
+                            <div style="padding: 16px;">
+                                <div style="height: 20px; background: #eee; width: 70%; margin-bottom: 10px; border-radius: 4px;"></div>
+                                <div style="height: 16px; background: #eee; width: 40%; border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                     
+                        <div style="background: var(--site-card-bg); border: 1px solid var(--site-border-color); border-radius: 12px; overflow: hidden;">
+                            <div style="height: 250px; background: #eee; display: flex; align-items: center; justify-content: center; color: #999;">
+                                <i data-lucide="shopping-bag" class="" style="width: 48px; height: 48px; opacity: 0.5;"></i>
+                            </div>
+                            <div style="padding: 16px;">
+                                <div style="height: 20px; background: #eee; width: 70%; margin-bottom: 10px; border-radius: 4px;"></div>
+                                <div style="height: 16px; background: #eee; width: 40%; border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                     
+                </div>
+                
+            </div>
+        </section>
+
+        <section style="position: relative; min-height: auto;  padding-top: 40px; padding-bottom: 40px;">
+            
+            <div class="container" style="position: relative; z-index: 1;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;">
+                    
+                <div style="display: flex; flex-direction: column; width: 100%;">
+                    
+                </div>
+            
+                <div style="display: flex; flex-direction: column; width: 100%;">
+                    
+                </div>
+            
+                </div>
+            </div>
+        </section>
+
+        <section style="padding-top: 40px; padding-bottom: 40px;">
+            <div class="container">
+                <h2 style="text-align: center; font-size: 2rem; margin-bottom: 2rem; color: var(--site-text-primary);">Каталог товарів</h2>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;">
+                     
+                        <div style="background: var(--site-card-bg); border: 1px solid var(--site-border-color); border-radius: 12px; overflow: hidden;">
+                            <div style="height: 250px; background: #eee; display: flex; align-items: center; justify-content: center; color: #999;">
+                                <i data-lucide="shopping-bag" class="" style="width: 48px; height: 48px; opacity: 0.5;"></i>
+                            </div>
+                            <div style="padding: 16px;">
+                                <div style="height: 20px; background: #eee; width: 70%; margin-bottom: 10px; border-radius: 4px;"></div>
+                                <div style="height: 16px; background: #eee; width: 40%; border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                     
+                        <div style="background: var(--site-card-bg); border: 1px solid var(--site-border-color); border-radius: 12px; overflow: hidden;">
+                            <div style="height: 250px; background: #eee; display: flex; align-items: center; justify-content: center; color: #999;">
+                                <i data-lucide="shopping-bag" class="" style="width: 48px; height: 48px; opacity: 0.5;"></i>
+                            </div>
+                            <div style="padding: 16px;">
+                                <div style="height: 20px; background: #eee; width: 70%; margin-bottom: 10px; border-radius: 4px;"></div>
+                                <div style="height: 16px; background: #eee; width: 40%; border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                     
+                        <div style="background: var(--site-card-bg); border: 1px solid var(--site-border-color); border-radius: 12px; overflow: hidden;">
+                            <div style="height: 250px; background: #eee; display: flex; align-items: center; justify-content: center; color: #999;">
+                                <i data-lucide="shopping-bag" class="" style="width: 48px; height: 48px; opacity: 0.5;"></i>
+                            </div>
+                            <div style="padding: 16px;">
+                                <div style="height: 20px; background: #eee; width: 70%; margin-bottom: 10px; border-radius: 4px;"></div>
+                                <div style="height: 16px; background: #eee; width: 40%; border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                     
+                        <div style="background: var(--site-card-bg); border: 1px solid var(--site-border-color); border-radius: 12px; overflow: hidden;">
+                            <div style="height: 250px; background: #eee; display: flex; align-items: center; justify-content: center; color: #999;">
+                                <i data-lucide="shopping-bag" class="" style="width: 48px; height: 48px; opacity: 0.5;"></i>
+                            </div>
+                            <div style="padding: 16px;">
+                                <div style="height: 20px; background: #eee; width: 70%; margin-bottom: 10px; border-radius: 4px;"></div>
+                                <div style="height: 16px; background: #eee; width: 40%; border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                     
+                        <div style="background: var(--site-card-bg); border: 1px solid var(--site-border-color); border-radius: 12px; overflow: hidden;">
+                            <div style="height: 250px; background: #eee; display: flex; align-items: center; justify-content: center; color: #999;">
+                                <i data-lucide="shopping-bag" class="" style="width: 48px; height: 48px; opacity: 0.5;"></i>
+                            </div>
+                            <div style="padding: 16px;">
+                                <div style="height: 20px; background: #eee; width: 70%; margin-bottom: 10px; border-radius: 4px;"></div>
+                                <div style="height: 16px; background: #eee; width: 40%; border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                     
+                        <div style="background: var(--site-card-bg); border: 1px solid var(--site-border-color); border-radius: 12px; overflow: hidden;">
+                            <div style="height: 250px; background: #eee; display: flex; align-items: center; justify-content: center; color: #999;">
+                                <i data-lucide="shopping-bag" class="" style="width: 48px; height: 48px; opacity: 0.5;"></i>
+                            </div>
+                            <div style="padding: 16px;">
+                                <div style="height: 20px; background: #eee; width: 70%; margin-bottom: 10px; border-radius: 4px;"></div>
+                                <div style="height: 16px; background: #eee; width: 40%; border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                     
+                        <div style="background: var(--site-card-bg); border: 1px solid var(--site-border-color); border-radius: 12px; overflow: hidden;">
+                            <div style="height: 250px; background: #eee; display: flex; align-items: center; justify-content: center; color: #999;">
+                                <i data-lucide="shopping-bag" class="" style="width: 48px; height: 48px; opacity: 0.5;"></i>
+                            </div>
+                            <div style="padding: 16px;">
+                                <div style="height: 20px; background: #eee; width: 70%; margin-bottom: 10px; border-radius: 4px;"></div>
+                                <div style="height: 16px; background: #eee; width: 40%; border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                     
+                        <div style="background: var(--site-card-bg); border: 1px solid var(--site-border-color); border-radius: 12px; overflow: hidden;">
+                            <div style="height: 250px; background: #eee; display: flex; align-items: center; justify-content: center; color: #999;">
+                                <i data-lucide="shopping-bag" class="" style="width: 48px; height: 48px; opacity: 0.5;"></i>
+                            </div>
+                            <div style="padding: 16px;">
+                                <div style="height: 20px; background: #eee; width: 70%; margin-bottom: 10px; border-radius: 4px;"></div>
+                                <div style="height: 16px; background: #eee; width: 40%; border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                     
+                        <div style="background: var(--site-card-bg); border: 1px solid var(--site-border-color); border-radius: 12px; overflow: hidden;">
+                            <div style="height: 250px; background: #eee; display: flex; align-items: center; justify-content: center; color: #999;">
+                                <i data-lucide="shopping-bag" class="" style="width: 48px; height: 48px; opacity: 0.5;"></i>
+                            </div>
+                            <div style="padding: 16px;">
+                                <div style="height: 20px; background: #eee; width: 70%; margin-bottom: 10px; border-radius: 4px;"></div>
+                                <div style="height: 16px; background: #eee; width: 40%; border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                     
+                        <div style="background: var(--site-card-bg); border: 1px solid var(--site-border-color); border-radius: 12px; overflow: hidden;">
+                            <div style="height: 250px; background: #eee; display: flex; align-items: center; justify-content: center; color: #999;">
+                                <i data-lucide="shopping-bag" class="" style="width: 48px; height: 48px; opacity: 0.5;"></i>
+                            </div>
+                            <div style="padding: 16px;">
+                                <div style="height: 20px; background: #eee; width: 70%; margin-bottom: 10px; border-radius: 4px;"></div>
+                                <div style="height: 16px; background: #eee; width: 40%; border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                     
+                        <div style="background: var(--site-card-bg); border: 1px solid var(--site-border-color); border-radius: 12px; overflow: hidden;">
+                            <div style="height: 250px; background: #eee; display: flex; align-items: center; justify-content: center; color: #999;">
+                                <i data-lucide="shopping-bag" class="" style="width: 48px; height: 48px; opacity: 0.5;"></i>
+                            </div>
+                            <div style="padding: 16px;">
+                                <div style="height: 20px; background: #eee; width: 70%; margin-bottom: 10px; border-radius: 4px;"></div>
+                                <div style="height: 16px; background: #eee; width: 40%; border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                     
+                        <div style="background: var(--site-card-bg); border: 1px solid var(--site-border-color); border-radius: 12px; overflow: hidden;">
+                            <div style="height: 250px; background: #eee; display: flex; align-items: center; justify-content: center; color: #999;">
+                                <i data-lucide="shopping-bag" class="" style="width: 48px; height: 48px; opacity: 0.5;"></i>
+                            </div>
+                            <div style="padding: 16px;">
+                                <div style="height: 20px; background: #eee; width: 70%; margin-bottom: 10px; border-radius: 4px;"></div>
+                                <div style="height: 16px; background: #eee; width: 40%; border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                     
+                </div>
+                <div style="text-align: center; margin-top: 30px; font-style: italic; color: var(--site-text-secondary);">Dynamic catalog requires backend connection.</div>
+            </div>
+        </section>
+
+        <section style="background-color: var(--site-bg); padding-top: 40px; padding-bottom: 40px;">
+            <div class="container">
+                <h2 style="text-align: center; font-size: 2rem; margin-bottom: 2rem; color: var(--site-text-primary);">Наші переваги</h2>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px;">
+                    
+                        <div style="padding: 0; background: transparent; border: none; border-radius: 8px; display: flex; flex-direction: column; align-items: flex-start; gap: 16px; text-align: undefined;">
+                            <div style="color: var(--site-accent); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: transparent; color: var(--site-accent); border-radius: 50%;">
+                                <i data-lucide="star" class="" style=""></i>
+                            </div>
+                            <div>
+                                <h4 style="margin: 0 0 8px; font-size: 1.25rem; color: var(--site-text-primary);">Особливість 1</h4>
+                                <p style="margin: 0; color: var(--site-text-secondary); line-height: 1.6;">Короткий опис</p>
+                            </div>
+                        </div>
+                    
+                        <div style="padding: 0; background: transparent; border: none; border-radius: 8px; display: flex; flex-direction: column; align-items: flex-start; gap: 16px; text-align: undefined;">
+                            <div style="color: var(--site-accent); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: transparent; color: var(--site-accent); border-radius: 50%;">
+                                <i data-lucide="zap" class="" style=""></i>
+                            </div>
+                            <div>
+                                <h4 style="margin: 0 0 8px; font-size: 1.25rem; color: var(--site-text-primary);">Особливість 2</h4>
+                                <p style="margin: 0; color: var(--site-text-secondary); line-height: 1.6;">Короткий опис</p>
+                            </div>
+                        </div>
+                    
+                </div>
+            </div>
+        </section>
+
+        <section style="padding-top: 40px; padding-bottom: 40px;">
+            <div class="container" style="max-width: 600px;">
+                <form style="background: var(--site-card-bg); padding: 30px; border-radius: 12px; border: 1px solid var(--site-border-color);">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                        <input type="text" placeholder="Ваше ім'я" style="padding: 12px; border: 1px solid var(--site-border-color); border-radius: 8px; width: 100%;">
+                        <input type="email" placeholder="Email" style="padding: 12px; border: 1px solid var(--site-border-color); border-radius: 8px; width: 100%;">
+                    </div>
+                    <textarea placeholder="Повідомлення" style="width: 100%; padding: 12px; border: 1px solid var(--site-border-color); border-radius: 8px; min-height: 120px; margin-bottom: 20px;"></textarea>
+                    <div style="text-align: center">
+                         <button type="button" style="
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        background: var(--site-accent); color: #ffffff; border: 2px solid transparent;
+        padding: 12px 24px;
+        font-size: 1rem;
+        border-radius: 4px;
+        width: auto;
+        text-decoration: none; font-weight: 600; cursor: pointer;
+        transition: opacity 0.2s; 
+    ">
+        
+        <span>Надіслати</span>
+        
+    </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <div style="width: 100%; height: auto; background: #000; padding-top: 40px; padding-bottom: 40px;">
+            <div class="container" style="height: 100%;">
+                 
+            </div>
+        </div>
+
+
+        <section style="padding-top: 40px; padding-bottom: 40px;">
+            <div class="container" style="max-width: 800px;">
+                
+                    <details style="margin-bottom: 12px; background: var(--site-card-bg); border: 1px solid var(--site-border-color); border-radius: 8px; overflow: hidden;">
+                        <summary style="padding: 16px; font-weight: 600; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; color: var(--site-text-primary);">
+                            Перше питання
+                            <span style="color: var(--site-accent);">▼</span>
+                        </summary>
+                        <div style="padding: 16px; border-top: 1px solid var(--site-border-color); color: var(--site-text-secondary); line-height: 1.6;">
+                            Текст відповіді тут...
+                        </div>
+                    </details>
+                
+                    <details style="margin-bottom: 12px; background: var(--site-card-bg); border: 1px solid var(--site-border-color); border-radius: 8px; overflow: hidden;">
+                        <summary style="padding: 16px; font-weight: 600; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; color: var(--site-text-primary);">
+                            Друге питання
+                            <span style="color: var(--site-accent);">▼</span>
+                        </summary>
+                        <div style="padding: 16px; border-top: 1px solid var(--site-border-color); color: var(--site-text-secondary); line-height: 1.6;">
+                            Інший текст відповіді...
+                        </div>
+                    </details>
+                
+            </div>
+        </section>
+
+        <div style="text-align: left; padding-top: 40px; padding-bottom: 40px;">
+            <div class="container" style="display: flex; gap: 12px; justify-content: flex-start;">
+                
+            </div>
+        </div>
+
+
+
+        <section style="position: relative; min-height: auto;  padding-top: 40px; padding-bottom: 40px;">
+            
+            <div class="container" style="position: relative; z-index: 1;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 20px; align-items: start;">
+                    
+                <div style="display: flex; flex-direction: column; width: 100%;">
+                    
+                </div>
+            
+                <div style="display: flex; flex-direction: column; width: 100%;">
+                    
+                </div>
+            
+                <div style="display: flex; flex-direction: column; width: 100%;">
+                    
+                </div>
+            
+                <div style="display: flex; flex-direction: column; width: 100%;">
+                    
+                </div>
+            
+                </div>
+            </div>
+        </section>
+    
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
