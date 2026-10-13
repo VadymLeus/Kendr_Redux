@@ -1,6 +1,7 @@
 // backend/repositories/SiteRepository.js
 const db = require('../config/db');
 const { deleteFile } = require('../utils/fileUtils');
+const executor = (connection) => connection || db;
 const safeParseCategories = (catsData) => {
     if (!catsData) return [];
     if (typeof catsData === 'string') {
@@ -82,13 +83,7 @@ class SiteRepository {
     query += ` ${orderByClause}`;
     const [rows] = await db.query(query, params);
     for (let site of rows) {
-        const [tags] = await db.query(`
-            SELECT t.id, t.name 
-            FROM tags t
-            JOIN site_tags st ON t.id = st.tag_id
-            WHERE st.site_id = ?
-        `, [site.id]);
-        site.tags = tags;
+        site.tags = await SiteRepository.findTags(site.id);
     }
     return rows;
   }
@@ -173,8 +168,8 @@ class SiteRepository {
     return rows;
   }
   
-  static async create(userId, sitePath, title, logoUrl) {
-    const [result] = await db.query(
+  static async create(userId, sitePath, title, logoUrl, connection) {
+    const [result] = await executor(connection).query(
       'INSERT INTO sites (user_id, site_path, title, logo_url, status, currency) VALUES (?, ?, ?, ?, ?, ?)',
       [userId, sitePath, title, logoUrl, 'private', 'UAH']
     );
@@ -334,13 +329,7 @@ class SiteRepository {
       ORDER BY s.is_pinned DESC, s.updated_at DESC
     `, [userId]);
     for (let site of rows) {
-        const [tags] = await db.query(`
-            SELECT t.id, t.name 
-            FROM tags t
-            JOIN site_tags st ON t.id = st.tag_id
-            WHERE st.site_id = ?
-        `, [site.id]);
-        site.tags = tags;
+        site.tags = await SiteRepository.findTags(site.id);
     }
     return rows;
   }
@@ -351,6 +340,85 @@ class SiteRepository {
     );
     return rows;
   }
+  static transaction(work) {
+    return db.withTransaction(work);
+  }
+
+  static async existsByPath(sitePath, connection) {
+    const [rows] = await executor(connection).query('SELECT id FROM sites WHERE site_path = ?', [sitePath]);
+    return rows.length > 0;
+  }
+
+  static async findInfoById(siteId) {
+    const [sites] = await db.query(`
+        SELECT s.site_path, s.title, s.is_online_payment_enabled, s.is_cod_enabled,
+               u.username as author, u.email as author_email, u.avatar_url as author_avatar
+        FROM sites s
+        LEFT JOIN users u ON s.user_id = u.id
+        WHERE s.id = ?
+    `, [siteId]);
+    return sites[0] || null;
+  }
+
+  static async findLock(siteId) {
+    const [rows] = await db.query('SELECT locked_by_user_id, locked_until FROM sites WHERE id = ?', [siteId]);
+    return rows[0];
+  }
+
+  static async findOwnerAndStats(siteId) {
+    const [rows] = await db.query('SELECT user_id, view_count, currency FROM sites WHERE id = ?', [siteId]);
+    return rows[0] || null;
+  }
+
+  static async findTags(siteId) {
+    const [tags] = await db.query(`
+        SELECT t.id, t.name 
+        FROM tags t
+        JOIN site_tags st ON t.id = st.tag_id
+        WHERE st.site_id = ?
+    `, [siteId]);
+    return tags;
+  }
+
+  static async applyContent(siteId, { header, footer, themeSettings, mode, accent }, connection) {
+    await executor(connection).query(
+      'UPDATE sites SET header_content = ?, footer_content = ?, theme_settings = ?, site_theme_mode = ?, site_theme_accent = ? WHERE id = ?',
+      [JSON.stringify(header), JSON.stringify(footer), JSON.stringify(themeSettings), mode, accent, siteId]
+    );
+  }
+
+  static async rename(oldPath, newPath, userId) {
+    const [result] = await db.query('UPDATE sites SET site_path = ? WHERE site_path = ? AND user_id = ?', [newPath, oldPath, userId]);
+    return result;
+  }
+
+  static async findSuspendedWithAppeals(userId) {
+    const [sites] = await db.query(`
+        SELECT s.id, s.site_path, s.title, s.logo_url, s.deletion_scheduled_for,
+               sa.status as appeal_status, sa.ticket_id, st.status as ticket_status,
+               (SELECT reason_note FROM user_warnings WHERE site_id = s.id ORDER BY created_at DESC LIMIT 1) as suspension_reason
+        FROM sites s
+        LEFT JOIN site_appeals sa ON s.id = sa.site_id
+        LEFT JOIN support_tickets st ON sa.ticket_id = st.id
+        WHERE s.user_id = ? AND s.status = 'suspended'
+    `, [userId]);
+    return sites;
+  }
+
+  static async findAllAccessible(userId) {
+    const [sites] = await db.query(`
+        SELECT DISTINCT s.*, 
+               u.username as author, u.email as author_email, u.avatar_url as author_avatar,
+               IF(s.user_id = ?, 'owner', sc.role) as user_access_role
+        FROM sites s
+        LEFT JOIN site_collaborators sc ON s.id = sc.site_id
+        LEFT JOIN users u ON s.user_id = u.id
+        WHERE s.user_id = ? OR sc.user_id = ?
+        ORDER BY s.created_at DESC
+    `, [userId, userId, userId]);
+    return sites;
+  }
+
   static async togglePin(siteId) {
     await db.query('UPDATE sites SET is_pinned = NOT is_pinned WHERE id = ?', [siteId]);
     const [rows] = await db.query('SELECT is_pinned FROM sites WHERE id = ?', [siteId]);

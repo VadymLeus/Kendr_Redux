@@ -1,4 +1,6 @@
 // backend/tests/unit/sendServiceError.test.js
+// Перетворення помилки сервісу на відповідь. Форма відповіді збігається з колишнім res.status(...).json({ message }),
+// решта помилок іде в errorHandler (next), як і раніше.
 import { describe, it, expect, vi } from 'vitest';
 import { createRequire } from 'node:module';
 
@@ -20,6 +22,12 @@ describe('ServiceError', () => {
     expect(error.status).toBe(403);
     expect(error.message).toBe('Немає прав.');
     expect(error.name).toBe('ServiceError');
+    expect(error.extra).toBeUndefined();
+  });
+
+  it('третій аргумент зберігається в extra', () => {
+    const error = new ServiceError(403, 'Заблоковано.', { isSuspended: true });
+    expect(error.extra).toEqual({ isSuspended: true });
   });
 });
 
@@ -32,6 +40,18 @@ describe('sendServiceError', () => {
 
     expect(res.status).toHaveBeenCalledWith(404);
     expect(res.json).toHaveBeenCalledWith({ message: 'Товар не знайдено.' });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('extra додається до тіла відповіді після message', () => {
+    const res = fakeRes();
+    const next = vi.fn();
+
+    sendServiceError(new ServiceError(403, 'Заблоковано.', { isSuspended: true }), res, next);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({ message: 'Заблоковано.', isSuspended: true });
+    expect(Object.keys(res.json.mock.calls[0][0])).toEqual(['message', 'isSuspended']);
     expect(next).not.toHaveBeenCalled();
   });
 

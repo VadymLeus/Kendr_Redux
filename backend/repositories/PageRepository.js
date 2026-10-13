@@ -1,6 +1,8 @@
 // backend/repositories/PageRepository.js
 const db = require('../config/db');
 
+const executor = (connection) => connection || db;
+
 class PageRepository {
     static async create(pageData) {
         const { site_id, name, slug, block_content, is_homepage = 0 } = pageData;
@@ -9,6 +11,18 @@ class PageRepository {
             [site_id, name, slug, JSON.stringify(block_content), is_homepage]
         );
         return { id: result.insertId, ...pageData };
+    }
+
+    static async createFromTemplate(page, connection) {
+        const { site_id, name, slug, block_content, is_homepage, seo_title, seo_description } = page;
+        await executor(connection).query(
+            'INSERT INTO pages (site_id, name, slug, block_content, is_homepage, seo_title, seo_description) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [site_id, name, slug, JSON.stringify(block_content), is_homepage, seo_title, seo_description]
+        );
+    }
+
+    static async deleteBySiteId(siteId, connection) {
+        await executor(connection).query('DELETE FROM pages WHERE site_id = ?', [siteId]);
     }
 
     static async findById(pageId) {

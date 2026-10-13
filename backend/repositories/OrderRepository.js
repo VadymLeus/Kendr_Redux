@@ -78,6 +78,29 @@ class OrderRepository {
         return orders[0];
     }
 
+    static async findStatsBySite(siteId) {
+        const [orderStats] = await db.query(`
+            SELECT 
+                COUNT(id) as totalOrders,
+                SUM(CASE WHEN status IN ('completed', 'paid', 'shipped') THEN 1 ELSE 0 END) as completedOrders,
+                SUM(CASE WHEN status IN ('completed', 'paid', 'shipped') THEN total_amount ELSE 0 END) as revenue
+            FROM orders 
+            WHERE site_id = ?
+        `, [siteId]);
+        return orderStats[0];
+    }
+
+    static async findRecentBySite(siteId, limit) {
+        const [recentOrders] = await db.query(`
+            SELECT id, customer_name, total_amount, status, created_at
+            FROM orders
+            WHERE site_id = ?
+            ORDER BY created_at DESC
+            LIMIT ?
+        `, [siteId, limit]);
+        return recentOrders;
+    }
+
     static async findBySite(siteId) {
         const [orders] = await db.query('SELECT * FROM orders WHERE site_id = ? ORDER BY created_at DESC', [siteId]);
         return orders;

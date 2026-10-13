@@ -42,7 +42,7 @@ npm run test:coverage         # покриття (v8)
 | Файл | Що перевіряє |
 |---|---|
 | `transaction.test.js` | `config/transaction.js`: порядок `getConnection → begin → work → commit → release`, відкат при помилці, збій відкату не приховує причину, з'єднання завжди повертається в пул; те саме на реальній БД через `pool.withTransaction` |
-| `sendServiceError.test.js` | `utils/sendServiceError.js`: `ServiceError` → `res.status(status).json({ message })`, решта помилок → `next(error)` |
+| `sendServiceError.test.js` | `utils/sendServiceError.js`: `ServiceError` → `res.status(status).json({ message, ...extra })`, решта помилок → `next(error)` |
 | `ProductService.test.js` | `services/ProductService.js`: права доступу, нормалізація полів товару, правила відгуків; фіксує D-DEAD-08, D-SEC-18, D-SEC-06 на рівні сервісу |
 | `PageService.test.js` | `services/PageService.js`: права доступу до сторінки, обов'язкові поля, переклад дубля slug у 400, правила видалення (головна й остання сторінка), D-BLK-05 на рівні сервісу |
 | `OrderService.test.js` | `services/OrderService.js`: оформлення замовлення (перевірки магазину, ліміт неоплачених, залишок, адреса, цифрові товари), оплата LiqPay і Google Pay, списки замовлень; фіксує D-BIZ-01, D-BIZ-02, D-BIZ-08, D-BIZ-09, D-SEC-02, D-SEC-03, D-SEC-07, D-CFG-01 на рівні сервісу |
@@ -50,6 +50,10 @@ npm run test:coverage         # покриття (v8)
 | `LiqPayService.test.js` | `services/LiqPayService.js`: підпис і параметри платежу, адреси зворотного виклику |
 | `PlanPolicy.test.js` | `services/PlanPolicy.js`: ліміти тарифів FREE, PLUS, ADMIN, невідомий тариф, регістр і пробіли |
 | `siteAccess.test.js` | `services/siteAccess.js`: `requireSiteAccess` і `hasSiteAccess` (власник або будь-який співавтор, D-SEC-06) |
+| `SiteService.test.js` | `services/SiteService.js`: створення сайту (вимкнене створення, адреса, шаблон, транзакція), каталог, відкриття за адресою (статуси suspended, probation, private), збереження налаштувань (права, блокування, статус), перейменування, скидання до шаблону, закріплення, аналітика; фіксує D-ARC-10, D-BIZ-03, D-SEC-05, D-SEC-06, D-SEC-17 на рівні сервісу |
+| `siteValidation.test.js` | `services/siteValidation.js`: правила адреси сайту (довжина, символи, зарезервовані й прості послідовності, D-BIZ-05) і назви сайту |
+| `siteTemplate.test.js` | `services/siteTemplate.js`: перегенерація ідентифікаторів блоків, розбір вмісту шаблону (рядок, об'єкт, масив блоків), значення за замовчуванням |
+| `siteSettings.test.js` | `services/siteSettings.js`: складання даних оновлення налаштувань сайту, шапка й назва, шифрування ключа LiqPay, заборона зміни статусу заблокованого сайту |
 
 Модульні тести теж запускаються командою `npm test` (глобальна підготовка схеми БД спільна для всіх файлів, тож Docker потрібен і для них).
 
