@@ -1,5 +1,6 @@
 // backend/services/ProductService.js
 const ProductRepository = require('../repositories/ProductRepository');
+const OrderRepository = require('../repositories/OrderRepository');
 const Site = require('../models/Site');
 const { ServiceError } = require('./ServiceError');
 
@@ -143,7 +144,7 @@ class ProductService {
             throw new ServiceError(400, 'Коментар не може бути порожнім.');
         }
         await ProductService.getById(productId);
-        const hasPurchased = await ProductRepository.hasPurchased(userId, productId);
+        const hasPurchased = await OrderRepository.hasPurchased(userId, productId);
         if (!hasPurchased) {
             throw new ServiceError(403, 'Ви можете залишити відгук лише на товар, який ви придбали.');
         }
@@ -178,7 +179,7 @@ class ProductService {
 
     static async getPurchaseStatus(productId, userId) {
         const existingReview = await ProductRepository.getReviewByUser(productId, userId);
-        const hasPurchased = await ProductRepository.hasPurchased(userId, productId);
+        const hasPurchased = await OrderRepository.hasPurchased(userId, productId);
         return {
             hasPurchased,
             hasReviewed: !!existingReview,

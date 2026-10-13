@@ -213,16 +213,24 @@ class ProductRepository {
         return rows[0] || null;
     }
 
-    // Запит про оплачені замовлення з товаром лежить тут, доки немає OrderRepository (зріз order).
-    static async hasPurchased(userId, productId) {
-        const [orders] = await db.query(`
-            SELECT o.id 
-            FROM orders o
-            JOIN order_items oi ON o.id = oi.order_id
-            WHERE o.customer_id = ? AND oi.product_id = ? AND o.status IN ('paid', 'shipped', 'completed')
-            LIMIT 1
-        `, [userId, productId]);
-        return orders.length > 0;
+    static async findForCheckout(productId, siteId, connection) {
+        const [products] = await (connection || db).query(
+            'SELECT id, name, price, type, digital_file_url, stock_quantity FROM products WHERE id = ? AND site_id = ? AND is_available = 1',
+            [productId, siteId]
+        );
+        return products[0];
+    }
+
+    static async findStock(productId) {
+        const [products] = await db.query('SELECT stock_quantity, name FROM products WHERE id = ?', [productId]);
+        return products[0];
+    }
+
+    static async decrementStock(productId, quantity, connection) {
+        await (connection || db).query(
+            `UPDATE products SET stock_quantity = GREATEST(stock_quantity - ?, 0) WHERE id = ? AND stock_quantity IS NOT NULL`,
+            [quantity, productId]
+        );
     }
 
     static async getReviewByUser(productId, userId) {

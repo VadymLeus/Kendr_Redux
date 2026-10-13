@@ -45,6 +45,9 @@ npm run test:coverage         # покриття (v8)
 | `sendServiceError.test.js` | `utils/sendServiceError.js`: `ServiceError` → `res.status(status).json({ message })`, решта помилок → `next(error)` |
 | `ProductService.test.js` | `services/ProductService.js`: права доступу, нормалізація полів товару, правила відгуків; фіксує D-DEAD-08, D-SEC-18, D-SEC-06 на рівні сервісу |
 | `PageService.test.js` | `services/PageService.js`: права доступу до сторінки, обов'язкові поля, переклад дубля slug у 400, правила видалення (головна й остання сторінка), D-BLK-05 на рівні сервісу |
+| `OrderService.test.js` | `services/OrderService.js`: оформлення замовлення (перевірки магазину, ліміт неоплачених, залишок, адреса, цифрові товари), оплата LiqPay і Google Pay, списки замовлень; фіксує D-BIZ-01, D-BIZ-02, D-BIZ-08, D-BIZ-09, D-SEC-02, D-SEC-03, D-SEC-07, D-CFG-01 на рівні сервісу |
+| `PricingService.test.js` | `services/PricingService.js`: сума замовлення без знижок і надбавок (D-BIZ-01), поведінка при від'ємній і нечисловій кількості |
+| `LiqPayService.test.js` | `services/LiqPayService.js`: підпис і параметри платежу, адреси зворотного виклику |
 
 Модульні тести теж запускаються командою `npm test` (глобальна підготовка схеми БД спільна для всіх файлів, тож Docker потрібен і для них).
 

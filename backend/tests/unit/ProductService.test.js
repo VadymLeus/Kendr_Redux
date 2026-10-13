@@ -5,8 +5,10 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const ProductService = require('../../services/ProductService');
 const ProductRepository = require('../../repositories/ProductRepository');
+const OrderRepository = require('../../repositories/OrderRepository');
 const Site = require('../../models/Site');
 const { ServiceError } = require('../../services/ServiceError');
+
 const PRODUCT = { id: 7, site_id: 3, name: 'Кава', categories: [{ id: 1 }, { id: 2 }], image_gallery: ['/a.jpg'] };
 
 async function failure(fn) {
@@ -33,7 +35,7 @@ beforeEach(() => {
     deleteReview: vi.spyOn(ProductRepository, 'deleteReview').mockResolvedValue(undefined),
     findReviewById: vi.spyOn(ProductRepository, 'findReviewById').mockResolvedValue({ user_id: 50 }),
     getReviewByUser: vi.spyOn(ProductRepository, 'getReviewByUser').mockResolvedValue(null),
-    hasPurchased: vi.spyOn(ProductRepository, 'hasPurchased').mockResolvedValue(true),
+    hasPurchased: vi.spyOn(OrderRepository, 'hasPurchased').mockResolvedValue(true),
   };
   site = vi.spyOn(Site, 'findByIdAndUserId').mockResolvedValue({ id: 3 });
 });
