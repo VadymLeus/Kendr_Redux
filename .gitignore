@@ -11,3 +11,4 @@
 .env
 /backend/coverage/
 /backend/tests/.tmp/
+/frontend/coverage/
