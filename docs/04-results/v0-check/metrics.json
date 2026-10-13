@@ -1,0 +1,64 @@
+{
+  "tag": "v0-check",
+  "sloc": {
+    "backend": null,
+    "frontend": null,
+    "testsBackend": null,
+    "testsFrontend": null
+  },
+  "jscpd": {
+    "lines": 43678,
+    "clones": 73,
+    "duplicatedLines": 986,
+    "percentage": 2.2574293694766245
+  },
+  "cycles": {
+    "backend": {
+      "files": 74,
+      "count": 0,
+      "list": []
+    },
+    "frontend": {
+      "files": 198,
+      "count": 2,
+      "list": [
+        "modules/editor/core/BlockRenderer.jsx > modules/editor/blocks/Layout/LayoutBlock.jsx",
+        "modules/editor/core/BlockRenderer.jsx > modules/editor/blocks/Layout/LayoutBlock.jsx > modules/editor/ui/EditableBlockWrapper.jsx"
+      ]
+    }
+  },
+  "unresolvedImports": null,
+  "api": null,
+  "sizes": null,
+  "knip": {
+    "frontend": {
+      "files": 4,
+      "dependencies": 0,
+      "devDependencies": 5,
+      "exports": 24,
+      "duplicates": 2
+    },
+    "backend": {
+      "files": 3,
+      "dependencies": 3,
+      "devDependencies": 0,
+      "exports": 144,
+      "duplicates": 0
+    }
+  },
+  "backendUnusedExports": [
+    "controllers/siteController.js: getUserSites",
+    "utils/fileUtils.js: ensureDirExists",
+    "utils/fileUtils.js: downloadImage",
+    "config/mediaLimits.js: PLAN_LIMITS"
+  ],
+  "complexity": null,
+  "coverage": {
+    "frontend": null,
+    "backend": null
+  },
+  "tests": {
+    "frontend": null,
+    "backend": null
+  }
+}

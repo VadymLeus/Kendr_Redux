@@ -1,0 +1,276 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90mD:/Studying/Otrabotono/Y5S1/Course Work/Kendr_Redux/backend[39m
+      [2mCoverage enabled with [22m[33mv8[39m
+
+[90mstdout[2m | tests/characterization/products.test.js
+[22m[39m[dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+[dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+
+ [32m✓[39m tests/characterization/products.test.js [2m([22m[2m98 tests[22m[2m)[22m[33m 9844[2mms[22m[39m
+[90mstdout[2m | tests/characterization/sites.public.test.js
+[22m[39m[dotenv@17.2.2] injecting env (0) from .env -- tip: 📡 observe env with Radar: https://dotenvx.com/radar
+[dotenv@17.2.2] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+
+ [32m✓[39m tests/characterization/sites.public.test.js [2m([22m[2m66 tests[22m[2m)[22m[33m 5533[2mms[22m[39m
+[90mstdout[2m | tests/characterization/sites.access.test.js
+[22m[39m[dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+[dotenv@17.2.2] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+
+ [32m✓[39m tests/characterization/sites.access.test.js [2m([22m[2m58 tests[22m[2m)[22m[33m 5584[2mms[22m[39m
+[90mstdout[2m | tests/characterization/team.test.js
+[22m[39m[dotenv@17.2.2] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[dotenv@17.2.2] injecting env (0) from .env -- tip: 📡 version env with Radar: https://dotenvx.com/radar
+
+ [32m✓[39m tests/characterization/team.test.js [2m([22m[2m59 tests[22m[2m)[22m[33m 4919[2mms[22m[39m
+[90mstdout[2m | tests/characterization/pages.test.js
+[22m[39m[dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+[dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+
+ [32m✓[39m tests/characterization/pages.test.js [2m([22m[2m49 tests[22m[2m)[22m[33m 4559[2mms[22m[39m
+[90mstdout[2m | tests/characterization/users.profile.test.js
+[22m[39m[dotenv@17.2.2] injecting env (0) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+[dotenv@17.2.2] injecting env (0) from .env -- tip: 📡 auto-backup env with Radar: https://dotenvx.com/radar
+
+ [32m✓[39m tests/characterization/users.profile.test.js [2m([22m[2m41 tests[22m[2m)[22m[33m 3792[2mms[22m[39m
+     [33m[2m✓[22m[39m змінює пароль після підтвердження поточного [33m 318[2mms[22m[39m
+[90mstdout[2m | tests/characterization/support.test.js
+[22m[39m[dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+[dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+
+ [32m✓[39m tests/characterization/support.test.js [2m([22m[2m37 tests[22m[2m)[22m[33m 2843[2mms[22m[39m
+[90mstdout[2m | tests/characterization/auth.register.test.js
+[22m[39m[dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+[dotenv@17.2.2] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+
+ [32m✓[39m tests/characterization/auth.register.test.js [2m([22m[2m30 tests[22m[2m)[22m[33m 2986[2mms[22m[39m
+     [33m[2m✓[22m[39m створює непідтверджений акаунт, зберігає хеш пароля й надсилає код на пошту [33m 313[2mms[22m[39m
+[90mstdout[2m | tests/characterization/orders.payment.test.js
+[22m[39m[dotenv@17.2.2] injecting env (0) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+[dotenv@17.2.2] injecting env (0) from .env -- tip: 📡 auto-backup env with Radar: https://dotenvx.com/radar
+
+ [32m✓[39m tests/characterization/orders.payment.test.js [2m([22m[2m25 tests[22m[2m)[22m[33m 2293[2mms[22m[39m
+[90mstdout[2m | tests/characterization/orders.checkout.test.js
+[22m[39m[dotenv@17.2.2] injecting env (0) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+[dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+
+ [32m✓[39m tests/characterization/orders.checkout.test.js [2m([22m[2m27 tests[22m[2m)[22m[33m 2299[2mms[22m[39m
+[90mstdout[2m | tests/characterization/auth.recovery.test.js
+[22m[39m[dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+[dotenv@17.2.2] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+
+ [32m✓[39m tests/characterization/auth.recovery.test.js [2m([22m[2m24 tests[22m[2m)[22m[33m 2495[2mms[22m[39m
+     [33m[2m✓[22m[39m змінює пароль, стирає код і збільшує token_version [33m 316[2mms[22m[39m
+     [33m[2m✓[22m[39m після скидання діє лише новий пароль, а токен зі старою версією відкликається [33m 339[2mms[22m[39m
+[90mstdout[2m | tests/characterization/sites.create.test.js
+[22m[39m[dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+[dotenv@17.2.2] injecting env (0) from .env -- tip: 📡 version env with Radar: https://dotenvx.com/radar
+
+ [32m✓[39m tests/characterization/sites.create.test.js [2m([22m[2m39 tests[22m[2m)[22m[33m 2194[2mms[22m[39m
+[90mstdout[2m | tests/characterization/auth.admin.test.js
+[22m[39m[dotenv@17.2.2] injecting env (0) from .env -- tip: 📡 observe env with Radar: https://dotenvx.com/radar
+[dotenv@17.2.2] injecting env (0) from .env -- tip: 📡 auto-backup env with Radar: https://dotenvx.com/radar
+
+ [32m✓[39m tests/characterization/auth.admin.test.js [2m([22m[2m24 tests[22m[2m)[22m[33m 1942[2mms[22m[39m
+     [33m[2m✓[22m[39m KNOWN-DEFECT D-SEC-04: пароль адміністратора скидається поштою, хоча forgot-password для staff вимкнено навмисно [33m 357[2mms[22m[39m
+[90mstdout[2m | tests/characterization/auth.login.test.js
+[22m[39m[dotenv@17.2.2] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+
+ [32m✓[39m tests/characterization/auth.login.test.js [2m([22m[2m23 tests[22m[2m)[22m[33m 1552[2mms[22m[39m
+[90mstdout[2m | tests/characterization/auth.guards.test.js
+[22m[39m[dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+[dotenv@17.2.2] injecting env (0) from .env -- tip: 📡 auto-backup env with Radar: https://dotenvx.com/radar
+
+ [32m✓[39m tests/characterization/auth.guards.test.js [2m([22m[2m24 tests[22m[2m)[22m[33m 1442[2mms[22m[39m
+[90mstdout[2m | tests/characterization/users.lifecycle.test.js
+[22m[39m[dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+[dotenv@17.2.2] injecting env (0) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+
+ [32m✓[39m tests/characterization/users.lifecycle.test.js [2m([22m[2m20 tests[22m[2m)[22m[33m 1342[2mms[22m[39m
+[90mstdout[2m | tests/characterization/orders.access.test.js
+[22m[39m[dotenv@17.2.2] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+[dotenv@17.2.2] injecting env (0) from .env -- tip: 📡 version env with Radar: https://dotenvx.com/radar
+
+ [32m✓[39m tests/characterization/orders.access.test.js [2m([22m[2m12 tests[22m[2m)[22m[33m 1243[2mms[22m[39m
+[90mstdout[2m | tests/characterization/auth.tokens.test.js
+[22m[39m[dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+[dotenv@17.2.2] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+
+ [32m✓[39m tests/characterization/auth.tokens.test.js [2m([22m[2m19 tests[22m[2m)[22m[33m 1431[2mms[22m[39m
+[90mstdout[2m | tests/characterization/auth.google.test.js
+[22m[39m[dotenv@17.2.2] injecting env (0) from .env -- tip: 📡 auto-backup env with Radar: https://dotenvx.com/radar
+[dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+
+ [32m✓[39m tests/characterization/auth.google.test.js [2m([22m[2m19 tests[22m[2m)[22m[33m 1016[2mms[22m[39m
+[90mstdout[2m | tests/characterization/orders.stock.test.js
+[22m[39m[dotenv@17.2.2] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+
+ [32m✓[39m tests/characterization/orders.stock.test.js [2m([22m[2m9 tests[22m[2m)[22m[33m 931[2mms[22m[39m
+[90mstdout[2m | tests/characterization/platform.guards.test.js
+[22m[39m[dotenv@17.2.2] injecting env (0) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+[dotenv@17.2.2] injecting env (0) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+
+ [32m✓[39m tests/characterization/platform.guards.test.js [2m([22m[2m11 tests[22m[2m)[22m[33m 766[2mms[22m[39m
+[90mstdout[2m | tests/characterization/transactions.upgrade.test.js
+[22m[39m[dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+[dotenv@17.2.2] injecting env (0) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+
+ [32m✓[39m tests/characterization/transactions.upgrade.test.js [2m([22m[2m12 tests[22m[2m)[22m[33m 808[2mms[22m[39m
+[90mstdout[2m | tests/characterization/app.smoke.test.js
+[22m[39m[dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+[dotenv@17.2.2] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+
+ [32m✓[39m tests/characterization/app.smoke.test.js [2m([22m[2m13 tests[22m[2m)[22m[33m 575[2mms[22m[39m
+[90mstdout[2m | tests/characterization/orders.checkout.input.test.js
+[22m[39m[dotenv@17.2.2] injecting env (0) from .env -- tip: 📡 version env with Radar: https://dotenvx.com/radar
+[dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+
+ [32m✓[39m tests/characterization/orders.checkout.input.test.js [2m([22m[2m5 tests[22m[2m)[22m[33m 497[2mms[22m[39m
+[90mstdout[2m | tests/unit/transaction.test.js
+[22m[39m[dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+[dotenv@17.2.2] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+
+ [32m✓[39m tests/unit/transaction.test.js [2m([22m[2m11 tests[22m[2m)[22m[33m 354[2mms[22m[39m
+[90mstdout[2m | tests/unit/SiteService.test.js
+[22m[39m[dotenv@17.2.2] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+
+ [32m✓[39m tests/unit/SiteService.test.js [2m([22m[2m140 tests[22m[2m)[22m[32m 122[2mms[22m[39m
+[90mstdout[2m | tests/unit/OrderService.test.js
+[22m[39m[dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+
+ [32m✓[39m tests/unit/OrderService.test.js [2m([22m[2m103 tests[22m[2m)[22m[32m 96[2mms[22m[39m
+[90mstdout[2m | tests/unit/ProductService.test.js
+[22m[39m[dotenv@17.2.2] injecting env (0) from .env -- tip: 📡 observe env with Radar: https://dotenvx.com/radar
+
+ [32m✓[39m tests/unit/ProductService.test.js [2m([22m[2m60 tests[22m[2m)[22m[32m 53[2mms[22m[39m
+[90mstdout[2m | tests/unit/PageService.test.js
+[22m[39m[dotenv@17.2.2] injecting env (0) from .env -- tip: 📡 version env with Radar: https://dotenvx.com/radar
+
+ [32m✓[39m tests/unit/PageService.test.js [2m([22m[2m34 tests[22m[2m)[22m[32m 31[2mms[22m[39m
+ [32m✓[39m tests/unit/siteSettings.test.js [2m([22m[2m30 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m tests/unit/siteValidation.test.js [2m([22m[2m48 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/siteTemplate.test.js [2m([22m[2m20 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/sendServiceError.test.js [2m([22m[2m6 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+[90mstdout[2m | tests/unit/siteAccess.test.js
+[22m[39m[dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+
+ [32m✓[39m tests/unit/siteAccess.test.js [2m([22m[2m6 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/unit/LiqPayService.test.js [2m([22m[2m6 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m tests/unit/PlanPolicy.test.js [2m([22m[2m12 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/PricingService.test.js [2m([22m[2m6 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m37 passed[39m[22m[90m (37)[39m
+[2m      Tests [22m [1m[32m1226 passed[39m[22m[90m (1226)[39m
+[2m   Start at [22m 21:20:56
+[2m   Duration [22m 118.60s[2m (transform 469ms, setup 0ms, import 40.38s, tests 63.63s, environment 4ms)[22m
+
+JSON report written to D:/Studying/Otrabotono/Y5S1/Course Work/Kendr_Redux/docs/04-results/v1.0/raw/tests-backend.json
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   70.32 |    63.43 |   76.28 |   71.53 |                   
+ backend           |     100 |      100 |     100 |     100 |                   
+  app.js           |     100 |      100 |     100 |     100 |                   
+ backend/config    |   95.89 |    90.62 |     100 |   95.77 |                   
+  cloudinary.js    |     100 |      100 |     100 |     100 |                   
+  db.js            |   88.88 |    66.66 |     100 |   88.88 | 14                
+  mediaLimits.js   |     100 |      100 |     100 |     100 |                   
+  passport.js      |   94.73 |       95 |     100 |   94.59 | 64-65             
+  transaction.js   |     100 |      100 |     100 |     100 |                   
+ ...nd/controllers |   52.84 |    41.66 |   55.42 |    54.7 |                   
+  ...Controller.js |    9.49 |        0 |    3.44 |   10.59 | ...82-727,744-774 
+  ...Controller.js |   92.53 |    81.43 |   94.11 |   94.57 | ...37,362,364,384 
+  ...Controller.js |   95.55 |      100 |     100 |   95.55 | 11,75             
+  ...Controller.js |   17.39 |        0 |       0 |      20 | 5-24,29-53        
+  ...Controller.js |   21.73 |      100 |       0 |   21.73 | ...18,23-28,33-38 
+  ...Controller.js |   14.86 |        0 |       0 |   15.49 | ...01-116,121-132 
+  ...Controller.js |    6.49 |        0 |       0 |    7.51 | ...45-165,170-200 
+  ...Controller.js |   74.24 |    68.75 |   85.71 |   74.24 | ...65,75-76,97-98 
+  ...Controller.js |     100 |      100 |     100 |     100 |                   
+  ...Controller.js |    83.5 |       25 |   92.85 |    85.1 | ...-89,99,113,157 
+  ...Controller.js |    9.09 |        0 |       0 |    9.09 | 5-42              
+  ...Controller.js |   15.15 |        0 |       0 |   15.15 | ...22,27-42,47-55 
+  ...Controller.js |   87.34 |       60 |   88.23 |   88.15 | ...86,109-112,129 
+  ...Controller.js |   93.85 |    95.45 |     100 |   95.32 | 77,94,129,139,169 
+  tagController.js |      25 |      100 |       0 |      25 | 5-9,14-19         
+  ...Controller.js |   90.47 |    90.41 |     100 |   90.12 | ...66,186,251-253 
+  ...Controller.js |   50.39 |    52.45 |   66.66 |   50.39 | ...17-179,184-249 
+  ...Controller.js |   27.77 |        0 |       0 |   29.41 | 6,10-41           
+  ...Controller.js |   86.14 |    84.21 |    92.3 |   86.66 | ...77-279,286-301 
+  ...Controller.js |    8.33 |        0 |       0 |    9.09 | ...94-106,111-165 
+ ...end/middleware |   81.53 |    73.07 |   66.66 |   82.79 |                   
+  errorHandler.js  |   76.47 |    47.36 |     100 |   81.25 | 13-15,18          
+  ...formGuards.js |   96.15 |    97.72 |     100 |   96.07 | 24-26             
+  trackVisit.js    |    93.1 |    85.71 |     100 |    93.1 | 52-53             
+  upload.js        |   46.15 |    17.24 |   46.15 |    46.8 | ...,60,76,103-104 
+  verifyAdmin.js   |   81.81 |     87.5 |     100 |   81.81 | 7,16              
+  ...trictAdmin.js |      25 |        0 |       0 |      25 | 3-6               
+  verifyToken.js   |     100 |      100 |     100 |     100 |                   
+  ...enOptional.js |     100 |      100 |     100 |     100 |                   
+  ...yTurnstile.js |     100 |      100 |     100 |     100 |                   
+ backend/models    |   59.84 |    59.64 |   93.33 |   58.84 |                   
+  Category.js      |   79.41 |    81.81 |     100 |   79.41 | ...54,63,71,83,88 
+  Favorite.js      |   18.18 |      100 |      80 |      20 | 6-47              
+  ...Submission.js |   15.38 |        0 |     100 |   15.38 | 6-47              
+  Media.js         |     5.4 |        0 |     100 |    7.14 | 18-84             
+  SavedBlock.js    |       8 |        0 |      80 |    8.69 | 6-53              
+  SupportTicket.js |   93.33 |       80 |     100 |   93.33 | 6-10              
+  Tag.js           |   33.33 |      100 |     100 |   33.33 | 6-18              
+  User.js          |      89 |    92.68 |   88.88 |   86.48 | ...05,120,148-171 
+  Warning.js       |      50 |        0 |     100 |      50 | 6-18              
+ ...d/repositories |    83.2 |    76.33 |   90.29 |   83.98 |                   
+  ...Repository.js |     100 |      100 |     100 |     100 |                   
+  ...Repository.js |     100 |       75 |     100 |     100 | 7-12              
+  ...Repository.js |   91.66 |       90 |     100 |   91.48 | 77-78,120-121     
+  ...Repository.js |   97.36 |     91.3 |     100 |   97.29 | 50                
+  ...Repository.js |   88.13 |    80.68 |   95.65 |   87.27 | ...,35-38,225-226 
+  ...Repository.js |   69.93 |    70.58 |   72.72 |   72.09 | ...09-419,428-429 
+  ...Repository.js |     100 |      100 |     100 |     100 |                   
+  ...Repository.js |     100 |       50 |     100 |     100 | 6                 
+  ...Repository.js |      75 |    33.33 |     100 |      75 | 11-12             
+ backend/routes    |     100 |       50 |     100 |     100 |                   
+  adminRoutes.js   |     100 |      100 |     100 |     100 |                   
+  authRoutes.js    |     100 |       50 |     100 |     100 | 10-16             
+  ...goryRoutes.js |     100 |      100 |     100 |     100 |                   
+  ...veryRoutes.js |     100 |      100 |     100 |     100 |                   
+  ...riteRoutes.js |     100 |      100 |     100 |     100 |                   
+  formRoutes.js    |     100 |      100 |     100 |     100 |                   
+  mediaRoutes.js   |     100 |      100 |     100 |     100 |                   
+  orderRoutes.js   |     100 |      100 |     100 |     100 |                   
+  pageRoutes.js    |     100 |      100 |     100 |     100 |                   
+  productRoutes.js |     100 |      100 |     100 |     100 |                   
+  ...FormRoutes.js |     100 |      100 |     100 |     100 |                   
+  reportRoutes.js  |     100 |      100 |     100 |     100 |                   
+  ...lockRoutes.js |     100 |      100 |     100 |     100 |                   
+  siteRoutes.js    |     100 |      100 |     100 |     100 |                   
+  supportRoutes.js |     100 |      100 |     100 |     100 |                   
+  tagRoutes.js     |     100 |      100 |     100 |     100 |                   
+  teamRoutes.js    |     100 |      100 |     100 |     100 |                   
+  ...tionRoutes.js |     100 |      100 |     100 |     100 |                   
+  uploadRoutes.js  |     100 |      100 |     100 |     100 |                   
+  userRoutes.js    |     100 |      100 |     100 |     100 |                   
+  ...lateRoutes.js |     100 |      100 |     100 |     100 |                   
+ backend/services  |   99.85 |    96.33 |     100 |   99.84 |                   
+  LiqPayService.js |     100 |      100 |     100 |     100 |                   
+  OrderService.js  |   99.47 |    94.37 |     100 |   99.43 | 297               
+  PageService.js   |     100 |      100 |     100 |     100 |                   
+  PlanPolicy.js    |     100 |      100 |     100 |     100 |                   
+  ...ingService.js |     100 |      100 |     100 |     100 |                   
+  ...uctService.js |     100 |      100 |     100 |     100 |                   
+  ServiceError.js  |     100 |      100 |     100 |     100 |                   
+  SiteService.js   |     100 |     94.7 |     100 |     100 | ...84,313,332,341 
+  siteAccess.js    |     100 |      100 |     100 |     100 |                   
+  siteSettings.js  |     100 |    95.74 |     100 |     100 | 39,41             
+  siteTemplate.js  |     100 |      100 |     100 |     100 |                   
+  ...Validation.js |     100 |      100 |     100 |     100 |                   
+ .../tests/helpers |     100 |      100 |     100 |     100 |                   
+  app.js           |     100 |      100 |     100 |     100 |                   
+ backend/utils     |   58.55 |    37.87 |      25 |   61.37 |                   
+  adminLogger.js   |   27.27 |        0 |       0 |   27.27 | 4-18              
+  emailService.js  |   51.61 |       25 |   14.28 |   55.17 | ...16,120-149,203 
+  encryption.js    |      80 |       60 |     100 |   84.84 | 6-7,20-21,29      
+  fileUtils.js     |   51.35 |    58.33 |   11.11 |   52.77 | ...17,36-37,43-55 
+  ...rviceError.js |     100 |      100 |     100 |     100 |                   
+-------------------|---------|----------|---------|---------|-------------------

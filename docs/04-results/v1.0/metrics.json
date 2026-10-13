@@ -1,0 +1,344 @@
+{
+  "tag": "v1.0",
+  "sloc": {
+    "backend": {
+      "files": 92,
+      "physical": 7865,
+      "source": 7184,
+      "comment": 112,
+      "single": 112,
+      "block": 0,
+      "mixed": 17,
+      "empty": 586
+    },
+    "frontend": {
+      "files": 201,
+      "physical": 36276,
+      "source": 34563,
+      "comment": 263,
+      "single": 262,
+      "block": 1,
+      "mixed": 62,
+      "empty": 1512
+    },
+    "testsBackend": {
+      "files": 47,
+      "physical": 10224,
+      "source": 8587,
+      "comment": 319,
+      "single": 319,
+      "block": 0,
+      "mixed": 55,
+      "empty": 1373
+    },
+    "testsFrontend": {
+      "files": 26,
+      "physical": 4319,
+      "source": 3768,
+      "comment": 134,
+      "single": 134,
+      "block": 0,
+      "mixed": 43,
+      "empty": 460
+    }
+  },
+  "jscpd": {
+    "lines": 43778,
+    "clones": 66,
+    "duplicatedLines": 908,
+    "percentage": 2.074101146694687
+  },
+  "cycles": {
+    "backend": {
+      "files": 92,
+      "count": 0,
+      "list": []
+    },
+    "frontend": {
+      "files": 201,
+      "count": 0,
+      "list": []
+    }
+  },
+  "unresolvedImports": 0,
+  "api": {
+    "endpoints": 141,
+    "route_files": 21,
+    "mounted": 141,
+    "unmounted": 0,
+    "access": {
+      "public": 32,
+      "token": 84,
+      "admin": 21,
+      "strict-admin": 4
+    },
+    "controllers": 20,
+    "controllers_with_sql": 10,
+    "sql_calls": 130,
+    "controllers_without_model": [
+      "deliveryController",
+      "mediaController",
+      "orderController",
+      "pageController",
+      "productController",
+      "reportController",
+      "siteController",
+      "teamController",
+      "transactionController",
+      "userTemplateController"
+    ],
+    "controllers_using_services": 6,
+    "layer_files": {
+      "controllers": 20,
+      "services": 12,
+      "repositories": 9,
+      "models": 9,
+      "middleware": 9,
+      "utils": 5,
+      "config": 5
+    },
+    "layer_sql_calls": {
+      "controllers": 130,
+      "services": 0,
+      "repositories": 90,
+      "models": 59,
+      "middleware": 6,
+      "utils": 1,
+      "config": 5
+    }
+  },
+  "sizes": {
+    "backend": {
+      "files": 92,
+      "over300": 5,
+      "over500": 1,
+      "largest": {
+        "lines": 776,
+        "file": "backend/controllers/adminController.js"
+      }
+    },
+    "frontend": {
+      "files": 201,
+      "over300": 34,
+      "over500": 12,
+      "largest": {
+        "lines": 831,
+        "file": "frontend/src/modules/dashboard/pages/SiteDashboardPage.jsx"
+      }
+    }
+  },
+  "knip": {
+    "frontend": {
+      "files": 0,
+      "dependencies": 1,
+      "devDependencies": 1,
+      "exports": 17,
+      "duplicates": 2
+    },
+    "backend": {
+      "files": 0,
+      "dependencies": 0,
+      "devDependencies": 1,
+      "exports": 144,
+      "duplicates": 0
+    }
+  },
+  "backendUnusedExports": [
+    "controllers/siteController.js: getUserSites",
+    "utils/fileUtils.js: ensureDirExists",
+    "utils/fileUtils.js: downloadImage",
+    "config/mediaLimits.js: PLAN_LIMITS"
+  ],
+  "complexity": {
+    "frontend": {
+      "functions": 2739,
+      "mean": 3.325301204819277,
+      "median": 1,
+      "max": 121,
+      "maxName": "ProductDetailPage",
+      "maxAt": "modules/shop/ProductDetailPage.jsx:38",
+      "over10": 170,
+      "over20": 56
+    },
+    "backend": {
+      "functions": 485,
+      "mean": 3.7443298969072165,
+      "median": 2,
+      "max": 33,
+      "maxName": "OrderService.placeOrder",
+      "maxAt": "services/OrderService.js:78",
+      "over10": 35,
+      "over20": 6
+    },
+    "all": {
+      "functions": 3224,
+      "mean": 3.3883374689826304,
+      "median": 1,
+      "max": 121,
+      "maxName": "ProductDetailPage",
+      "maxAt": "modules/shop/ProductDetailPage.jsx:38",
+      "over10": 205,
+      "over20": 62
+    },
+    "topBackend": [
+      {
+        "part": "backend",
+        "value": 33,
+        "name": "OrderService.placeOrder",
+        "where": "services/OrderService.js:78"
+      },
+      {
+        "part": "backend",
+        "value": 23,
+        "name": "platformGuards.checkMaintenance",
+        "where": "middleware/platformGuards.js:28"
+      },
+      {
+        "part": "backend",
+        "value": 22,
+        "name": "SiteRepository.getPublic",
+        "where": "repositories/SiteRepository.js:14"
+      },
+      {
+        "part": "backend",
+        "value": 21,
+        "name": "adminController.getDashboardStats",
+        "where": "controllers/adminController.js:55"
+      },
+      {
+        "part": "backend",
+        "value": 21,
+        "name": "mediaController.upload",
+        "where": "controllers/mediaController.js:69"
+      },
+      {
+        "part": "backend",
+        "value": 21,
+        "name": "SiteService.getByPath",
+        "where": "services/SiteService.js:168"
+      },
+      {
+        "part": "backend",
+        "value": 20,
+        "name": "authController.login",
+        "where": "controllers/authController.js:75"
+      },
+      {
+        "part": "backend",
+        "value": 20,
+        "name": "SiteRepository.updateSettings",
+        "where": "repositories/SiteRepository.js:187"
+      }
+    ],
+    "topFrontend": [
+      {
+        "part": "frontend",
+        "value": 121,
+        "name": "ProductDetailPage",
+        "where": "modules/shop/ProductDetailPage.jsx:38"
+      },
+      {
+        "part": "frontend",
+        "value": 62,
+        "name": "HeaderBlock",
+        "where": "modules/editor/blocks/Header/HeaderBlock.jsx:33"
+      },
+      {
+        "part": "frontend",
+        "value": 58,
+        "name": "EditableBlockWrapper",
+        "where": "modules/editor/ui/EditableBlockWrapper.jsx:31"
+      },
+      {
+        "part": "frontend",
+        "value": 56,
+        "name": "SiteDetailsPanel",
+        "where": "modules/admin/components/SiteDetailsPanel.jsx:19"
+      },
+      {
+        "part": "frontend",
+        "value": 54,
+        "name": "ProductCard",
+        "where": "modules/editor/ui/components/ProductCard.jsx:11"
+      },
+      {
+        "part": "frontend",
+        "value": 54,
+        "name": "SiteDisplayPage",
+        "where": "modules/renderer/pages/SiteDisplayPage.jsx:21"
+      },
+      {
+        "part": "frontend",
+        "value": 46,
+        "name": "ProfilePage",
+        "where": "modules/profile/pages/ProfilePage.jsx:43"
+      },
+      {
+        "part": "frontend",
+        "value": 46,
+        "name": "Layout",
+        "where": "shared/ui/layouts/Layout.jsx:44"
+      }
+    ]
+  },
+  "coverage": {
+    "frontend": {
+      "lines": {
+        "covered": 1057,
+        "total": 9608,
+        "pct": 11.001248959200666
+      },
+      "statements": {
+        "covered": 1193,
+        "total": 10923,
+        "pct": 10.921907900759864
+      },
+      "functions": {
+        "covered": 271,
+        "total": 2739,
+        "pct": 9.894121942314714
+      },
+      "branches": {
+        "covered": 1251,
+        "total": 10603,
+        "pct": 11.798547580873338
+      }
+    },
+    "backend": {
+      "lines": {
+        "covered": 2787,
+        "total": 3896,
+        "pct": 71.53490759753593
+      },
+      "statements": {
+        "covered": 2920,
+        "total": 4152,
+        "pct": 70.32755298651252
+      },
+      "functions": {
+        "covered": 370,
+        "total": 485,
+        "pct": 76.28865979381443
+      },
+      "branches": {
+        "covered": 1379,
+        "total": 2174,
+        "pct": 63.43146274149034
+      }
+    }
+  },
+  "tests": {
+    "frontend": {
+      "files": 20,
+      "tests": 625,
+      "passed": 625,
+      "failed": 0
+    },
+    "backend": {
+      "files": 37,
+      "tests": 1226,
+      "passed": 1226,
+      "failed": 0
+    }
+  }
+}
