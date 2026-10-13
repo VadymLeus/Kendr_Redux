@@ -1,6 +1,6 @@
 // backend/controllers/userController.js
 const User = require('../models/User');
-const Site = require('../models/Site');
+const SiteRepository = require('../repositories/SiteRepository');
 const Warning = require('../models/Warning');
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
@@ -8,7 +8,7 @@ const path = require('path');
 const jwt = require('jsonwebtoken');
 const { deleteFile } = require('../utils/fileUtils');
 const db = require('../config/db');
-const { getLimitsForUser } = require('../config/mediaLimits');
+const PlanPolicy = require('../services/PlanPolicy');
 const getUserStats = async (userId, plan, role) => {
     try {
         const [[siteRows], [mediaRows], totalViews, warnings] = await Promise.all([
@@ -17,7 +17,7 @@ const getUserStats = async (userId, plan, role) => {
             User.getTotalSiteViews(userId),
             Warning.findForUser(userId)
         ]);
-        const limits = getLimitsForUser(plan);
+        const limits = PlanPolicy.getLimits(plan);
         return {
             siteCount: siteRows[0].count || 0,
             siteLimit: limits.maxSites,
@@ -28,7 +28,7 @@ const getUserStats = async (userId, plan, role) => {
         };
     } catch (err) {
         console.error("Помилка отримання статистики:", err);
-        const fallbackLimits = getLimitsForUser('FREE');
+        const fallbackLimits = PlanPolicy.getLimits('FREE');
         return { 
             siteCount: 0, 
             siteLimit: fallbackLimits.maxSites, 
@@ -217,7 +217,7 @@ exports.deleteAccount = async (req, res, next) => {
         }
         const userId = req.user.id;
         await User.softDeleteUser(userId);
-        await Site.setAllUserSitesToDraft(userId);
+        await SiteRepository.setAllUserSitesToDraft(userId);
         res.json({ message: 'Акаунт заплановано на видалення. Ви можете відновити його протягом 14 днів.' });
     } catch (error) {
         next(error);

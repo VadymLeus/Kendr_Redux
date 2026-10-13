@@ -1,6 +1,6 @@
 // backend/services/PageService.js
 const PageRepository = require('../repositories/PageRepository');
-const Site = require('../models/Site');
+const { requireSiteAccess } = require('./siteAccess');
 const { ServiceError } = require('./ServiceError');
 
 const ACCESS_DENIED = 'Доступ заборонено.';
@@ -25,10 +25,7 @@ class PageService {
     }
 
     static async listForSite(siteId, userId) {
-        const site = await Site.findByIdAndUserId(siteId, userId);
-        if (!site) {
-            throw new ServiceError(403, ACCESS_DENIED);
-        }
+        await requireSiteAccess(siteId, userId, ACCESS_DENIED);
         return PageRepository.findBySiteId(siteId);
     }
 
@@ -37,10 +34,7 @@ class PageService {
         if (!name || !slug) {
             throw new ServiceError(400, FIELDS_REQUIRED);
         }
-        const site = await Site.findByIdAndUserId(siteId, userId);
-        if (!site) {
-            throw new ServiceError(403, ACCESS_DENIED);
-        }
+        await requireSiteAccess(siteId, userId, ACCESS_DENIED);
         try {
             return await PageRepository.create({
                 site_id: siteId,

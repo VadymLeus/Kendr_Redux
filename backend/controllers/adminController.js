@@ -1,5 +1,5 @@
 // backend/controllers/adminController.js
-const Site = require('../models/Site');
+const SiteRepository = require('../repositories/SiteRepository');
 const User = require('../models/User');
 const Warning = require('../models/Warning');
 const Media = require('../models/Media');
@@ -37,12 +37,12 @@ const suspendFullUserAccount = async (userId) => {
     if (user.avatar_url && user.avatar_url.includes('/avatars/custom/')) {
         await deleteFile(user.avatar_url);
     }
-    const sites = await Site.findAllByUserId(userId);
+    const sites = await SiteRepository.findAllByUserId(userId);
     for (const site of sites) {
         if (site.logo_url && !site.logo_url.includes('/default/')) await deleteFile(site.logo_url);
         if (site.cover_image && !site.cover_image.includes('/default/')) await deleteFile(site.cover_image);
     }
-    await Site.deleteAllByUserId(userId);
+    await SiteRepository.deleteAllByUserId(userId);
     const mediaFiles = await Media.findAllByUserId(userId);
     for (const media of mediaFiles) {
         if (media.path_full) await deleteFile(media.path_full);
@@ -299,7 +299,7 @@ exports.suspendSite = async (req, res, next) => {
         }
         const deletionDate = new Date();
         deletionDate.setDate(deletionDate.getDate() + 7);
-        await Site.updateStatus(site.id, 'suspended', deletionDate);
+        await SiteRepository.updateStatus(site.id, 'suspended', deletionDate);
         const siteOwner = { email: site.email, username: site.username };
         const [existingWarning] = await db.query(
             'SELECT id FROM user_warnings WHERE user_id = ? AND site_id = ?', 
@@ -350,7 +350,7 @@ exports.setProbation = async (req, res, next) => {
         if (!checkHierarchyPermission(req.user.role, site.owner_role)) {
             return res.status(403).json({ message: 'Недостатньо прав для взаємодії з сайтами адміністрації або модераторів.' });
         }
-        await Site.updateStatus(site.id, 'probation', null);
+        await SiteRepository.updateStatus(site.id, 'probation', null);
         await logAdminAction(req, 'site_probation', 'site', site.id, { 
             title: site.title,
             path: site.site_path
@@ -375,7 +375,7 @@ exports.restoreSite = async (req, res, next) => {
         if (!checkHierarchyPermission(req.user.role, site.owner_role)) {
             return res.status(403).json({ message: 'Недостатньо прав.' });
         }
-        await Site.updateStatus(site.id, 'published', null);
+        await SiteRepository.updateStatus(site.id, 'published', null);
         await db.query("UPDATE site_appeals SET status = 'approved', resolved_at = NOW() WHERE site_id = ? AND status = 'pending'", [site.id]);
         await db.query('DELETE FROM user_warnings WHERE site_id = ?', [site.id]);
         await logAdminAction(req, 'site_restore', 'site', site.id, { title: site.title });
@@ -417,7 +417,7 @@ exports.deleteSiteByAdmin = async (req, res, next) => {
         if (existingWarning.length === 0) {
             await Warning.create(site.user_id, site.id, baseReasonText);
         }
-        await Site.delete(site.id);
+        await SiteRepository.delete(site.id);
         await logAdminAction(req, 'site_delete', 'site', site.id, { 
             title: site.title, 
             path: site.site_path,
@@ -503,7 +503,7 @@ exports.banSiteFromReport = async (req, res, next) => {
         await db.query("UPDATE site_reports SET status = 'banned' WHERE id = ?", [id]);
         const deletionDate = new Date();
         deletionDate.setDate(deletionDate.getDate() + 7); 
-        await Site.updateStatus(site.id, 'suspended', deletionDate);
+        await SiteRepository.updateStatus(site.id, 'suspended', deletionDate);
         const [existingWarning] = await db.query(
             'SELECT id FROM user_warnings WHERE user_id = ? AND site_id = ?', 
             [site.user_id, site.id]

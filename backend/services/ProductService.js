@@ -1,7 +1,7 @@
 // backend/services/ProductService.js
 const ProductRepository = require('../repositories/ProductRepository');
 const OrderRepository = require('../repositories/OrderRepository');
-const Site = require('../models/Site');
+const { requireSiteAccess, hasSiteAccess } = require('./siteAccess');
 const { ServiceError } = require('./ServiceError');
 
 const parseDecimal = (value) => {
@@ -35,19 +35,13 @@ class ProductService {
 
     static async getAccessible(productId, userId, forbiddenMessage) {
         const product = await ProductService.getById(productId);
-        const site = await Site.findByIdAndUserId(product.site_id, userId);
-        if (!site) {
-            throw new ServiceError(403, forbiddenMessage);
-        }
+        await requireSiteAccess(product.site_id, userId, forbiddenMessage);
         return product;
     }
 
     static async create(userId, body) {
         const { site_id, name, description, price, category_ids, stock_quantity, image_gallery, variants, sale_percentage, type, digital_file_url } = body;
-        const site = await Site.findByIdAndUserId(site_id, userId);
-        if (!site) {
-            throw new ServiceError(403, 'У вас немає прав для додавання товарів на цей сайт.');
-        }
+        await requireSiteAccess(site_id, userId, 'У вас немає прав для додавання товарів на цей сайт.');
         let galleryData = [];
         if (Array.isArray(image_gallery)) {
             galleryData = image_gallery;
@@ -167,8 +161,7 @@ class ProductService {
         if (!isAuthor && !isPlatformStaff) {
             const product = await ProductRepository.findById(productId);
             if (product) {
-                const site = await Site.findByIdAndUserId(product.site_id, user.id);
-                if (site) isSiteOwner = true;
+                isSiteOwner = await hasSiteAccess(product.site_id, user.id);
             }
         }
         if (!isAuthor && !isSiteOwner && !isPlatformStaff) {

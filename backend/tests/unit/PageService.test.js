@@ -5,7 +5,7 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const PageService = require('../../services/PageService');
 const PageRepository = require('../../repositories/PageRepository');
-const Site = require('../../models/Site');
+const SiteRepository = require('../../repositories/SiteRepository');
 const { ServiceError } = require('../../services/ServiceError');
 
 const ACCESS = { user_id: 1, is_homepage: 0, site_id: 3 };
@@ -35,7 +35,7 @@ beforeEach(() => {
     countBySiteId: vi.spyOn(PageRepository, 'countBySiteId').mockResolvedValue(3),
     setHomepage: vi.spyOn(PageRepository, 'setHomepage').mockResolvedValue(true),
   };
-  site = vi.spyOn(Site, 'findByIdAndUserId').mockResolvedValue({ id: 3 });
+  site = vi.spyOn(SiteRepository, 'findByIdAndUserId').mockResolvedValue({ id: 3 });
 });
 
 afterEach(() => {

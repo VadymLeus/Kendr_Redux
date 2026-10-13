@@ -1,6 +1,6 @@
 // backend/controllers/formController.js
 const FormSubmission = require('../models/FormSubmission');
-const Site = require('../models/Site');
+const SiteRepository = require('../repositories/SiteRepository');
 const User = require('../models/User');
 const { sendSubmissionNotification } = require('../utils/emailService');
 const db = require('../config/db');
@@ -41,7 +41,7 @@ exports.submitForm = async (req, res, next) => {
 exports.getSubmissions = async (req, res, next) => {
     try {
         const { siteId } = req.params;
-        const site = await Site.findByIdAndUserId(siteId, req.user.id);
+        const site = await SiteRepository.findByIdAndUserId(siteId, req.user.id);
 
         if (!site) {
             return res.status(403).json({ message: 'Доступ заборонено.' });
@@ -57,7 +57,7 @@ exports.getSubmissions = async (req, res, next) => {
 exports.markSubmissionRead = async (req, res, next) => {
     try {
         const { siteId, submissionId } = req.params;
-        const site = await Site.findByIdAndUserId(siteId, req.user.id);
+        const site = await SiteRepository.findByIdAndUserId(siteId, req.user.id);
 
         if (!site) {
             return res.status(403).json({ message: 'Доступ заборонено.' });
@@ -75,7 +75,7 @@ exports.updateStatus = async (req, res, next) => {
         const { siteId, submissionId } = req.params;
         const { status } = req.body;
         
-        const site = await Site.findByIdAndUserId(siteId, req.user.id);
+        const site = await SiteRepository.findByIdAndUserId(siteId, req.user.id);
         if (!site) return res.status(403).json({ message: 'Доступ заборонено.' });
 
         const [rows] = await db.query('SELECT form_data FROM form_submissions WHERE id = ?', [submissionId]);
@@ -101,7 +101,7 @@ exports.toggleSubmissionPin = async (req, res, next) => {
     try {
         const { siteId, submissionId } = req.params;
         
-        const site = await Site.findByIdAndUserId(siteId, req.user.id);
+        const site = await SiteRepository.findByIdAndUserId(siteId, req.user.id);
         if (!site) {
             return res.status(403).json({ message: 'Доступ заборонено.' });
         }
@@ -120,7 +120,7 @@ exports.toggleSubmissionPin = async (req, res, next) => {
 exports.deleteSubmission = async (req, res, next) => {
     try {
         const { siteId, submissionId } = req.params;
-        const site = await Site.findByIdAndUserId(siteId, req.user.id);
+        const site = await SiteRepository.findByIdAndUserId(siteId, req.user.id);
 
         if (!site) {
             return res.status(403).json({ message: 'Доступ заборонено.' });

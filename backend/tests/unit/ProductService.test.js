@@ -6,7 +6,7 @@ const require = createRequire(import.meta.url);
 const ProductService = require('../../services/ProductService');
 const ProductRepository = require('../../repositories/ProductRepository');
 const OrderRepository = require('../../repositories/OrderRepository');
-const Site = require('../../models/Site');
+const SiteRepository = require('../../repositories/SiteRepository');
 const { ServiceError } = require('../../services/ServiceError');
 
 const PRODUCT = { id: 7, site_id: 3, name: 'Кава', categories: [{ id: 1 }, { id: 2 }], image_gallery: ['/a.jpg'] };
@@ -37,7 +37,7 @@ beforeEach(() => {
     getReviewByUser: vi.spyOn(ProductRepository, 'getReviewByUser').mockResolvedValue(null),
     hasPurchased: vi.spyOn(OrderRepository, 'hasPurchased').mockResolvedValue(true),
   };
-  site = vi.spyOn(Site, 'findByIdAndUserId').mockResolvedValue({ id: 3 });
+  site = vi.spyOn(SiteRepository, 'findByIdAndUserId').mockResolvedValue({ id: 3 });
 });
 
 afterEach(() => {

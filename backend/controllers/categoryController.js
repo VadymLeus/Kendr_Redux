@@ -1,6 +1,6 @@
 // backend/controllers/categoryController.js
 const Category = require('../models/Category');
-const Site = require('../models/Site');
+const SiteRepository = require('../repositories/SiteRepository');
 
 exports.getCategoriesForSite = async (req, res, next) => {
     try {
@@ -17,7 +17,7 @@ exports.createCategory = async (req, res, next) => {
         const { siteId, name, discount_percentage, icon } = req.body;
         const userId = req.user.id;
 
-        const site = await Site.findByIdAndUserId(siteId, userId);
+        const site = await SiteRepository.findByIdAndUserId(siteId, userId);
         if (!site) {
             return res.status(403).json({ message: 'У вас немає прав для додавання категорій на цей сайт.' });
         }

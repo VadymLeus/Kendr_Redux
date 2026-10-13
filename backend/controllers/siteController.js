@@ -1,5 +1,5 @@
 // backend/controllers/siteController.js
-const Site = require('../models/Site');
+const SiteRepository = require('../repositories/SiteRepository');
 const PageRepository = require('../repositories/PageRepository');
 const db = require('../config/db');
 const fs = require('fs').promises;
@@ -228,7 +228,7 @@ exports.getSites = async (req, res, next) => {
             if (users.length > 0) targetUserId = users[0].id;
         }
         if (isStaff && targetUserId) includeAllStatuses = true;
-        const sites = await Site.getPublic({ 
+        const sites = await SiteRepository.getPublic({ 
             searchTerm: search, 
             userId: targetUserId, 
             tag, 
@@ -249,7 +249,7 @@ exports.getDefaultLogos = async (req, res, next) => {
 exports.getSiteByPath = async (req, res, next) => {
     try {
         const { site_path, slug } = req.params;
-        const site = await Site.findByPath(site_path);
+        const site = await SiteRepository.findByPath(site_path);
         if (!site) return res.status(200).json(null);
         const [ownerInfo] = await db.query('SELECT username, email, avatar_url FROM users WHERE id = ?', [site.user_id]);
         if (ownerInfo.length > 0) {
@@ -310,7 +310,7 @@ exports.updateSiteSettings = async (req, res, next) => {
     try {
         const { site_path } = req.params;
         const userId = req.user.id;
-        const site = await Site.findByPath(site_path);
+        const site = await SiteRepository.findByPath(site_path);
         if (!site) return res.status(404).json({ message: 'Сайт не знайдено.' });
         const isOwner = site.user_id === userId;
         const [collabs] = await db.query('SELECT role FROM site_collaborators WHERE site_id = ? AND user_id = ?', [site.id, userId]);
@@ -422,8 +422,8 @@ exports.updateSiteSettings = async (req, res, next) => {
             cookie_banner_position: cookie_banner_position !== undefined ? cookie_banner_position : site.cookie_banner_position,
             cookie_banner_blur: cookie_banner_blur !== undefined ? cookie_banner_blur : site.cookie_banner_blur
         };
-        await Site.updateSettings(site.id, updateData);
-        if (Array.isArray(tags)) await Site.updateTags(site.id, tags);
+        await SiteRepository.updateSettings(site.id, updateData);
+        if (Array.isArray(tags)) await SiteRepository.updateTags(site.id, tags);
         res.json({ 
             message: 'Налаштування оновлено',
             updated: { logo_url: finalLogoUrl, title: finalTitle, header_content: currentHeaderContent, status: finalStatus, currency: updateData.currency }
@@ -442,9 +442,9 @@ exports.renameSite = async (req, res, next) => {
         const slugError = validateSlugOnly(newPath);
         if (slugError) return res.status(400).json({ message: slugError });
         const sanitizedNewPath = newPath.toLowerCase().trim();
-        const existingSite = await Site.findByPath(sanitizedNewPath); 
+        const existingSite = await SiteRepository.findByPath(sanitizedNewPath); 
         if (existingSite) return res.status(409).json({ message: 'Ця адреса вже зайнята. Спробуйте іншу.' });
-        const currentSite = await Site.findByPath(oldPath); 
+        const currentSite = await SiteRepository.findByPath(oldPath); 
         if (!currentSite || currentSite.user_id !== userId) return res.status(404).json({ message: 'Сайт не знайдено або недостатньо прав (тільки власник).' });
         const [result] = await db.query('UPDATE sites SET site_path = ? WHERE site_path = ? AND user_id = ?', [sanitizedNewPath, oldPath, userId]); 
         if (result.affectedRows === 0) return res.status(404).json({ message: 'Сайт не знайдено або недостатньо прав.' });
@@ -475,7 +475,7 @@ exports.deleteSite = async (req, res, next) => {
     try { 
         const { site_path } = req.params; 
         const userId = req.user.id; 
-        const result = await Site.deleteByPathAndUserId(site_path, userId); 
+        const result = await SiteRepository.deleteByPathAndUserId(site_path, userId); 
         if (!result) return res.status(404).json({ message: 'Сайт не знайдено або у вас немає прав на його видалення.' }); 
         res.json({ message: 'Сайт успішно видалено.' }); 
     } catch (error) { next(error); } 
@@ -488,7 +488,7 @@ exports.resetSiteToTemplate = async (req, res, next) => {
     const isBlank = req.body.isBlank || templateId === 'blank';
     const connection = await db.getConnection();
     try { 
-        const site = await Site.findByIdAndUserId(siteId, userId); 
+        const site = await SiteRepository.findByIdAndUserId(siteId, userId); 
         if (!site) return res.status(403).json({ message: 'Сайт не знайдено або у вас немає прав (тільки власник).' });
         let headerToSave = [], footerToSave = [], pagesToCreate = [];
         let siteThemeMode = 'light', siteThemeAccent = 'blue', themeSettings = {};
@@ -554,9 +554,9 @@ exports.toggleSitePin = async (req, res, next) => {
     try { 
         const { siteId } = req.params; 
         const userId = req.user.id; 
-        const site = await Site.findByIdAndUserId(siteId, userId); 
+        const site = await SiteRepository.findByIdAndUserId(siteId, userId); 
         if (!site) return res.status(404).json({ message: 'Сайт не знайдено або у вас немає прав (тільки власник).' }); 
-        const newState = await Site.togglePin(siteId); 
+        const newState = await SiteRepository.togglePin(siteId); 
         res.json({ message: newState ? 'Сайт закріплено' : 'Сайт відкріплено', is_pinned: newState }); 
     } catch (error) { next(error); } 
 };
@@ -567,7 +567,7 @@ exports.checkSlug = async (req, res, next) => {
         const slugError = validateSlugOnly(slug);
         if (slugError) return res.json({ isAvailable: false, message: slugError });
         const sanitizedSlug = slug.toLowerCase().trim();
-        const existingSite = await Site.findByPath(sanitizedSlug);
+        const existingSite = await SiteRepository.findByPath(sanitizedSlug);
         if (existingSite) return res.json({ isAvailable: false, message: 'Ця адреса вже зайнята.' });
         res.json({ isAvailable: true });
     } catch (error) { next(error); }

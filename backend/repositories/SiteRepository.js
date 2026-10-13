@@ -1,4 +1,4 @@
-// backend/models/Site.js
+// backend/repositories/SiteRepository.js
 const db = require('../config/db');
 const { deleteFile } = require('../utils/fileUtils');
 const safeParseCategories = (catsData) => {
@@ -9,7 +9,7 @@ const safeParseCategories = (catsData) => {
     return Array.isArray(catsData) ? catsData : [];
 };
 
-class Site {
+class SiteRepository {
   static async getPublic({ searchTerm = '', userId = null, tag = null, sort = 'new', onlyFavorites = false, currentUserId = null, includeAllStatuses = false }) {
     let query = `
         SELECT DISTINCT
@@ -286,21 +286,13 @@ class Site {
   }
 
   static async updateTags(siteId, tagIds = []) {
-    const connection = await db.getConnection();
-    try {
-        await connection.beginTransaction();
+    await db.withTransaction(async (connection) => {
         await connection.query('DELETE FROM site_tags WHERE site_id = ?', [siteId]);
         if (tagIds.length > 0) {
             const values = tagIds.map(tagId => [siteId, tagId]);
             await connection.query('INSERT INTO site_tags (site_id, tag_id) VALUES ?', [values]);
         }
-        await connection.commit();
-    } catch (error) {
-        await connection.rollback();
-        throw error;
-    } finally {
-        connection.release();
-    }
+    });
   }
 
   static async delete(siteId) {
@@ -370,4 +362,4 @@ class Site {
   }
 }
 
-module.exports = Site;
+module.exports = SiteRepository;

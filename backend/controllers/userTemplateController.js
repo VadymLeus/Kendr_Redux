@@ -1,5 +1,5 @@
 // backend/controllers/userTemplateController.js
-const Site = require('../models/Site');
+const SiteRepository = require('../repositories/SiteRepository');
 const PageRepository = require('../repositories/PageRepository');
 const db = require('../config/db');
 
@@ -11,11 +11,11 @@ exports.saveAsTemplate = async (req, res, next) => {
         if (!siteId || !templateName) {
             return res.status(400).json({ message: 'Необхідно вказати ID сайту та назву шаблону.' });
         }
-        const site = await Site.findByIdAndUserId(siteId, userId);
+        const site = await SiteRepository.findByIdAndUserId(siteId, userId);
         if (!site) {
             return res.status(403).json({ message: 'Сайт не знайдено або у вас немає прав.' });
         }
-        const siteDetails = await Site.findByPath(site.site_path);
+        const siteDetails = await SiteRepository.findByPath(site.site_path);
         if (!siteDetails) return res.status(404).json({ message: 'Деталі сайту не знайдено.' });
         const pages = await PageRepository.findBySiteId(siteId);
         const pagesWithContent = await Promise.all(pages.map(async (p) => {
@@ -123,9 +123,9 @@ exports.updateTemplate = async (req, res, next) => {
             }
             return res.json({ message: 'Інформацію про шаблон оновлено!' });
         }
-        const site = await Site.findByIdAndUserId(siteId, userId);
+        const site = await SiteRepository.findByIdAndUserId(siteId, userId);
         if (!site) return res.status(403).json({ message: 'Сайт для оновлення шаблону не знайдено.' });
-        const siteDetails = await Site.findByPath(site.site_path);
+        const siteDetails = await SiteRepository.findByPath(site.site_path);
         if (!siteDetails) return res.status(404).json({ message: 'Деталі сайту не знайдено.' });
         const pages = await PageRepository.findBySiteId(siteId);
         const pagesWithContent = await Promise.all(pages.map(async (p) => {

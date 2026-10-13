@@ -48,6 +48,8 @@ npm run test:coverage         # покриття (v8)
 | `OrderService.test.js` | `services/OrderService.js`: оформлення замовлення (перевірки магазину, ліміт неоплачених, залишок, адреса, цифрові товари), оплата LiqPay і Google Pay, списки замовлень; фіксує D-BIZ-01, D-BIZ-02, D-BIZ-08, D-BIZ-09, D-SEC-02, D-SEC-03, D-SEC-07, D-CFG-01 на рівні сервісу |
 | `PricingService.test.js` | `services/PricingService.js`: сума замовлення без знижок і надбавок (D-BIZ-01), поведінка при від'ємній і нечисловій кількості |
 | `LiqPayService.test.js` | `services/LiqPayService.js`: підпис і параметри платежу, адреси зворотного виклику |
+| `PlanPolicy.test.js` | `services/PlanPolicy.js`: ліміти тарифів FREE, PLUS, ADMIN, невідомий тариф, регістр і пробіли |
+| `siteAccess.test.js` | `services/siteAccess.js`: `requireSiteAccess` і `hasSiteAccess` (власник або будь-який співавтор, D-SEC-06) |
 
 Модульні тести теж запускаються командою `npm test` (глобальна підготовка схеми БД спільна для всіх файлів, тож Docker потрібен і для них).
 
