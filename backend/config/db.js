@@ -1,6 +1,7 @@
 // backend/config/db.js
 const mysql = require('mysql2');
 require('dotenv').config();
+const { makeWithTransaction } = require('./transaction');
 const dbConfig = {
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -15,4 +16,5 @@ if (process.env.DB_HOST !== 'localhost' && process.env.DB_HOST !== '127.0.0.1') 
     };
 }
 const pool = mysql.createPool(dbConfig).promise();
+pool.withTransaction = makeWithTransaction(pool);
 module.exports = pool;

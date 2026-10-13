@@ -1,4 +1,4 @@
-// backend/models/Product.js
+// backend/repositories/ProductRepository.js
 const db = require('../config/db');
 const safeParseGallery = (galleryData) => {
     if (!galleryData) return [];
@@ -41,7 +41,7 @@ const safeParseCategories = (catsData) => {
     return Array.isArray(catsData) ? catsData : [];
 };
 
-class Product {
+class ProductRepository {
     static async findById(productId) {
         const [rows] = await db.query(
             `SELECT p.*, 
@@ -208,6 +208,23 @@ class Product {
         return result;
     }
 
+    static async findReviewById(reviewId) {
+        const [rows] = await db.query('SELECT user_id FROM product_reviews WHERE id = ?', [reviewId]);
+        return rows[0] || null;
+    }
+
+    // Запит про оплачені замовлення з товаром лежить тут, доки немає OrderRepository (зріз order).
+    static async hasPurchased(userId, productId) {
+        const [orders] = await db.query(`
+            SELECT o.id 
+            FROM orders o
+            JOIN order_items oi ON o.id = oi.order_id
+            WHERE o.customer_id = ? AND oi.product_id = ? AND o.status IN ('paid', 'shipped', 'completed')
+            LIMIT 1
+        `, [userId, productId]);
+        return orders.length > 0;
+    }
+
     static async getReviewByUser(productId, userId) {
          const [rows] = await db.query(
             'SELECT * FROM product_reviews WHERE product_id = ? AND user_id = ?',
@@ -233,4 +250,4 @@ class Product {
     }
 }
 
-module.exports = Product;
+module.exports = ProductRepository;

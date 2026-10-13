@@ -57,16 +57,18 @@ describe('POST /api/support (створення звернення)', () => {
     });
   });
 
+  // Вік звернення задано з півхвилини: MySQL округлює дробові секунди TIMESTAMP, тож на межі цілої хвилини
+  // залишок час від часу виходив на хвилину більшим (мінливий тест).
   it('не частіше разу на 20 хвилин: повторне звернення — 429 із залишком часу', async () => {
-    await createTicket(owner, { minutesAgo: 1 });
+    await createTicket(owner, { minutesAgo: 1.5 });
     const res = await open(owner, { subject: 'Ще одне', body: 'Текст' });
     expect(res.status).toBe(429);
     expect(res.body).toEqual({ message: 'Ви занадто часто створюєте звернення. Зачекайте ще 19 хв.' });
     expect(await countRows('support_tickets')).toBe(1);
   });
 
-  it('через 19 хвилин ще 429 (залишилась 1 хв.), через 21 — дозволено', async () => {
-    await createTicket(owner, { minutesAgo: 19 });
+  it('через 19,5 хвилини ще 429 (залишилась 1 хв.), через 21 — дозволено', async () => {
+    await createTicket(owner, { minutesAgo: 19.5 });
     const early = await open(owner, { subject: 'Ще одне', body: 'Текст' });
     expect(early.status).toBe(429);
     expect(early.body.message).toBe('Ви занадто часто створюєте звернення. Зачекайте ще 1 хв.');
