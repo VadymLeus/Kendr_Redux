@@ -49,7 +49,7 @@ node tools/measure.mjs --tag=v1.0
 | Циклічні залежності | `madge` 8.0.0 (`--circular`); `code-metrics.mjs` будує той самий граф статичних, динамічних і `require`-імпортів і на `v0` дає ті самі два цикли |
 | API й шари | `api_catalog.py`: ендпоінти за `routes`, доступ за middleware, виклики `.query(` і `.execute(` за каталогами backend |
 | Розмір файлів | `code-metrics.mjs`, `file-sizes.csv` (рядків на файл) |
-| Невикористаний код | `knip` із конфігураціями цієї теки. Для backend перевірено звернення до кожного експорту, який повідомив knip: knip не розпізнає CommonJS-обробники контролерів, тож у таблицю йдуть експорти без звернень з інших файлів backend (без `tests`). Backend аналізується без тестів, як на `v0`, де їх не було |
+| Невикористаний код | `knip` із конфігураціями цієї теки (`tailwindcss` виключено зі звіту: його підключає CSS-директива `@import`, яку knip не читає). Для backend перевірено звернення до кожного експорту, який повідомив knip: knip не розпізнає CommonJS-обробники контролерів, тож у таблицю йдуть експорти без звернень з інших файлів backend (без `tests`). Backend аналізується без тестів, як на `v0`, де їх не було |
 | Складність | `eslint` 9, правило `complexity` із порогом 0, `eslint-complexity.config.mjs` (`backend/tests` виключено). Вкладені функції рахуються окремо |
 | Тести й покриття | Vitest (`--reporter=json`) і `@vitest/coverage-v8`, провайдер v8; frontend — `tests/unit` і `tests/integration`, усі файли `src/**/*.{js,jsx}`; backend — `vitest.config.mjs` |
 

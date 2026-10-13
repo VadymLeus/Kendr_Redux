@@ -130,8 +130,8 @@
   "knip": {
     "frontend": {
       "files": 0,
-      "dependencies": 1,
-      "devDependencies": 1,
+      "dependencies": 0,
+      "devDependencies": 0,
       "exports": 17,
       "duplicates": 2
     },
