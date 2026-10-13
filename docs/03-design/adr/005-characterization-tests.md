@@ -17,7 +17,7 @@
 3. Збереження сторінки та експорт сайту (`page`, `site`, `htmlGenerator`).
 4. Автентифікація (`auth`).
 
-Інструменти: Vitest на обох сторонах, `supertest` для HTTP-тестів backend, тестова MySQL із `db/schema.sql` (окремий сервіс у `docker-compose.yml`). Існуючий Playwright-тест лишається.
+Інструменти: Vitest на обох сторонах, `supertest` для HTTP-тестів backend, тестова MySQL із `db/schema.sql` (окремий сервіс у `docker-compose.yml`), Testing Library й jsdom для компонентів frontend. Вивід експорту сайту порівнюється із золотими файлами (`frontend/tests/golden/`): повний вивід функції на `v0` зберігається в репозиторії, і будь-яка зміна експорту стає видимою. Компоненти блоків у тестах frontend підмінено заглушками, щоб перевіряти вибір компонента за типом блока, а не їхній вигляд. Існуючий Playwright-тест лишається.
 
 Передумова: у `server.js` виклик `app.listen` стоїть у самому модулі без експорту `app`, тому першою (поведінково нейтральною) правкою є виділення створення застосунку в `app.js`.
 
@@ -26,8 +26,10 @@ backend/tests/
 ├── characterization/   orders, auth, sites, pages
 └── helpers/            testDb.js, factories.js
 frontend/tests/
-├── unit/               blockRegistry, pricing, htmlGenerator
-├── integration/
+├── unit/               htmlGenerator, siteExporter, blockUtils, editorConfig, linkUtils
+├── integration/        BlockRenderer, SettingsTab, CartContext, ProductCard, ProductDetailPage, CartPage
+├── helpers/            stubs.jsx, shopStubs.jsx, golden.js, fakeZip.js
+├── fixtures/ golden/   дані й еталонний вивід експорту
 └── e2e/
 ```
 
