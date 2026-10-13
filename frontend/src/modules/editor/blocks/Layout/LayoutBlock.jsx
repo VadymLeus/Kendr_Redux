@@ -1,9 +1,8 @@
 // frontend/src/modules/editor/blocks/Layout/LayoutBlock.jsx
 import React, { useRef, useEffect } from 'react';
 import { useDrop } from 'react-dnd';
-import EditableBlockWrapper from '../../ui/EditableBlockWrapper';
 import { DND_TYPE_NEW_BLOCK } from '../../ui/DraggableBlockItem';
-import BlockRenderer from '../../core/BlockRenderer';
+import { useBlockRenderer, useEditableBlock } from '../../core/blockComponents';
 import { BASE_URL } from '../../../../shared/config';
 import { Plus } from 'lucide-react';
 
@@ -113,6 +112,8 @@ const LayoutBlock = ({
         overlay_color = '#000000',
         overlay_opacity = 0
     } = block.data;
+    const BlockRenderer = useBlockRenderer();
+    const EditableBlockWrapper = useEditableBlock();
     const videoRef = useRef(null);
     const heightClasses = { 
         small: 'min-h-[300px]',

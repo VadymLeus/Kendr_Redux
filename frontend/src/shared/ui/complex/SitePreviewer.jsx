@@ -6,7 +6,8 @@ import FontLoader from '../../../modules/renderer/components/FontLoader';
 import { resolveAccentColor } from '../../utils/themeUtils';
 import CustomSelect from '../elements/CustomSelect';
 import LoadingState from './LoadingState';
-import { getDefaultBlockData } from '../../../modules/editor/core/blockRegistry';
+import { mergeGlobalBlocks } from '../../../modules/editor/core/globalBlocks';
+import { isHeaderType, isFooterType } from '../../../modules/editor/core/globalBlockTypes';
 import { Lock, Layers, Monitor, Smartphone, Star } from 'lucide-react';
 
 const DeviceIframe = ({ children, className, style }) => {
@@ -213,70 +214,7 @@ const SitePreviewer = ({
         return styles;
     }, [simulatedSiteData]);
 
-    const processBlocksWithGlobalData = useCallback((blocksArray) => {
-        if (!Array.isArray(blocksArray)) return [];
-        return blocksArray.map(block => {
-            if (block.type === 'global-header' || block.type === 'header') {
-                let globalData = { ...(block.data || {}) };
-                const rawContent = simulatedSiteData.header_content;
-                if (rawContent) {
-                    try {
-                        const parsed = typeof rawContent === 'string' ? JSON.parse(rawContent) : rawContent;
-                        if (Array.isArray(parsed)) {
-                            const found = parsed.find(b => b.type === 'header' || b.type === 'global-header');
-                            if (found?.data) globalData = { ...globalData, ...found.data };
-                        } else if (typeof parsed === 'object' && parsed !== null) {
-                            if (parsed["0"] && parsed["0"].data) {
-                                globalData = { ...globalData, ...parsed["0"].data };
-                            }
-                            const rootProps = { ...parsed };
-                            delete rootProps["0"]; delete rootProps["type"]; delete rootProps["block_id"];
-                            globalData = { ...globalData, ...rootProps };
-                        }
-                    } catch (e) {
-                        console.error("Header parse error", e);
-                    }
-                }
-                const defaultData = getDefaultBlockData('global-header');
-                if (Object.keys(globalData).length === 0) {
-                    globalData = defaultData;
-                } else {
-                    if (!globalData.nav_items || globalData.nav_items.length === 0) globalData.nav_items = defaultData.nav_items;
-                    if (globalData.site_title === undefined) globalData.site_title = defaultData.site_title;
-                }
-
-                return { ...block, type: 'global-header', data: globalData };
-            }
-            if (block.type === 'global-footer' || block.type === 'footer') {
-                let globalData = { ...(block.data || {}) };
-                const rawContent = simulatedSiteData.footer_content;
-                if (rawContent) {
-                    try {
-                        const parsed = typeof rawContent === 'string' ? JSON.parse(rawContent) : rawContent;
-                        if (Array.isArray(parsed)) {
-                            const found = parsed.find(b => b.type === 'footer' || b.type === 'global-footer');
-                            if (found?.data) globalData = { ...globalData, ...found.data };
-                        } else if (typeof parsed === 'object' && parsed !== null) {
-                            if (parsed["0"] && parsed["0"].data) {
-                                globalData = { ...globalData, ...parsed["0"].data };
-                            }
-                            const rootProps = { ...parsed };
-                            delete rootProps["0"]; delete rootProps["type"]; delete rootProps["block_id"];
-                            globalData = { ...globalData, ...rootProps };
-                        }
-                    } catch (e) {
-                        console.error("Footer parse error", e);
-                    }
-                }
-                const defaultData = getDefaultBlockData('global-footer');
-                if (Object.keys(globalData).length === 0) {
-                    globalData = defaultData;
-                }
-                return { ...block, type: 'global-footer', data: globalData };
-            }
-            return block;
-        });
-    }, [simulatedSiteData]);
+    const processBlocksWithGlobalData = useCallback((blocksArray) => mergeGlobalBlocks(blocksArray, simulatedSiteData), [simulatedSiteData]);
 
     const headerBlocks = useMemo(() => {
         let hData = previewData?.header || simulatedSiteData.header_content;
@@ -301,8 +239,8 @@ const SitePreviewer = ({
         return processBlocksWithGlobalData(activeBlocks);
     }, [previewData?.pages, activePageIndex, currentBlocks, processBlocksWithGlobalData]);
 
-    const hasCanvasHeader = useMemo(() => mainBlocks.some(block => block.type === 'global-header' || block.type === 'header'), [mainBlocks]);
-    const hasCanvasFooter = useMemo(() => mainBlocks.some(block => block.type === 'global-footer' || block.type === 'footer'), [mainBlocks]);
+    const hasCanvasHeader = useMemo(() => mainBlocks.some(block => isHeaderType(block.type)), [mainBlocks]);
+    const hasCanvasFooter = useMemo(() => mainBlocks.some(block => isFooterType(block.type)), [mainBlocks]);
     const previewContent = (
         <div className="flex flex-col min-h-full w-full relative">
             {previewData?.theme && (

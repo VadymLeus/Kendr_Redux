@@ -8,6 +8,7 @@ import 'swiper/css/pagination';
 import { resolveSiteLink } from '../../../../shared/utils/linkUtils';
 import { BASE_URL } from '../../../../shared/config';
 import { Image as ImageIcon } from 'lucide-react';
+import { areBlockPropsEqual } from '../../core/blockProps';
 
 const formatBorderRadius = (radius) => {
     if (!radius) return '0px';
@@ -222,8 +223,4 @@ const ImageBlock = ({ blockData, isEditorPreview, siteData, style }) => {
     );
 };
 
-export default React.memo(ImageBlock, (prev, next) => {
-    return JSON.stringify(prev.blockData) === JSON.stringify(next.blockData) && 
-           prev.isEditorPreview === next.isEditorPreview &&
-           prev.siteData?.id === next.siteData?.id;
-});
+export default React.memo(ImageBlock, areBlockPropsEqual);

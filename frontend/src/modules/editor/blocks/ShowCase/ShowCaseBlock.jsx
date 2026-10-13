@@ -4,6 +4,7 @@ import apiClient from '../../../../shared/api/api';
 import { useBlockFonts } from '../../../../shared/hooks/useBlockFonts';
 import ProductCard from '../../ui/components/ProductCard';
 import { ShoppingBag } from 'lucide-react';
+import { areBlockPropsEqual } from '../../core/blockProps';
 
 const getGridColsClass = (cols) => {
     const safeCols = parseInt(cols, 10) || 4;
@@ -191,8 +192,4 @@ const ShowCaseBlock = ({ blockData, siteData, isEditorPreview }) => {
     );
 };
 
-export default React.memo(ShowCaseBlock, (prev, next) => {
-    return JSON.stringify(prev.blockData) === JSON.stringify(next.blockData) && 
-           prev.isEditorPreview === next.isEditorPreview &&
-           prev.siteData?.id === next.siteData?.id;
-});
+export default React.memo(ShowCaseBlock, areBlockPropsEqual);

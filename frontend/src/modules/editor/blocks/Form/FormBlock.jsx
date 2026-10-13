@@ -4,6 +4,7 @@ import apiClient from '../../../../shared/api/api';
 import { toast } from 'react-toastify';
 import { useBlockFonts } from '../../../../shared/hooks/useBlockFonts';
 import { Send, ArrowRight, ShoppingCart, Mail, Phone, Check, Star, MousePointer2, User, AtSign, Type, MessageSquare } from 'lucide-react';
+import { areBlockPropsEqual } from '../../core/blockProps';
 
 const DEFAULT_BUTTON_CONFIG = {
     text: 'Надіслати',
@@ -270,8 +271,4 @@ const ButtonIcon = ({ name, size, flip }) => {
     return icons[name] || null;
 };
 
-export default React.memo(FormBlock, (prev, next) => {
-    return JSON.stringify(prev.blockData) === JSON.stringify(next.blockData) && 
-           prev.isEditorPreview === next.isEditorPreview &&
-           prev.siteData?.id === next.siteData?.id;
-});
+export default React.memo(FormBlock, areBlockPropsEqual);

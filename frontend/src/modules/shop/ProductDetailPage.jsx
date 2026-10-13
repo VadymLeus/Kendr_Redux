@@ -14,7 +14,8 @@ import FontLoader from '../renderer/components/FontLoader';
 import SiteControls from '../renderer/components/SiteControls';
 import ReportModal from '../../shared/ui/complex/ReportModal';
 import LoadingState from '../../shared/ui/complex/LoadingState';
-import { getDefaultBlockData } from '../editor/core/blockRegistry';
+import { resolveGlobalData } from '../editor/core/globalBlocks';
+import { isHeaderType, isFooterType } from '../editor/core/globalBlockTypes';
 import { resolveAccentColor } from '../../shared/utils/themeUtils';
 import { BASE_URL } from '../../shared/config';
 import { toast } from 'react-toastify';
@@ -75,23 +76,15 @@ const ProductDetailPage = () => {
     } catch (e) {
         console.error("Error parsing blocks:", e);
     }
-    const hasHeader = pageBlocks.some(block => block.type === 'header' || block.type === 'global-header');
-    const hasFooter = pageBlocks.some(block => block.type === 'footer' || block.type === 'global-footer');
+    const hasHeader = pageBlocks.some(block => isHeaderType(block.type));
+    const hasFooter = pageBlocks.some(block => isFooterType(block.type));
     const headerBlocks = useMemo(() => {
         if (!hasHeader) return [];
-        let globalData = typeof siteData?.header_content === 'string' 
-            ? JSON.parse(siteData.header_content || '{}') 
-            : (siteData?.header_content || {});
-        if (Object.keys(globalData).length === 0) globalData = getDefaultBlockData('global-header');
-        return [{ block_id: 'sys-global-header', type: 'global-header', data: globalData }];
+        return [{ block_id: 'sys-global-header', type: 'global-header', data: resolveGlobalData(siteData?.header_content, 'global-header') }];
     }, [siteData?.header_content, hasHeader]);
     const footerBlocks = useMemo(() => {
         if (!hasFooter) return [];
-        let globalData = typeof siteData?.footer_content === 'string' 
-            ? JSON.parse(siteData.footer_content || '{}') 
-            : (siteData?.footer_content || {});
-        if (Object.keys(globalData).length === 0) globalData = getDefaultBlockData('global-footer');
-        return [{ block_id: 'sys-global-footer', type: 'global-footer', data: globalData }];
+        return [{ block_id: 'sys-global-footer', type: 'global-footer', data: resolveGlobalData(siteData?.footer_content, 'global-footer') }];
     }, [siteData?.footer_content, hasFooter]);
     const isSiteDark = siteData?.site_theme_mode === 'dark';
     const siteBg = isSiteDark ? '#1a202c' : '#f7fafc';

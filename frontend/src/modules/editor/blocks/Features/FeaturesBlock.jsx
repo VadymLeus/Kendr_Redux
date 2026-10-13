@@ -2,6 +2,7 @@
 import React from 'react';
 import { useBlockFonts } from '../../../../shared/hooks/useBlockFonts';
 import { Star, Zap, Shield, Truck, Gift, Clock, Phone, Settings, Check, User, Globe, Heart, ShoppingBag, Box, Smile, Award } from 'lucide-react';
+import { areBlockPropsEqual } from '../../core/blockProps';
 
 const ICON_MAP = {
     star: Star, zap: Zap, shield: Shield, truck: Truck, gift: Gift,
@@ -157,8 +158,4 @@ const FeaturesBlock = ({ blockData, siteData, isEditorPreview, style }) => {
     );
 };
 
-export default React.memo(FeaturesBlock, (prev, next) => {
-    return JSON.stringify(prev.blockData) === JSON.stringify(next.blockData) && 
-           prev.isEditorPreview === next.isEditorPreview &&
-           prev.siteData?.id === next.siteData?.id;
-});
+export default React.memo(FeaturesBlock, areBlockPropsEqual);

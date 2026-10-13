@@ -1,6 +1,7 @@
 // frontend/src/modules/editor/blocks/Text/TextBlock.jsx
 import React from 'react';
 import { useBlockFonts } from '../../../../shared/hooks/useBlockFonts';
+import { areBlockPropsEqual } from '../../core/blockProps';
 
 const TextBlock = ({ blockData, siteData, isEditorPreview, style }) => {
     const { 
@@ -91,8 +92,4 @@ const TextBlock = ({ blockData, siteData, isEditorPreview, style }) => {
     );
 };
 
-export default React.memo(TextBlock, (prev, next) => {
-    return JSON.stringify(prev.blockData) === JSON.stringify(next.blockData) && 
-           prev.isEditorPreview === next.isEditorPreview &&
-           prev.siteData?.id === next.siteData?.id;
-});
+export default React.memo(TextBlock, areBlockPropsEqual);

@@ -2,6 +2,7 @@
 import React, { lazy } from 'react';
 import { Image, FileText, MousePointerClick, Star, Grid, ShoppingBag, List, Mail, Video, MapPin, HelpCircle, Share2, Globe } from 'lucide-react';
 import { generateBlockId } from './blockId';
+import { LEGACY_TYPE_ALIASES } from './globalBlockTypes';
 import { escapeHTML, transformLink, renderIcon, parseSrcFromIframe, getGridTemplate, renderButtonHTML, getPaddingStyle } from '../../../shared/utils/exportHtml';
 
 const renderProductGridHtml = (data, isCatalog) => {
@@ -512,11 +513,14 @@ const DEFINITIONS = [
 ];
 
 const BY_TYPE = new Map(DEFINITIONS.map((definition) => [definition.type, definition]));
-const RENDER_ALIASES = new Map([['header', 'global-header']]);
-const SETTINGS_ALIASES = new Map([['header', 'global-header'], ['footer', 'global-footer']]);
-const EXPORT_ALIASES = new Map([['header', 'global-header'], ['footer', 'global-footer']]);
+const ACCEPTED_ALIASES = {
+    render: ['header'],
+    settings: ['header', 'footer'],
+    export: ['header', 'footer']
+};
 
-const find = (type, aliases) => BY_TYPE.get(aliases.get(type) ?? type);
+const resolveType = (type, consumer) => (ACCEPTED_ALIASES[consumer].includes(type) ? LEGACY_TYPE_ALIASES[type] : type);
+const find = (type, consumer) => BY_TYPE.get(resolveType(type, consumer));
 
 export const BLOCK_REGISTRY = DEFINITIONS;
 
@@ -530,14 +534,15 @@ export const BLOCK_LIBRARY = DEFINITIONS.map((definition) => ({
 
 export const getBlockDescriptor = (type) => BY_TYPE.get(type);
 
-export const getBlockComponent = (type) => find(type, RENDER_ALIASES)?.Component;
+export const getBlockComponent = (type) => find(type, 'render')?.Component;
 
-export const getSettingsComponent = (type) => find(type, SETTINGS_ALIASES)?.Settings;
+export const getSettingsComponent = (type) => find(type, 'settings')?.Settings;
 
 export const getBlockHtmlRenderer = (type) => {
-    const descriptor = find(type, EXPORT_ALIASES);
+    const resolved = resolveType(type, 'export');
+    const descriptor = BY_TYPE.get(resolved);
     if (!descriptor) return undefined;
-    if (descriptor.isGlobal && !EXPORT_ALIASES.has(type)) return undefined;
+    if (descriptor.isGlobal && resolved === type) return undefined;
     return descriptor.toHtml;
 };
 

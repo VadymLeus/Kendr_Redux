@@ -1,6 +1,7 @@
 // frontend/src/modules/editor/blocks/SocialIcons/SocialIconsBlock.jsx
 import React from 'react';
 import { Facebook, Instagram, Send, Youtube, Music, Share2 } from 'lucide-react';
+import { areBlockPropsEqual } from '../../core/blockProps';
 
 const IconsMap = {
     facebook: Facebook,
@@ -121,7 +122,4 @@ const SocialIconsBlock = ({ blockData, isEditorPreview, style }) => {
     );
 };
 
-export default React.memo(SocialIconsBlock, (prev, next) => {
-    return JSON.stringify(prev.blockData) === JSON.stringify(next.blockData) && 
-           prev.isEditorPreview === next.isEditorPreview;
-});
+export default React.memo(SocialIconsBlock, areBlockPropsEqual);

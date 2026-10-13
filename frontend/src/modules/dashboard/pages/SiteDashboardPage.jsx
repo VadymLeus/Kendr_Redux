@@ -18,6 +18,8 @@ import { Button } from '../../../shared/ui/elements/Button';
 import useHistory from '../../../shared/hooks/useHistory';
 import { generateBlockId } from '../../editor/core/editorConfig';
 import { getDefaultBlockData } from '../../editor/core/blockRegistry';
+import { normalizeGlobalBlocks } from '../../editor/core/globalBlocks';
+import { isHeaderType, isFooterType } from '../../editor/core/globalBlockTypes';
 import { updateBlockDataByPath, removeBlockByPath, addBlockByPath, moveBlock, handleDrop } from '../../editor/core/blockUtils';
 import PagesManagerModal from '../features/settings/PagesManagerModal';
 import { resolveAccentColor } from '../../../shared/utils/themeUtils';
@@ -415,19 +417,7 @@ const SiteDashboardPage = () => {
             if (typeof content === 'string') {
                 try { content = JSON.parse(content); } catch (e) { content = []; }
             }
-            content = content.map(block => {
-                if (block.type === 'global-header' || block.type === 'header') {
-                    let globalData = typeof siteData.header_content === 'string' ? JSON.parse(siteData.header_content || '{}') : (siteData.header_content || {});
-                    if (Object.keys(globalData).length === 0) globalData = getDefaultBlockData('global-header');
-                    return { ...block, type: 'global-header', data: globalData };
-                }
-                if (block.type === 'global-footer' || block.type === 'footer') {
-                    let globalData = typeof siteData.footer_content === 'string' ? JSON.parse(siteData.footer_content || '{}') : (siteData.footer_content || {});
-                    if (Object.keys(globalData).length === 0) globalData = getDefaultBlockData('global-footer');
-                    return { ...block, type: 'global-footer', data: globalData };
-                }
-                return block;
-            });
+            content = normalizeGlobalBlocks(content, siteData);
             const serverBlocksStr = JSON.stringify(content);
             setSavedBlocksStr(serverBlocksStr); 
             const draftKey = `draft_${siteData.id}_${pageId}`;
@@ -542,11 +532,11 @@ const SiteDashboardPage = () => {
             let updatedHeaderData = null;
             let updatedFooterData = null;
             const blocksToSave = blocksToProcess.map(block => {
-                if (block.type === 'global-header' || block.type === 'header') {
+                if (isHeaderType(block.type)) {
                     updatedHeaderData = block.data;
                     return { ...block, data: {} };
                 }
-                if (block.type === 'global-footer' || block.type === 'footer') {
+                if (isFooterType(block.type)) {
                     updatedFooterData = block.data;
                     return { ...block, data: {} };
                 }

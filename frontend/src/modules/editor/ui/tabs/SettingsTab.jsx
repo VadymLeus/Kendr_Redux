@@ -2,6 +2,7 @@
 import React, { Suspense, useState, useEffect } from 'react';
 import { findBlockByPath } from '../../core/blockUtils';
 import { getSettingsComponent } from '../../core/blockRegistry';
+import { isGlobalType } from '../../core/globalBlockTypes';
 import AdvancedSettingsTab from './AdvancedSettingsTab';
 import { Settings, FileText, MousePointerClick, AlertCircle, SlidersHorizontal, Loader2 } from 'lucide-react';
 
@@ -10,7 +11,7 @@ const SettingsTab = ({ blocks, selectedBlockPath, onUpdateBlockData, siteData })
     const selectedBlock = selectedBlockPath 
         ? findBlockByPath(blocks, selectedBlockPath) 
         : null;
-    const isGlobalBlock = selectedBlock?.type.startsWith('global-') || selectedBlock?.type === 'header' || selectedBlock?.type === 'footer';
+    const isGlobalBlock = isGlobalType(selectedBlock?.type);
     useEffect(() => {
         if (isGlobalBlock && activeTab === 'advanced') {
             setActiveTab('content');

@@ -4,6 +4,7 @@ import { resolveSiteLink } from '../../../../shared/utils/linkUtils';
 import { useBlockFonts } from '../../../../shared/hooks/useBlockFonts';
 import { BASE_URL } from '../../../../shared/config';
 import { ArrowRight, ShoppingCart, Mail, Phone, Check, Star, MousePointer2, Download, FileText } from 'lucide-react';
+import { areBlockPropsEqual } from '../../core/blockProps';
 
 const ButtonIcon = ({ name, size, flip }) => {
     if (!name || name === 'none') return null;
@@ -143,8 +144,4 @@ const ButtonBlock = ({ blockData, siteData, isEditorPreview, style }) => {
     );
 };
 
-export default React.memo(ButtonBlock, (prev, next) => {
-    return JSON.stringify(prev.blockData) === JSON.stringify(next.blockData) && 
-           prev.isEditorPreview === next.isEditorPreview &&
-           prev.siteData?.id === next.siteData?.id;
-});
+export default React.memo(ButtonBlock, areBlockPropsEqual);

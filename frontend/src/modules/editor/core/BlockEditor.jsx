@@ -6,6 +6,7 @@ import { DND_TYPE_NEW_BLOCK } from '../ui/DraggableBlockItem';
 import { DND_TYPE_EXISTING } from './useBlockDrop';
 import ContextMenu from '../ui/ContextMenu';
 import { findBlockByPath } from './blockUtils';
+import { isHeaderType } from './globalBlockTypes';
 import { useConfirm } from '../../../shared/hooks/useConfirm';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PackageOpen, ArrowDownToLine, Layers } from 'lucide-react';
@@ -175,7 +176,7 @@ const BlockEditor = ({
                         ) : (
                             <AnimatePresence initial={false}>
                                 {blocks.map((block, index) => {
-                                    const isHeader = block.type === 'global-header' || block.type === 'header';
+                                    const isHeader = isHeaderType(block.type);
                                     const isSticky = isHeader && block.data?.is_sticky && viewMode !== 'editor';
                                     return (
                                         <motion.div 

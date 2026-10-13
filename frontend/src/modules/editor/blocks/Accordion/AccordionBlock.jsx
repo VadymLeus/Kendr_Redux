@@ -3,6 +3,7 @@ import React from 'react';
 import AccordionItem from './AccordionItem';
 import { useBlockFonts } from '../../../../shared/hooks/useBlockFonts';
 import { HelpCircle } from 'lucide-react';
+import { areBlockPropsEqual } from '../../core/blockProps';
 
 const AccordionBlock = ({ blockData, siteData, isEditorPreview, style }) => {
     const { 
@@ -77,8 +78,4 @@ const AccordionBlock = ({ blockData, siteData, isEditorPreview, style }) => {
     );
 };
 
-export default React.memo(AccordionBlock, (prev, next) => {
-    return JSON.stringify(prev.blockData) === JSON.stringify(next.blockData) && 
-           prev.isEditorPreview === next.isEditorPreview &&
-           prev.siteData?.id === next.siteData?.id;
-});
+export default React.memo(AccordionBlock, areBlockPropsEqual);

@@ -2,6 +2,7 @@
 import React, { useRef, useEffect } from 'react';
 import { BASE_URL } from '../../../../shared/config';
 import { Video as VideoIcon } from 'lucide-react';
+import { areBlockPropsEqual } from '../../core/blockProps';
 
 const getYoutubeVideoId = (url) => {
     if (!url || typeof url !== 'string') return null;
@@ -156,7 +157,4 @@ const VideoBlock = ({ blockData, isEditorPreview, style }) => {
     );
 };
 
-export default React.memo(VideoBlock, (prev, next) => {
-    return JSON.stringify(prev.blockData) === JSON.stringify(next.blockData) && 
-           prev.isEditorPreview === next.isEditorPreview;
-});
+export default React.memo(VideoBlock, areBlockPropsEqual);

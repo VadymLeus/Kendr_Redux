@@ -13,7 +13,8 @@ import FontLoader from '../components/FontLoader';
 import SiteControls from '../components/SiteControls';
 import ReportModal from '../../../shared/ui/complex/ReportModal';
 import { BASE_URL } from '../../../shared/config';
-import { getDefaultBlockData } from '../../editor/core/blockRegistry';
+import { normalizeGlobalBlocks } from '../../editor/core/globalBlocks';
+import { isHeaderType } from '../../editor/core/globalBlockTypes';
 import { resolveAccentColor } from '../../../shared/utils/themeUtils';
 import { Loader2, Layers } from 'lucide-react';
 
@@ -108,28 +109,12 @@ const SiteDisplayPage = () => {
         let parsedBlocks = Array.isArray(siteData.page.block_content)
             ? siteData.page.block_content
             : JSON.parse(siteData.page.block_content || '[]');
-        pageBlocks = parsedBlocks.map(block => {
-            if (block.type === 'global-header' || block.type === 'header') {
-                let globalData = typeof siteData.header_content === 'string' 
-                    ? JSON.parse(siteData.header_content || '{}') 
-                    : (siteData.header_content || {});
-                if (Object.keys(globalData).length === 0) globalData = getDefaultBlockData('global-header');
-                return { ...block, type: 'global-header', data: globalData };
-            }
-            if (block.type === 'global-footer' || block.type === 'footer') {
-                let globalData = typeof siteData.footer_content === 'string' 
-                    ? JSON.parse(siteData.footer_content || '{}') 
-                    : (siteData.footer_content || {});
-                if (Object.keys(globalData).length === 0) globalData = getDefaultBlockData('global-footer');
-                return { ...block, type: 'global-footer', data: globalData };
-            }
-            return block;
-        });
+        pageBlocks = normalizeGlobalBlocks(parsedBlocks, siteData);
     } catch (e) {
         console.error("Error parsing blocks:", e);
     }
 
-    const hasHeader = pageBlocks.some(block => block.type === 'header' || block.type === 'global-header');
+    const hasHeader = pageBlocks.some(block => isHeaderType(block.type));
     const layoutStyle = {
         display: 'flex', flexDirection: 'column', minHeight: '100dvh',
         width: '100%', margin: 0, padding: 0,

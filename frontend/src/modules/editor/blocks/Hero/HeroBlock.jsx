@@ -3,6 +3,7 @@ import React, { useRef, useEffect } from 'react';
 import { useBlockFonts } from '../../../../shared/hooks/useBlockFonts';
 import ButtonBlock from '../Button/ButtonBlock'; 
 import { BASE_URL } from '../../../../shared/config';
+import { areBlockPropsEqual } from '../../core/blockProps';
 
 const HeroBlock = ({ blockData = {}, siteData, isEditorPreview, style }) => {
     const { 
@@ -191,8 +192,4 @@ const HeroBlock = ({ blockData = {}, siteData, isEditorPreview, style }) => {
     );
 };
 
-export default React.memo(HeroBlock, (prev, next) => {
-    return JSON.stringify(prev.blockData) === JSON.stringify(next.blockData) && 
-           prev.isEditorPreview === next.isEditorPreview &&
-           prev.siteData?.id === next.siteData?.id;
-});
+export default React.memo(HeroBlock, areBlockPropsEqual);

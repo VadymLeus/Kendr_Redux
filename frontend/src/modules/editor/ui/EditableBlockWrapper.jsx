@@ -8,6 +8,8 @@ import { toast } from 'react-toastify';
 import { useConfirm } from '../../../shared/hooks/useConfirm';
 import { useBlockDrop, DND_TYPE_EXISTING } from '../core/useBlockDrop';
 import { BLOCK_LIBRARY } from '../core/blockRegistry';
+import { EditableBlockContext } from '../core/blockComponents';
+import { isHeaderType } from '../core/globalBlockTypes';
 import { Settings, Trash2, Save, GripVertical, ChevronDown, ChevronUp, HelpCircle } from 'lucide-react';
 
 const EditableBlockWrapper = ({ 
@@ -33,7 +35,7 @@ const EditableBlockWrapper = ({
     const { confirm } = useConfirm();
     const isEditorMode = viewMode === 'editor';
     const isGlobal = block.type.startsWith('global-');
-    const isHeader = block.type === 'global-header' || block.type === 'header';
+    const isHeader = isHeaderType(block.type);
     const isSticky = isHeader && block.data?.is_sticky && !isEditorMode;
     const [{ isDragging }, drag, preview] = useDrag({
         type: DND_TYPE_EXISTING,
@@ -216,7 +218,9 @@ const EditableBlockWrapper = ({
                             <div className="p-6 text-center bg-(--platform-bg) text-(--platform-text-secondary)"><small>Вміст блоку згорнуто</small></div>
                         ) : (
                             <div className="site-theme-context" data-site-mode={siteData?.site_theme_mode || 'light'} data-site-accent={siteData?.site_theme_accent || 'orange'} style={{ background: block.type === 'layout' ? 'transparent' : 'var(--site-bg)', color: 'var(--platform-text-primary)' }}>
-                                <BlockRenderer blocks={[block]} siteData={siteData} isEditorPreview={true} path={path} onMoveBlock={onMoveBlock} onDropBlock={onDropBlock} onDeleteBlock={onDeleteBlock} onAddBlock={onAddBlock} onSelectBlock={onSelectBlock} selectedBlockPath={selectedBlockPath} viewMode={viewMode} />
+                                <EditableBlockContext.Provider value={MemoizedEditableBlockWrapper}>
+                                    <BlockRenderer blocks={[block]} siteData={siteData} isEditorPreview={true} path={path} onMoveBlock={onMoveBlock} onDropBlock={onDropBlock} onDeleteBlock={onDeleteBlock} onAddBlock={onAddBlock} onSelectBlock={onSelectBlock} selectedBlockPath={selectedBlockPath} viewMode={viewMode} />
+                                </EditableBlockContext.Provider>
                             </div>
                         )}
                     </div>
@@ -243,4 +247,6 @@ function arePropsEqual(prev, next) {
     return true;
 }
 
-export default React.memo(EditableBlockWrapper, arePropsEqual);
+const MemoizedEditableBlockWrapper = React.memo(EditableBlockWrapper, arePropsEqual);
+
+export default MemoizedEditableBlockWrapper;

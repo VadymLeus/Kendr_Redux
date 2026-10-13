@@ -3,6 +3,7 @@ import React, { useId } from 'react';
 import { useBlockFonts } from '../../../../shared/hooks/useBlockFonts';
 import { BASE_URL } from '../../../../shared/config';
 import { Facebook, Instagram, Send, Youtube, Music, Twitter, Linkedin, Github } from 'lucide-react';
+import { areBlockPropsEqual } from '../../core/blockProps';
 
 const IconsMap = {
     facebook: Facebook,
@@ -145,8 +146,4 @@ const FooterBlock = ({ blockData, siteData, isEditorPreview, style }) => {
     );
 };
 
-export default React.memo(FooterBlock, (prev, next) => {
-    return JSON.stringify(prev.blockData) === JSON.stringify(next.blockData) && 
-           prev.isEditorPreview === next.isEditorPreview &&
-           prev.siteData?.id === next.siteData?.id;
-});
+export default React.memo(FooterBlock, areBlockPropsEqual);
