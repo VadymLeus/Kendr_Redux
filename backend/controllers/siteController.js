@@ -1,6 +1,6 @@
 // backend/controllers/siteController.js
 const Site = require('../models/Site');
-const Page = require('../models/Page');
+const PageRepository = require('../repositories/PageRepository');
 const db = require('../config/db');
 const fs = require('fs').promises;
 const path = require('path');
@@ -281,8 +281,8 @@ exports.getSiteByPath = async (req, res, next) => {
             if (!isOwner && !isStaff && !isCollaborator) return res.status(200).json(null);
         }
         let page;
-        if (slug) page = await Page.findBySiteIdAndSlug(site.id, slug);
-        else page = await Page.findHomepageBySiteId(site.id);
+        if (slug) page = await PageRepository.findBySiteIdAndSlug(site.id, slug);
+        else page = await PageRepository.findHomepageBySiteId(site.id);
         if (!page) return res.status(200).json(null);
         const [tags] = await db.query(`SELECT t.id, t.name FROM tags t JOIN site_tags st ON t.id = st.tag_id WHERE st.site_id = ?`, [site.id]);
         if (site.liqpay_private_key) {

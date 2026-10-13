@@ -1,0 +1,237 @@
+// backend/tests/unit/PageService.test.js
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+const PageService = require('../../services/PageService');
+const PageRepository = require('../../repositories/PageRepository');
+const Site = require('../../models/Site');
+const { ServiceError } = require('../../services/ServiceError');
+
+const ACCESS = { user_id: 1, is_homepage: 0, site_id: 3 };
+
+async function failure(fn) {
+  try {
+    await fn();
+  } catch (error) {
+    expect(error).toBeInstanceOf(ServiceError);
+    return error;
+  }
+  throw new Error('Очікувалася ServiceError');
+}
+
+let repo;
+let site;
+
+beforeEach(() => {
+  repo = {
+    findAccessible: vi.spyOn(PageRepository, 'findAccessible').mockResolvedValue(ACCESS),
+    findById: vi.spyOn(PageRepository, 'findById').mockResolvedValue({ id: 5, block_content: [] }),
+    findBySiteId: vi.spyOn(PageRepository, 'findBySiteId').mockResolvedValue([{ id: 5 }]),
+    create: vi.spyOn(PageRepository, 'create').mockResolvedValue({ id: 9 }),
+    updateContent: vi.spyOn(PageRepository, 'updateContent').mockResolvedValue({}),
+    updateSettings: vi.spyOn(PageRepository, 'updateSettings').mockResolvedValue({}),
+    delete: vi.spyOn(PageRepository, 'delete').mockResolvedValue({}),
+    countBySiteId: vi.spyOn(PageRepository, 'countBySiteId').mockResolvedValue(3),
+    setHomepage: vi.spyOn(PageRepository, 'setHomepage').mockResolvedValue(true),
+  };
+  site = vi.spyOn(Site, 'findByIdAndUserId').mockResolvedValue({ id: 3 });
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe('getAccessible', () => {
+  it('повертає рядок доступу', async () => {
+    expect(await PageService.getAccessible(5, 11, 'нема')).toBe(ACCESS);
+    expect(repo.findAccessible).toHaveBeenCalledWith(5, 11);
+  });
+
+  it('403 із переданим повідомленням', async () => {
+    repo.findAccessible.mockResolvedValue(null);
+    const error = await failure(() => PageService.getAccessible(5, 11, 'нема'));
+    expect(error.status).toBe(403);
+    expect(error.message).toBe('нема');
+  });
+});
+
+describe('listForSite', () => {
+  it('403 «Доступ заборонено.», якщо немає доступу до сайту', async () => {
+    site.mockResolvedValue(null);
+    const error = await failure(() => PageService.listForSite(3, 11));
+    expect(error.status).toBe(403);
+    expect(error.message).toBe('Доступ заборонено.');
+    expect(repo.findBySiteId).not.toHaveBeenCalled();
+  });
+
+  it('повертає сторінки сайту', async () => {
+    expect(await PageService.listForSite(3, 11)).toEqual([{ id: 5 }]);
+    expect(site).toHaveBeenCalledWith(3, 11);
+    expect(repo.findBySiteId).toHaveBeenCalledWith(3);
+  });
+});
+
+describe('create', () => {
+  it.each([
+    [{}], [{ name: 'Про нас' }], [{ slug: 'about' }], [{ name: '', slug: 'about' }],
+  ])('тіло %j → 400 до перевірки сайту', async (body) => {
+    const error = await failure(() => PageService.create(3, 11, body));
+    expect(error.status).toBe(400);
+    expect(error.message).toBe('Назва (name) та шлях (slug) є обов\'язковими.');
+    expect(site).not.toHaveBeenCalled();
+  });
+
+  it('403, якщо немає доступу до сайту', async () => {
+    site.mockResolvedValue(null);
+    const error = await failure(() => PageService.create(3, 11, { name: 'Про нас', slug: 'about' }));
+    expect(error.status).toBe(403);
+    expect(error.message).toBe('Доступ заборонено.');
+    expect(repo.create).not.toHaveBeenCalled();
+  });
+
+  it('створює порожню неголовну сторінку', async () => {
+    const result = await PageService.create('3', 11, { name: 'Про нас', slug: 'about' });
+    expect(result).toEqual({ id: 9 });
+    expect(repo.create).toHaveBeenCalledWith({
+      site_id: '3', name: 'Про нас', slug: 'about', block_content: [], is_homepage: 0,
+    });
+  });
+
+  it('дубль slug → 400 з окремим повідомленням', async () => {
+    repo.create.mockImplementation(async () => { throw Object.assign(new Error('dup'), { code: 'ER_DUP_ENTRY' }); });
+    const error = await failure(() => PageService.create(3, 11, { name: 'Про нас', slug: 'about' }));
+    expect(error.status).toBe(400);
+    expect(error.message).toBe('Сторінка з таким slug вже існує на цьому сайті.');
+  });
+
+  it('інша помилка репозиторію передається без змін', async () => {
+    const boom = new Error('db down');
+    repo.create.mockImplementation(async () => { throw boom; });
+    await expect(PageService.create(3, 11, { name: 'Про нас', slug: 'about' })).rejects.toBe(boom);
+  });
+});
+
+describe('getById', () => {
+  it('403 з текстом про редагування, якщо доступу немає', async () => {
+    repo.findAccessible.mockResolvedValue(null);
+    const error = await failure(() => PageService.getById(5, 11));
+    expect(error.status).toBe(403);
+    expect(error.message).toBe('У вас немає прав на редагування цієї сторінки.');
+    expect(repo.findById).not.toHaveBeenCalled();
+  });
+
+  it('404, якщо сторінка зникла між перевіркою доступу й читанням', async () => {
+    repo.findById.mockResolvedValue(undefined);
+    const error = await failure(() => PageService.getById(5, 11));
+    expect(error.status).toBe(404);
+    expect(error.message).toBe('Сторінку не знайдено.');
+  });
+
+  it('повертає сторінку', async () => {
+    expect(await PageService.getById(5, 11)).toEqual({ id: 5, block_content: [] });
+  });
+});
+
+describe('updateContent', () => {
+  it('403 з текстом про редагування', async () => {
+    repo.findAccessible.mockResolvedValue(null);
+    const error = await failure(() => PageService.updateContent(5, 11, [{ type: 'text' }]));
+    expect(error.status).toBe(403);
+    expect(error.message).toBe('У вас немає прав на редагування цієї сторінки.');
+    expect(repo.updateContent).not.toHaveBeenCalled();
+  });
+
+  it('зберігає передані блоки без перевірки', async () => {
+    const blocks = [{ type: 'text', data: {} }];
+    await PageService.updateContent(5, 11, blocks);
+    expect(repo.updateContent).toHaveBeenCalledWith(5, blocks);
+  });
+
+  it.each([[undefined], [null], [0], ['']])('D-BLK-05: відсутній вміст %j замінюється на [] і стирає сторінку', async (value) => {
+    await PageService.updateContent(5, 11, value);
+    expect(repo.updateContent).toHaveBeenCalledWith(5, []);
+  });
+});
+
+describe('updateSettings', () => {
+  const body = { name: 'Нова', slug: 'new', seo_title: 't', seo_description: 'd', seo_keywords: 'k' };
+
+  it.each([[{}], [{ name: 'Нова' }], [{ slug: 'new' }]])('тіло %j → 400 до перевірки доступу', async (input) => {
+    const error = await failure(() => PageService.updateSettings(5, 11, input));
+    expect(error.status).toBe(400);
+    expect(repo.findAccessible).not.toHaveBeenCalled();
+  });
+
+  it('403 «Доступ заборонено.»', async () => {
+    repo.findAccessible.mockResolvedValue(null);
+    const error = await failure(() => PageService.updateSettings(5, 11, body));
+    expect(error.status).toBe(403);
+    expect(error.message).toBe('Доступ заборонено.');
+    expect(repo.updateSettings).not.toHaveBeenCalled();
+  });
+
+  it('передає в репозиторій лише п\'ять полів налаштувань', async () => {
+    await PageService.updateSettings(5, 11, { ...body, is_homepage: 1, site_id: 99 });
+    expect(repo.updateSettings).toHaveBeenCalledWith(5, body);
+  });
+
+  it('дубль slug → 400, інша помилка передається без змін', async () => {
+    repo.updateSettings.mockImplementation(async () => { throw Object.assign(new Error('dup'), { code: 'ER_DUP_ENTRY' }); });
+    const error = await failure(() => PageService.updateSettings(5, 11, body));
+    expect(error.status).toBe(400);
+    expect(error.message).toBe('Сторінка з таким slug вже існує на цьому сайті.');
+
+    const boom = new Error('db down');
+    repo.updateSettings.mockImplementation(async () => { throw boom; });
+    await expect(PageService.updateSettings(5, 11, body)).rejects.toBe(boom);
+  });
+});
+
+describe('remove', () => {
+  it('403 «Доступ заборонено.»', async () => {
+    repo.findAccessible.mockResolvedValue(null);
+    const error = await failure(() => PageService.remove(5, 11));
+    expect(error.status).toBe(403);
+    expect(error.message).toBe('Доступ заборонено.');
+    expect(repo.delete).not.toHaveBeenCalled();
+  });
+
+  it('головну сторінку видалити не можна, кількість сторінок навіть не читається', async () => {
+    repo.findAccessible.mockResolvedValue({ ...ACCESS, is_homepage: 1 });
+    const error = await failure(() => PageService.remove(5, 11));
+    expect(error.status).toBe(400);
+    expect(error.message).toBe('Неможливо видалити головну сторінку.');
+    expect(repo.countBySiteId).not.toHaveBeenCalled();
+    expect(repo.delete).not.toHaveBeenCalled();
+  });
+
+  it.each([[0], [1]])('якщо на сайті %i сторінка — 400 «останню сторінку»', async (count) => {
+    repo.countBySiteId.mockResolvedValue(count);
+    const error = await failure(() => PageService.remove(5, 11));
+    expect(error.status).toBe(400);
+    expect(error.message).toBe('Неможливо видалити останню сторінку сайту.');
+    expect(repo.delete).not.toHaveBeenCalled();
+  });
+
+  it('при двох і більше сторінках видаляє, лічильник береться за site_id зі сторінки', async () => {
+    repo.countBySiteId.mockResolvedValue(2);
+    await PageService.remove(5, 11);
+    expect(repo.countBySiteId).toHaveBeenCalledWith(3);
+    expect(repo.delete).toHaveBeenCalledWith(5);
+  });
+});
+
+describe('setHomepage', () => {
+  it('403 «Доступ заборонено.»', async () => {
+    repo.findAccessible.mockResolvedValue(null);
+    const error = await failure(() => PageService.setHomepage(5, 11));
+    expect(error.status).toBe(403);
+    expect(repo.setHomepage).not.toHaveBeenCalled();
+  });
+
+  it('призначає головною сторінку у сайті, до якого вона належить', async () => {
+    await PageService.setHomepage(5, 11);
+    expect(repo.setHomepage).toHaveBeenCalledWith(3, 5);
+  });
+});

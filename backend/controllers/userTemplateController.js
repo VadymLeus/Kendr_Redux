@@ -1,6 +1,6 @@
 // backend/controllers/userTemplateController.js
 const Site = require('../models/Site');
-const Page = require('../models/Page');
+const PageRepository = require('../repositories/PageRepository');
 const db = require('../config/db');
 
 exports.saveAsTemplate = async (req, res, next) => {
@@ -17,9 +17,9 @@ exports.saveAsTemplate = async (req, res, next) => {
         }
         const siteDetails = await Site.findByPath(site.site_path);
         if (!siteDetails) return res.status(404).json({ message: 'Деталі сайту не знайдено.' });
-        const pages = await Page.findBySiteId(siteId);
+        const pages = await PageRepository.findBySiteId(siteId);
         const pagesWithContent = await Promise.all(pages.map(async (p) => {
-            const pageData = await Page.findById(p.id);
+            const pageData = await PageRepository.findById(p.id);
             if (!pageData) return null;
             return {
                 title: pageData.name,
@@ -127,9 +127,9 @@ exports.updateTemplate = async (req, res, next) => {
         if (!site) return res.status(403).json({ message: 'Сайт для оновлення шаблону не знайдено.' });
         const siteDetails = await Site.findByPath(site.site_path);
         if (!siteDetails) return res.status(404).json({ message: 'Деталі сайту не знайдено.' });
-        const pages = await Page.findBySiteId(siteId);
+        const pages = await PageRepository.findBySiteId(siteId);
         const pagesWithContent = await Promise.all(pages.map(async (p) => {
-            const pageData = await Page.findById(p.id);
+            const pageData = await PageRepository.findById(p.id);
             if (!pageData) return null;
             return {
                 title: pageData.name,

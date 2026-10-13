@@ -1,7 +1,7 @@
-// backend/models/Page.js
+// backend/repositories/PageRepository.js
 const db = require('../config/db');
 
-class Page {
+class PageRepository {
     static async create(pageData) {
         const { site_id, name, slug, block_content, is_homepage = 0 } = pageData;
         const [result] = await db.query(
@@ -71,9 +71,7 @@ class Page {
     }
 
     static async setHomepage(siteId, pageId) {
-        const connection = await db.getConnection();
-        try {
-            await connection.beginTransaction();
+        await db.withTransaction(async (connection) => {
             await connection.query(
                 'UPDATE pages SET is_homepage = 0 WHERE site_id = ?',
                 [siteId]
@@ -82,15 +80,25 @@ class Page {
                 'UPDATE pages SET is_homepage = 1 WHERE id = ? AND site_id = ?',
                 [pageId, siteId]
             );
-            await connection.commit();
-            return true;
-        } catch (error) {
-            await connection.rollback();
-            throw error;
-        } finally {
-            connection.release();
-        }
+        });
+        return true;
+    }
+
+    static async findAccessible(pageId, userId) {
+        const [rows] = await db.query(`
+            SELECT s.user_id, p.is_homepage, p.site_id 
+            FROM sites s 
+            JOIN pages p ON s.id = p.site_id 
+            LEFT JOIN site_collaborators sc ON s.id = sc.site_id
+            WHERE p.id = ? AND (s.user_id = ? OR sc.user_id = ?)
+        `, [pageId, userId, userId]);
+        return rows[0] || null;
+    }
+
+    static async countBySiteId(siteId) {
+        const [rows] = await db.query('SELECT COUNT(id) as count FROM pages WHERE site_id = ?', [siteId]);
+        return rows[0].count;
     }
 }
 
-module.exports = Page;
+module.exports = PageRepository;
