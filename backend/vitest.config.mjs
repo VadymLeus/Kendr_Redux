@@ -17,7 +17,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text-summary', 'json-summary'],
-      include: ['app.js', 'config/**', 'controllers/**', 'middleware/**', 'models/**', 'routes/**', 'utils/**'],
+      include: ['app.js', 'config/**', 'controllers/**', 'middleware/**', 'models/**', 'repositories/**', 'routes/**', 'services/**', 'utils/**'],
     },
   },
 });

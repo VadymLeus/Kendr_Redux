@@ -1,0 +1,8 @@
+Unresolved: 7
+frontend/src/modules/editor/ui/modals/BlockSettingsModal.jsx > ./settings/BannerSettings
+frontend/src/modules/editor/ui/modals/BlockSettingsModal.jsx > ./settings/CategoriesSettings
+frontend/src/modules/editor/ui/modals/BlockSettingsModal.jsx > ./features/editor/settings/FeaturesSettings
+frontend/src/modules/editor/ui/modals/BlockSettingsModal.jsx > ./features/editor/settings/CatalogSettings
+frontend/src/modules/editor/ui/modals/BlockSettingsModal.jsx > ./features/editor/settings/TextSettings
+frontend/src/modules/editor/ui/modals/BlockSettingsModal.jsx > ./features/editor/settings/HeroSettings
+frontend/src/modules/editor/ui/modals/BlockSettingsModal.jsx > ./common/AnimationSettings

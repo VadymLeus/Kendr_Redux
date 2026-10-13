@@ -1,6 +1,7 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "entry": ["server.js"],
-  "project": ["**/*.js"],
-  "ignore": ["uploads/**"]
+  "project": ["**/*.js", "!tests/**", "!coverage/**"],
+  "ignore": ["uploads/**"],
+  "vitest": false
 }

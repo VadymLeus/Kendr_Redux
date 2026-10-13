@@ -2,7 +2,7 @@
 // Поріг 0 змушує ESLint повідомити про кожну функцію; у повідомленні є її складність.
 // Запуск: див. tools/measure.mjs
 const common = {
-  ignores: ['**/node_modules/**', '**/dist/**', '**/coverage/**', '**/uploads/**'],
+  ignores: ['**/node_modules/**', '**/dist/**', '**/coverage/**', '**/uploads/**', 'backend/tests/**', 'backend/*.config.mjs'],
 };
 
 export default [

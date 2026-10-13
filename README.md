@@ -77,7 +77,7 @@ Kendr_Redux/
 ├── backend/        Express.js API (controllers, models, routes, middleware, utils)
 ├── frontend/       React-клієнт (Vite, Tailwind CSS)
 ├── db/             Схема БД та тестові дані
-├── tools/          Скрипти замірів (api_catalog.py: каталог API і SQL у контролерах)
+├── tools/          Скрипти замірів метрик (measure.mjs, summarize.mjs, api_catalog.py), див. tools/README.md
 ├── docs/
 │   ├── 01-reverse-engineering/   діаграми «як задумано» (as-designed) і «як є» (as-built),
 │   │                             каталог API, звірка диплома з кодом (gap-analysis)

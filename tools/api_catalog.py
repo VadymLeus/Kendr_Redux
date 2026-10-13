@@ -18,6 +18,9 @@ from pathlib import Path
 METHODS = ("get", "post", "put", "delete", "patch")
 SQL_CALL = re.compile(r"\b(?:db|pool|connection|conn)\.(?:query|execute)\(")
 MODEL_REQUIRE = re.compile(r"require\(\s*['\"]\.\./models/")
+SERVICE_REQUIRE = re.compile(r"require\(\s*['\"]\.\./services/")
+SQL_ANY = re.compile(r"\.(?:query|execute)\(")
+LAYERS = ("controllers", "services", "repositories", "models", "middleware", "utils", "config")
 
 
 def strip_comments(src):
@@ -103,6 +106,11 @@ def mw_names(arg):
             if not m.group(0).startswith(("function", "async", "req", "res", "next"))]
 
 
+def mount_file(be):
+    app_js = be / "app.js"
+    return app_js if app_js.exists() else be / "server.js"
+
+
 def parse_server(server_js):
     src = strip_comments(server_js.read_text(encoding="utf-8"))
     requires = {m.group(1): m.group(2) for m in
@@ -161,11 +169,22 @@ def parse_controllers(ctrl_dir):
     for f in sorted(ctrl_dir.glob("*.js")):
         src = strip_comments(f.read_text(encoding="utf-8"))
         rows.append({"controller": f.stem, "sql": len(SQL_CALL.findall(src)),
-                     "model": bool(MODEL_REQUIRE.search(src))})
+                     "model": bool(MODEL_REQUIRE.search(src)),
+                     "service": bool(SERVICE_REQUIRE.search(src))})
     return rows
 
 
-def summary(eps, ctrls):
+def layer_stats(be):
+    sql, files = {}, {}
+    for layer in LAYERS:
+        d = be / layer
+        found = sorted(d.glob("*.js")) if d.exists() else []
+        files[layer] = len(found)
+        sql[layer] = sum(len(SQL_ANY.findall(strip_comments(f.read_text(encoding="utf-8")))) for f in found)
+    return files, sql
+
+
+def summary(eps, ctrls, layers=None):
     acc = {k: sum(1 for e in eps if e["access"] == k) for k in ACCESS_LABEL}
     files = sorted({e["file"] for e in eps})
     with_sql = [c for c in ctrls if c["sql"] > 0]
@@ -177,6 +196,9 @@ def summary(eps, ctrls):
         "controllers": len(ctrls), "controllers_with_sql": len(with_sql),
         "sql_calls": sum(c["sql"] for c in ctrls),
         "controllers_without_model": [c["controller"] for c in ctrls if not c["model"]],
+        "controllers_using_services": sum(1 for c in ctrls if c["service"]),
+        "layer_files": layers[0] if layers else {},
+        "layer_sql_calls": layers[1] if layers else {},
     }
 
 
@@ -231,10 +253,10 @@ def main():
     ap.add_argument("--json", action="store_true", help="вивести лише підсумкові числа у JSON")
     a = ap.parse_args()
     be = Path(a.root) / "backend"
-    mounts = parse_server(be / "server.js")
+    mounts = parse_server(mount_file(be))
     eps = parse_routes(be / "routes", mounts)
     ctrls = parse_controllers(be / "controllers")
-    s = summary(eps, ctrls)
+    s = summary(eps, ctrls, layer_stats(be))
     if a.json:
         print(json.dumps(s, ensure_ascii=False, indent=2)); return
     md = render(eps, ctrls, s)

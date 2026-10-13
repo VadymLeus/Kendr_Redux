@@ -1,0 +1,334 @@
+{
+  "tag": "v0",
+  "sloc": {
+    "backend": {
+      "files": 74,
+      "physical": 7434,
+      "source": 6894,
+      "comment": 91,
+      "single": 91,
+      "block": 0,
+      "mixed": 17,
+      "empty": 466
+    },
+    "frontend": {
+      "files": 198,
+      "physical": 36583,
+      "source": 34869,
+      "comment": 260,
+      "single": 259,
+      "block": 1,
+      "mixed": 62,
+      "empty": 1516
+    },
+    "testsBackend": null,
+    "testsFrontend": {
+      "files": 3,
+      "physical": 149,
+      "source": 126,
+      "comment": 8,
+      "single": 8,
+      "block": 0,
+      "mixed": 0,
+      "empty": 15
+    }
+  },
+  "jscpd": {
+    "lines": 43678,
+    "clones": 73,
+    "duplicatedLines": 986,
+    "percentage": 2.2574293694766245
+  },
+  "cycles": {
+    "backend": {
+      "files": 74,
+      "count": 0,
+      "list": []
+    },
+    "frontend": {
+      "files": 198,
+      "count": 2,
+      "list": [
+        "modules/editor/core/BlockRenderer.jsx > modules/editor/blocks/Layout/LayoutBlock.jsx",
+        "modules/editor/core/BlockRenderer.jsx > modules/editor/blocks/Layout/LayoutBlock.jsx > modules/editor/ui/EditableBlockWrapper.jsx"
+      ]
+    }
+  },
+  "unresolvedImports": 7,
+  "api": {
+    "endpoints": 142,
+    "route_files": 22,
+    "mounted": 141,
+    "unmounted": 1,
+    "access": {
+      "public": 32,
+      "token": 85,
+      "admin": 21,
+      "strict-admin": 4
+    },
+    "controllers": 21,
+    "controllers_with_sql": 14,
+    "sql_calls": 196,
+    "controllers_without_model": [
+      "deliveryController",
+      "mediaController",
+      "orderController",
+      "reportController",
+      "teamController",
+      "transactionController"
+    ],
+    "controllers_using_services": 0,
+    "layer_files": {
+      "controllers": 21,
+      "services": 0,
+      "repositories": 0,
+      "models": 13,
+      "middleware": 9,
+      "utils": 4,
+      "config": 4
+    },
+    "layer_sql_calls": {
+      "controllers": 196,
+      "services": 0,
+      "repositories": 0,
+      "models": 111,
+      "middleware": 6,
+      "utils": 1,
+      "config": 5
+    }
+  },
+  "sizes": {
+    "backend": {
+      "files": 74,
+      "over300": 7,
+      "over500": 2,
+      "largest": {
+        "lines": 776,
+        "file": "backend/controllers/adminController.js"
+      }
+    },
+    "frontend": {
+      "files": 198,
+      "over300": 34,
+      "over500": 11,
+      "largest": {
+        "lines": 840,
+        "file": "frontend/src/modules/dashboard/pages/SiteDashboardPage.jsx"
+      }
+    }
+  },
+  "knip": {
+    "frontend": {
+      "files": 4,
+      "dependencies": 0,
+      "devDependencies": 5,
+      "exports": 24,
+      "duplicates": 2
+    },
+    "backend": {
+      "files": 3,
+      "dependencies": 3,
+      "devDependencies": 0,
+      "exports": 144,
+      "duplicates": 0
+    }
+  },
+  "backendUnusedExports": [
+    "controllers/siteController.js: getUserSites",
+    "utils/fileUtils.js: ensureDirExists",
+    "utils/fileUtils.js: downloadImage",
+    "config/mediaLimits.js: PLAN_LIMITS"
+  ],
+  "complexity": {
+    "frontend": {
+      "functions": 2717,
+      "mean": 3.408906882591093,
+      "median": 1,
+      "max": 121,
+      "maxName": "ProductDetailPage",
+      "maxAt": "modules/shop/ProductDetailPage.jsx:37",
+      "over10": 175,
+      "over20": 58
+    },
+    "backend": {
+      "functions": 365,
+      "mean": 4.8054794520547945,
+      "median": 3,
+      "max": 53,
+      "maxName": "siteController.updateSiteSettings",
+      "maxAt": "controllers/siteController.js:309",
+      "over10": 38,
+      "over20": 9
+    },
+    "all": {
+      "functions": 3082,
+      "mean": 3.574302401038287,
+      "median": 1,
+      "max": 121,
+      "maxName": "ProductDetailPage",
+      "maxAt": "modules/shop/ProductDetailPage.jsx:37",
+      "over10": 213,
+      "over20": 67
+    },
+    "topBackend": [
+      {
+        "part": "backend",
+        "value": 53,
+        "name": "siteController.updateSiteSettings",
+        "where": "controllers/siteController.js:309"
+      },
+      {
+        "part": "backend",
+        "value": 50,
+        "name": "orderController.processCheckout",
+        "where": "controllers/orderController.js:50"
+      },
+      {
+        "part": "backend",
+        "value": 42,
+        "name": "siteController.createSite",
+        "where": "controllers/siteController.js:113"
+      },
+      {
+        "part": "backend",
+        "value": 31,
+        "name": "siteController.resetSiteToTemplate",
+        "where": "controllers/siteController.js:484"
+      },
+      {
+        "part": "backend",
+        "value": 26,
+        "name": "siteController.getSiteByPath",
+        "where": "controllers/siteController.js:249"
+      },
+      {
+        "part": "backend",
+        "value": 23,
+        "name": "platformGuards.checkMaintenance",
+        "where": "middleware/platformGuards.js:28"
+      },
+      {
+        "part": "backend",
+        "value": 22,
+        "name": "Site.getPublic",
+        "where": "models/Site.js:13"
+      },
+      {
+        "part": "backend",
+        "value": 21,
+        "name": "adminController.getDashboardStats",
+        "where": "controllers/adminController.js:55"
+      }
+    ],
+    "topFrontend": [
+      {
+        "part": "frontend",
+        "value": 121,
+        "name": "ProductDetailPage",
+        "where": "modules/shop/ProductDetailPage.jsx:37"
+      },
+      {
+        "part": "frontend",
+        "value": 82,
+        "name": "generateBlockHTML",
+        "where": "shared/utils/htmlGenerator.js:107"
+      },
+      {
+        "part": "frontend",
+        "value": 62,
+        "name": "HeaderBlock",
+        "where": "modules/editor/blocks/Header/HeaderBlock.jsx:33"
+      },
+      {
+        "part": "frontend",
+        "value": 59,
+        "name": "EditableBlockWrapper",
+        "where": "modules/editor/ui/EditableBlockWrapper.jsx:29"
+      },
+      {
+        "part": "frontend",
+        "value": 56,
+        "name": "SiteDetailsPanel",
+        "where": "modules/admin/components/SiteDetailsPanel.jsx:19"
+      },
+      {
+        "part": "frontend",
+        "value": 54,
+        "name": "ProductCard",
+        "where": "modules/editor/ui/components/ProductCard.jsx:11"
+      },
+      {
+        "part": "frontend",
+        "value": 54,
+        "name": "SiteDisplayPage",
+        "where": "modules/renderer/pages/SiteDisplayPage.jsx:20"
+      },
+      {
+        "part": "frontend",
+        "value": 46,
+        "name": "ProfilePage",
+        "where": "modules/profile/pages/ProfilePage.jsx:43"
+      }
+    ]
+  },
+  "coverage": {
+    "frontend": {
+      "lines": {
+        "covered": 71,
+        "total": 9705,
+        "pct": 0.7315816589386913
+      },
+      "statements": {
+        "covered": 80,
+        "total": 11039,
+        "pct": 0.7247033245765016
+      },
+      "functions": {
+        "covered": 11,
+        "total": 2712,
+        "pct": 0.4056047197640118
+      },
+      "branches": {
+        "covered": 83,
+        "total": 10848,
+        "pct": 0.765117994100295
+      }
+    },
+    "backend": {
+      "lines": {
+        "covered": 0,
+        "total": null,
+        "pct": 0
+      },
+      "statements": {
+        "covered": 0,
+        "total": null,
+        "pct": 0
+      },
+      "functions": {
+        "covered": 0,
+        "total": null,
+        "pct": 0
+      },
+      "branches": {
+        "covered": 0,
+        "total": null,
+        "pct": 0
+      }
+    }
+  },
+  "tests": {
+    "frontend": {
+      "files": 2,
+      "tests": 12,
+      "passed": 12,
+      "failed": 0
+    },
+    "backend": {
+      "files": 0,
+      "tests": 0,
+      "passed": 0,
+      "failed": 0
+    }
+  }
+}

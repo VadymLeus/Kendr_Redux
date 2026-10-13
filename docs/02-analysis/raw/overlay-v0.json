@@ -1,0 +1,14 @@
+{
+  "tests": {
+    "frontend": { "files": 2, "tests": 12, "passed": 12, "failed": 0 },
+    "backend": { "files": 0, "tests": 0, "passed": 0, "failed": 0 }
+  },
+  "coverage": {
+    "backend": {
+      "lines": { "covered": 0, "total": null, "pct": 0 },
+      "statements": { "covered": 0, "total": null, "pct": 0 },
+      "functions": { "covered": 0, "total": null, "pct": 0 },
+      "branches": { "covered": 0, "total": null, "pct": 0 }
+    }
+  }
+}
