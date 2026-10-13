@@ -6,7 +6,7 @@ import FontLoader from '../../../modules/renderer/components/FontLoader';
 import { resolveAccentColor } from '../../utils/themeUtils';
 import CustomSelect from '../elements/CustomSelect';
 import LoadingState from './LoadingState';
-import { getDefaultBlockData } from '../../../modules/editor/core/editorConfig';
+import { getDefaultBlockData } from '../../../modules/editor/core/blockRegistry';
 import { Lock, Layers, Monitor, Smartphone, Star } from 'lucide-react';
 
 const DeviceIframe = ({ children, className, style }) => {

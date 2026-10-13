@@ -1,18 +1,16 @@
 // Характеризаційні тести v0: конфігурація редактора (каталог блоків, значення за замовчуванням, опції).
 // Це «перше з шести місць» опису блока (D-BLK-01): у v1.0 каталог і значення за замовчуванням
-// переходять до дескрипторів реєстру, а ці тести підтверджують, що результат не змінився.
+// переходять до дескрипторів реєстру (blockRegistry.js), а ці тести підтверджують, що результат не змінився.
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import {
-    BLOCK_LIBRARY,
     FONT_LIBRARY,
     BLOCK_THEME_OPTIONS,
     ALIGNMENT_OPTIONS,
     HEIGHT_OPTIONS,
     generateBlockId,
-    getDefaultBlockData,
     getBlockThemeClass,
-    getDraggableBlocks,
 } from '../../src/modules/editor/core/editorConfig';
+import { BLOCK_LIBRARY, getDefaultBlockData, getDraggableBlocks } from '../../src/modules/editor/core/blockRegistry';
 
 // Ідентифікатори елементів генеруються випадково, тому порівнюємо дані з маркером замість значення.
 const maskIds = (value) => {

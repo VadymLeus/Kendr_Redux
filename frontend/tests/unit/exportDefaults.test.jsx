@@ -3,7 +3,7 @@
 // ухваленим окремо: у v1.0 вивід лишається тим самим.
 import { describe, it, expect } from 'vitest';
 import { generateFullHTML } from '../../src/shared/utils/htmlGenerator';
-import { BLOCK_LIBRARY, getDefaultBlockData } from '../../src/modules/editor/core/editorConfig';
+import { BLOCK_LIBRARY, getDefaultBlockData } from '../../src/modules/editor/core/blockRegistry';
 import { expectGolden } from '../helpers/golden';
 
 const blockOf = (type, options) => ({ type, block_id: `default-${type}`, data: getDefaultBlockData(type, options) });

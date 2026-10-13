@@ -1,43 +1,9 @@
 // frontend/src/modules/editor/ui/tabs/SettingsTab.jsx
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect } from 'react';
 import { findBlockByPath } from '../../core/blockUtils';
-import ShowCaseSettings from '../../blocks/ShowCase/ShowCaseSettings';
-import FeaturesSettings from '../../blocks/Features/FeaturesSettings';
-import CatalogSettings from '../../blocks/Catalog/CatalogSettings';
-import TextSettings from '../../blocks/Text/TextSettings';
-import HeroSettings from '../../blocks/Hero/HeroSettings';
-import ImageSettings from '../../blocks/Image/ImageSettings';
-import ButtonSettings from '../../blocks/Button/ButtonSettings';
-import FormSettings from '../../blocks/Form/FormSettings';
-import LayoutSettings from '../../blocks/Layout/LayoutSettings';
-import VideoSettings from '../../blocks/Video/VideoSettings';
-import MapSettings from '../../blocks/Map/MapSettings';
-import AccordionSettings from '../../blocks/Accordion/AccordionSettings';
-import SocialIconsSettings from '../../blocks/SocialIcons/SocialIconsSettings';
-import HeaderSettings from '../../blocks/Header/HeaderSettings';
-import FooterSettings from '../../blocks/Footer/FooterSettings';
+import { getSettingsComponent } from '../../core/blockRegistry';
 import AdvancedSettingsTab from './AdvancedSettingsTab';
-import { Settings, FileText, MousePointerClick, AlertCircle, SlidersHorizontal } from 'lucide-react';
-
-const SettingsComponentMap = {
-    showcase: ShowCaseSettings,
-    features: FeaturesSettings,
-    catalog: CatalogSettings,
-    text: TextSettings,
-    hero: HeroSettings,
-    image: ImageSettings,
-    button: ButtonSettings,
-    form: FormSettings,
-    layout: LayoutSettings,
-    video: VideoSettings,
-    map: MapSettings,
-    accordion: AccordionSettings,
-    social_icons: SocialIconsSettings,
-    'global-header': HeaderSettings,
-    'global-footer': FooterSettings,
-    header: HeaderSettings,
-    footer: FooterSettings,
-};
+import { Settings, FileText, MousePointerClick, AlertCircle, SlidersHorizontal, Loader2 } from 'lucide-react';
 
 const SettingsTab = ({ blocks, selectedBlockPath, onUpdateBlockData, siteData }) => {
     const [activeTab, setActiveTab] = useState('content');
@@ -67,7 +33,7 @@ const SettingsTab = ({ blocks, selectedBlockPath, onUpdateBlockData, siteData })
         );
     }
 
-    const SettingsComponent = SettingsComponentMap[selectedBlock.type];
+    const SettingsComponent = getSettingsComponent(selectedBlock.type);
     const handleLiveUpdate = (newData, addToHistory = true) => {
         onUpdateBlockData(selectedBlockPath, newData, addToHistory);
     };
@@ -119,11 +85,19 @@ const SettingsTab = ({ blocks, selectedBlockPath, onUpdateBlockData, siteData })
                 {activeTab === 'content' && (
                     <div>
                         {SettingsComponent ? (
-                            <SettingsComponent
-                                data={selectedBlock.data}
-                                onChange={handleLiveUpdate}
-                                siteData={siteData}
-                            />
+                            <Suspense
+                                fallback={
+                                    <div className="w-full flex items-center justify-center py-10">
+                                        <Loader2 size={28} className="animate-spin text-(--platform-accent)" />
+                                    </div>
+                                }
+                            >
+                                <SettingsComponent
+                                    data={selectedBlock.data}
+                                    onChange={handleLiveUpdate}
+                                    siteData={siteData}
+                                />
+                            </Suspense>
                         ) : (
                             <div className="p-8 text-center border border-dashed border-(--platform-border-color) rounded-lg">
                                 <div className="text-(--platform-text-secondary) mb-4 flex justify-center">

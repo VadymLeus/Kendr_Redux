@@ -1,5 +1,6 @@
 // Характеризаційні тести v0: відповідність типу блока панелі налаштувань у SettingsTab.
-// Це «четверте з шести місць» опису блока (D-BLK-01). У v1.0 карта «тип -> панель» береться з реєстру.
+// Це «четверте з шести місць» опису блока (D-BLK-01). У v1.0 карта «тип -> панель» береться з реєстру,
+// а панелі завантажуються ліниво (ADR-002), тому перевірки панелей чекають на їх появу (findBy*).
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
@@ -59,14 +60,14 @@ describe('SettingsTab: вибір панелі налаштувань за ти�
         ['global-footer', 'footer'],
         ['header', 'header'],
         ['footer', 'footer'],
-    ])('тип "%s" відкриває панель "%s"', (type, panel) => {
+    ])('тип "%s" відкриває панель "%s"', async (type, panel) => {
         renderTab([block(type)], [0]);
-        expect(screen.getByTestId(`settings-${panel}`)).toBeInTheDocument();
+        expect(await screen.findByTestId(`settings-${panel}`)).toBeInTheDocument();
     });
 
-    it('панель отримує data блока й siteData', () => {
+    it('панель отримує data блока й siteData', async () => {
         renderTab([block('hero', { title: 'Привіт' })], [0]);
-        expect(screen.getByTestId('settings-data')).toHaveTextContent('{"title":"Привіт"}');
+        expect(await screen.findByTestId('settings-data')).toHaveTextContent('{"title":"Привіт"}');
         expect(screen.getByTestId('settings-hero')).toHaveAttribute('data-site-title', 'Магазин');
     });
 
@@ -78,10 +79,10 @@ describe('SettingsTab: вибір панелі налаштувань за ти�
         expect(screen.getByText('wat', { selector: 'b' })).toBeInTheDocument();
     });
 
-    it('працює для блока, вкладеного в колонку макета', () => {
+    it('працює для блока, вкладеного в колонку макета', async () => {
         const blocks = [{ type: 'layout', data: { columns: [[block('text', { value: 'вкладений' })]] } }];
         renderTab(blocks, [0, 'data', 'columns', 0, 0]);
-        expect(screen.getByTestId('settings-text')).toBeInTheDocument();
+        expect(await screen.findByTestId('settings-text')).toBeInTheDocument();
         expect(screen.getByTestId('settings-data')).toHaveTextContent('вкладений');
     });
 });
@@ -100,37 +101,42 @@ describe('SettingsTab: без вибраного блока', () => {
 });
 
 describe('SettingsTab: заголовок і вкладки', () => {
-    it('заголовок: власна назва блока, інакше тип; "global-" замінюється на "Глобальний "', () => {
+    it('заголовок: власна назва блока, інакше тип; "global-" замінюється на "Глобальний "', async () => {
         const { unmount } = renderTab([{ ...block('hero'), name: 'Моя обкладинка' }], [0]);
         expect(screen.getByText('Моя обкладинка')).toBeInTheDocument();
+        await screen.findByTestId('settings-hero');
         unmount();
         renderTab([block('global-header')], [0]);
         expect(screen.getByText('Глобальний header')).toBeInTheDocument();
+        await screen.findByTestId('settings-header');
     });
 
-    it('звичайний блок має вкладки «Контент» і «Вигляд»', () => {
+    it('звичайний блок має вкладки «Контент» і «Вигляд»', async () => {
         renderTab([block('text')], [0]);
         expect(screen.getByRole('button', { name: /Контент/ })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Вигляд/ })).toBeInTheDocument();
+        await screen.findByTestId('settings-text');
     });
 
-    it.each(['global-header', 'global-footer', 'header', 'footer'])('глобальний блок "%s" має лише вкладку «Контент»', (type) => {
+    it.each(['global-header', 'global-footer', 'header', 'footer'])('глобальний блок "%s" має лише вкладку «Контент»', async (type) => {
         renderTab([block(type)], [0]);
         expect(screen.getByRole('button', { name: /Контент/ })).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: /Вигляд/ })).toBeNull();
+        await screen.findByTestId(/^settings-(header|footer)$/);
     });
 
-    it('вкладка «Вигляд» показує додаткові налаштування з data блока', () => {
+    it('вкладка «Вигляд» показує додаткові налаштування з data блока', async () => {
         renderTab([block('text', { value: 'abc' })], [0]);
+        await screen.findByTestId('settings-text');
         fireEvent.click(screen.getByRole('button', { name: /Вигляд/ }));
         expect(screen.getByTestId('advanced-tab')).toBeInTheDocument();
         expect(screen.getByTestId('advanced-data')).toHaveTextContent('{"value":"abc"}');
         expect(screen.queryByTestId('settings-text')).toBeNull();
         fireEvent.click(screen.getByRole('button', { name: /Контент/ }));
-        expect(screen.getByTestId('settings-text')).toBeInTheDocument();
+        expect(await screen.findByTestId('settings-text')).toBeInTheDocument();
     });
 
-    it('при виборі глобального блока відкрита вкладка «Вигляд» повертається на «Контент»', () => {
+    it('при виборі глобального блока відкрита вкладка «Вигляд» повертається на «Контент»', async () => {
         const blocks = [block('text'), block('global-header')];
         const onUpdateBlockData = vi.fn();
         const { rerender } = render(
@@ -140,25 +146,26 @@ describe('SettingsTab: заголовок і вкладки', () => {
         expect(screen.getByTestId('advanced-tab')).toBeInTheDocument();
         rerender(<SettingsTab blocks={blocks} selectedBlockPath={[1]} onUpdateBlockData={onUpdateBlockData} siteData={{}} />);
         expect(screen.queryByTestId('advanced-tab')).toBeNull();
-        expect(screen.getByTestId('settings-header')).toBeInTheDocument();
+        expect(await screen.findByTestId('settings-header')).toBeInTheDocument();
     });
 });
 
 describe('SettingsTab: збереження змін', () => {
-    it('зміна в панелі контенту передається з шляхом блока й записом в історію за замовчуванням', () => {
+    it('зміна в панелі контенту передається з шляхом блока й записом в історію за замовчуванням', async () => {
         const { onUpdateBlockData } = renderTab([block('hero')], [0]);
-        fireEvent.click(screen.getByTestId('settings-apply'));
+        fireEvent.click(await screen.findByTestId('settings-apply'));
         expect(onUpdateBlockData).toHaveBeenCalledWith([0], { changedBy: 'hero' }, true);
     });
 
-    it('зміна без запису в історію (другий аргумент false) передається далі', () => {
+    it('зміна без запису в історію (другий аргумент false) передається далі', async () => {
         const { onUpdateBlockData } = renderTab([block('hero')], [0]);
-        fireEvent.click(screen.getByTestId('settings-apply-silent'));
+        fireEvent.click(await screen.findByTestId('settings-apply-silent'));
         expect(onUpdateBlockData).toHaveBeenCalledWith([0], { changedBy: 'hero' }, false);
     });
 
-    it('зміна у вкладці «Вигляд» іде тим самим шляхом, із записом в історію', () => {
+    it('зміна у вкладці «Вигляд» іде тим самим шляхом, із записом в історію', async () => {
         const { onUpdateBlockData } = renderTab([block('text')], [0]);
+        await screen.findByTestId('settings-text');
         fireEvent.click(screen.getByRole('button', { name: /Вигляд/ }));
         fireEvent.click(screen.getByTestId('advanced-apply'));
         expect(onUpdateBlockData).toHaveBeenCalledWith([0], { advanced: true }, true);

@@ -1,43 +1,10 @@
 // frontend/src/modules/editor/core/BlockRenderer.jsx
-import React, { Suspense, lazy, useState } from 'react';
+import React, { Suspense, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AnimationWrapper from '../../renderer/components/AnimationWrapper';
 import { resolveSiteLink } from '../../../shared/utils/linkUtils';
+import { getBlockComponent } from './blockRegistry';
 import { AlertTriangle, Construction, Loader2 } from 'lucide-react';
-
-const HeroBlock = lazy(() => import('../blocks/Hero/HeroBlock'));
-const TextBlock = lazy(() => import('../blocks/Text/TextBlock'));
-const ShowCaseBlock = lazy(() => import('../blocks/ShowCase/ShowCaseBlock'));
-const CatalogBlock = lazy(() => import('../blocks/Catalog/CatalogBlock'));
-const FeaturesBlock = lazy(() => import('../blocks/Features/FeaturesBlock'));
-const LayoutBlock = lazy(() => import('../blocks/Layout/LayoutBlock'));
-const ImageBlock = lazy(() => import('../blocks/Image/ImageBlock'));
-const ButtonBlock = lazy(() => import('../blocks/Button/ButtonBlock'));
-const FormBlock = lazy(() => import('../blocks/Form/FormBlock'));
-const VideoBlock = lazy(() => import('../blocks/Video/VideoBlock'));
-const MapBlock = lazy(() => import('../blocks/Map/MapBlock'));
-const AccordionBlock = lazy(() => import('../blocks/Accordion/AccordionBlock'));
-const SocialIconsBlock = lazy(() => import('../blocks/SocialIcons/SocialIconsBlock'));
-const HeaderBlock = lazy(() => import('../blocks/Header/HeaderBlock'));
-const FooterBlock = lazy(() => import('../blocks/Footer/FooterBlock'));
-const blockMap = {
-    hero: HeroBlock,
-    text: TextBlock,
-    showcase: ShowCaseBlock,
-    catalog: CatalogBlock,
-    features: FeaturesBlock,
-    layout: LayoutBlock,
-    image: ImageBlock,
-    button: ButtonBlock,
-    form: FormBlock,
-    video: VideoBlock,
-    map: MapBlock,
-    accordion: AccordionBlock,
-    social_icons: SocialIconsBlock,
-    'global-header': HeaderBlock,
-    'global-footer': FooterBlock,
-    header: HeaderBlock,
-};
 
 const BlockRenderer = ({ 
     blocks, 
@@ -88,7 +55,7 @@ const BlockRenderer = ({
     return (
         <div className="relative w-full h-full flex flex-col">
             {blocks.map((block, index) => {
-                const Component = blockMap[block.type];
+                const Component = getBlockComponent(block.type);
                 const elementId = block.data?.anchorId || undefined;
                 if (!Component) {
                     console.warn(`Невідомий тип блоку: ${block.type}`);

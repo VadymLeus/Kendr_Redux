@@ -7,7 +7,7 @@ import SaveBlockModal from './modals/SaveBlockModal';
 import { toast } from 'react-toastify';
 import { useConfirm } from '../../../shared/hooks/useConfirm';
 import { useBlockDrop, DND_TYPE_EXISTING } from '../core/useBlockDrop';
-import { BLOCK_LIBRARY } from '../core/editorConfig';
+import { BLOCK_LIBRARY } from '../core/blockRegistry';
 import { Settings, Trash2, Save, GripVertical, ChevronDown, ChevronUp, HelpCircle } from 'lucide-react';
 
 const EditableBlockWrapper = ({ 

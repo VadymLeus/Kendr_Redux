@@ -1,7 +1,7 @@
 // frontend/src/modules/editor/ui/tabs/AddBlocksTab.jsx
 import React, { useState, useEffect } from 'react';
 import DraggableBlockItem from '../DraggableBlockItem';
-import { BLOCK_LIBRARY } from '../../core/editorConfig';
+import { getBlocksByCategory } from '../../core/blockRegistry';
 import apiClient from '../../../../shared/api/api';
 import { useConfirm } from '../../../../shared/hooks/useConfirm';
 import { Input } from '../../../../shared/ui/elements/Input';
@@ -172,10 +172,10 @@ const AddBlocksTab = ({ savedBlocksUpdateTrigger, blocks = [], onAddBlock }) => 
     const [savedBlocks, setSavedBlocks] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const { confirm } = useConfirm();
-    const layoutBlocks = BLOCK_LIBRARY.filter(b => b.type === 'layout');
-    const basicBlocks = BLOCK_LIBRARY.filter(b => ['hero', 'text', 'image', 'button', 'form', 'features', 'video', 'map', 'accordion', 'social_icons'].includes(b.type));
-    const ecommerceBlocks = BLOCK_LIBRARY.filter(b => ['catalog', 'showcase'].includes(b.type));
-    const globalBlocks = BLOCK_LIBRARY.filter(b => ['global-header', 'global-footer'].includes(b.type));
+    const layoutBlocks = getBlocksByCategory('layout');
+    const basicBlocks = getBlocksByCategory('basic');
+    const ecommerceBlocks = getBlocksByCategory('ecommerce');
+    const globalBlocks = getBlocksByCategory('global');
     useEffect(() => {
         const fetchSavedBlocks = async () => {
             setIsLoading(true);

@@ -14,7 +14,7 @@ import FontLoader from '../renderer/components/FontLoader';
 import SiteControls from '../renderer/components/SiteControls';
 import ReportModal from '../../shared/ui/complex/ReportModal';
 import LoadingState from '../../shared/ui/complex/LoadingState';
-import { getDefaultBlockData } from '../editor/core/editorConfig';
+import { getDefaultBlockData } from '../editor/core/blockRegistry';
 import { resolveAccentColor } from '../../shared/utils/themeUtils';
 import { BASE_URL } from '../../shared/config';
 import { toast } from 'react-toastify';

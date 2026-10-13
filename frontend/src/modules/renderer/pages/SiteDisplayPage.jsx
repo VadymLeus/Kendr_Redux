@@ -13,7 +13,7 @@ import FontLoader from '../components/FontLoader';
 import SiteControls from '../components/SiteControls';
 import ReportModal from '../../../shared/ui/complex/ReportModal';
 import { BASE_URL } from '../../../shared/config';
-import { getDefaultBlockData } from '../../editor/core/editorConfig';
+import { getDefaultBlockData } from '../../editor/core/blockRegistry';
 import { resolveAccentColor } from '../../../shared/utils/themeUtils';
 import { Loader2, Layers } from 'lucide-react';
 

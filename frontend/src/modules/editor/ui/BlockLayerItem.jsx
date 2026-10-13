@@ -1,7 +1,7 @@
 // frontend/src/modules/editor/ui/BlockLayerItem.jsx
 import React, { useRef } from 'react';
 import { useDrag } from 'react-dnd';
-import { BLOCK_LIBRARY } from '../core/editorConfig'; 
+import { BLOCK_LIBRARY } from '../core/blockRegistry';
 import { useBlockDrop, DND_TYPE_EXISTING } from '../core/useBlockDrop';
 import { useConfirm } from '../../../shared/hooks/useConfirm';
 import { toast } from 'react-toastify';
