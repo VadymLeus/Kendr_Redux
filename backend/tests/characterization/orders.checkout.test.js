@@ -1,7 +1,7 @@
 // Оформлення замовлення: POST /api/orders/checkout (orderController.processCheckout).
 // Тести фіксують поточну поведінку v0. Тести з маркером KNOWN-DEFECT фіксують помилкову поведінку
 // з реєстру дефектів (docs/02-analysis/defects.md): у v2.0 їх очікування змінюються разом із виправленням.
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import request from 'supertest';
 import { app } from '../helpers/app.js';
 import { useTestDatabase } from '../helpers/suite.js';
@@ -29,6 +29,10 @@ beforeEach(async () => {
   buyer = await createUser();
   site = await createSite(seller);
   product = await createProduct(site, { price: 100, stock_quantity: 10 });
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
 });
 
 const codBody = (items, extra = {}) => ({
@@ -235,11 +239,23 @@ describe('checkout: створення замовлення', () => {
 
     const payment = decodeLiqpay(res.body.liqpayData);
     expect(payment).toMatchObject({
-      public_key: LIQPAY.publicKey, version: '3', action: 'pay', currency: 'UAH', amount: 200, sandbox: 1,
+      public_key: LIQPAY.publicKey, version: '3', action: 'pay', currency: 'UAH', amount: 200,
     });
+    expect(payment).not.toHaveProperty('sandbox');
     expect(payment.order_id.startsWith(`${res.body.orderId}_`)).toBe(true);
     expect(payment.server_url.endsWith('/api/orders/liqpay-callback')).toBe(true);
     expect(res.body.liqpaySignature).toBe(signLiqpay(res.body.liqpayData, LIQPAY.privateKey));
+  });
+
+  it('D-CFG-01: параметр sandbox додається, лише коли LIQPAY_SANDBOX=1', async () => {
+    vi.stubEnv('LIQPAY_SANDBOX', '1');
+    const shop = await createSite(seller, { liqpay: LIQPAY });
+    const item = await createProduct(shop, { price: 100, stock_quantity: 10 });
+    const res = await checkout(buyer, {
+      siteId: shop.id, items: [{ id: item.id, quantity: 1 }], paymentMethod: 'online', customerData: { address: ADDRESS },
+    });
+    expect(res.status).toBe(200);
+    expect(decodeLiqpay(res.body.liqpayData).sandbox).toBe(1);
   });
 });
 

@@ -146,8 +146,12 @@ class OrderRepository {
         await executor(connection).query('UPDATE orders SET status = ? WHERE id = ?', [status, orderId]);
     }
 
-    static async updateStatusAndTouch(orderId, status, connection) {
-        await executor(connection).query('UPDATE orders SET status = ?, updated_at = NOW() WHERE id = ?', [status, orderId]);
+    static async settleIfPending(orderId, status, connection) {
+        const [result] = await executor(connection).query(
+            "UPDATE orders SET status = ? WHERE id = ? AND status = 'pending'",
+            [status, orderId]
+        );
+        return result.affectedRows === 1;
     }
 }
 

@@ -1,10 +1,10 @@
 // Залишки товару: коли саме зменшується stock_quantity (orderController: processCheckout, liqpayCallback, processGooglePay, updateOrderStatus).
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import request from 'supertest';
-import { app } from '../helpers/app.js';
+import { app, paymentService } from '../helpers/app.js';
 import { useTestDatabase } from '../helpers/suite.js';
 import { authHeader } from '../helpers/auth.js';
-import { postLiqpay, liqpayOrderId } from '../helpers/liqpay.js';
+import { postLiqpay, paidCallback } from '../helpers/liqpay.js';
 import { createUser, createSite, createProduct, createOrder, getProduct } from '../helpers/factories.js';
 
 useTestDatabase();
@@ -13,6 +13,10 @@ const LIQPAY = { publicKey: 'sandbox_i1234567890', privateKey: 'site-private-sec
 const ADDRESS = 'Київ, вул. Хрещатик, 1';
 
 let seller, buyer, site, product;
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 beforeEach(async () => {
   seller = await createUser({ plan: 'PLUS' });
@@ -55,7 +59,7 @@ describe('списання залишку при оформленні замов
 
 describe('списання залишку при оплаті', () => {
   const callback = (order) =>
-    postLiqpay(app, '/api/orders/liqpay-callback', { order_id: liqpayOrderId(order.id), status: 'success' }, LIQPAY.privateKey);
+    postLiqpay(app, '/api/orders/liqpay-callback', paidCallback(order), LIQPAY.privateKey);
 
   it('callback LiqPay зменшує залишок на кількість у замовленні', async () => {
     const order = await createOrder(site, buyer, { items: [{ product, quantity: 2 }] });
@@ -84,7 +88,8 @@ describe('списання залишку при оплаті', () => {
     expect(await stockOf(unlimited)).toBeNull();
   });
 
-  it('Google Pay зменшує залишок', async () => {
+  it('Google Pay після підтвердження платежу зменшує залишок', async () => {
+    vi.spyOn(paymentService, 'verifyGooglePay').mockResolvedValue({ providerId: 'gpay_verified' });
     const order = await createOrder(site, buyer, { items: [{ product, quantity: 2 }] });
     const res = await request(app).post(`/api/orders/${order.id}/pay/gpay`).set(authHeader(buyer)).send({});
     expect(res.status).toBe(200);

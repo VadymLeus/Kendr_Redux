@@ -6,6 +6,7 @@ const GlobalSettingsRepository = require('../repositories/GlobalSettingsReposito
 const TransactionRepository = require('../repositories/TransactionRepository');
 const PricingService = require('./PricingService');
 const LiqPayService = require('./LiqPayService');
+const PaymentService = require('./PaymentService');
 const emailService = require('../utils/emailService');
 const { decrypt } = require('../utils/encryption');
 const { ServiceError } = require('./ServiceError');
@@ -28,6 +29,15 @@ const settlementOf = (items) => {
         newStatus: isDigitalOnly ? 'completed' : 'paid',
         digitalItems: items.filter(item => item.type === 'digital' && item.digital_file_url)
     };
+};
+
+const assertAwaitingOnlinePayment = (order) => {
+    if (order.status !== 'pending') {
+        throw new ServiceError(400, 'Це замовлення вже оплачено або скасовано.');
+    }
+    if (order.payment_method === 'cod') {
+        throw new ServiceError(400, 'Це замовлення оформлено з оплатою при отриманні. Онлайн оплата недоступна.');
+    }
 };
 
 const decrementStockFor = async (items, connection) => {
@@ -168,12 +178,7 @@ class OrderService {
         if (await OrderRepository.isCollaborator(order.site_id, userId)) {
             throw new ServiceError(403, 'Співавтори не можуть оплачувати товари на цьому сайті.');
         }
-        if (order.status !== 'pending') {
-            throw new ServiceError(400, 'Це замовлення вже оплачено або скасовано.');
-        }
-        if (order.payment_method === 'cod') {
-            throw new ServiceError(400, 'Це замовлення оформлено з оплатою при отриманні. Онлайн оплата недоступна.');
-        }
+        assertAwaitingOnlinePayment(order);
         const items = await OrderRepository.findItemsForPayment(orderId);
         for (const item of items) {
             if (item.type !== 'digital') {
@@ -202,9 +207,8 @@ class OrderService {
         if (!data || !signature) {
             throw new ServiceError(400, 'Missing data or signature');
         }
-        const decodedData = JSON.parse(Buffer.from(data, 'base64').toString('utf8'));
-        const { order_id: liqpayOrderId, status } = decodedData;
-        const realOrderId = liqpayOrderId.split('_')[0];
+        const payload = PaymentService.decodeCallback(data);
+        const realOrderId = PaymentService.referenceOf(payload);
         const order = await OrderRepository.findById(realOrderId);
         if (!order) {
             throw new ServiceError(404, 'Order not found');
@@ -216,57 +220,62 @@ class OrderService {
         const sitePrivateKey = decrypt(site.liqpay_private_key);
         if (!sitePrivateKey) throw new ServiceError(500, 'Private key decryption failed');
         const siteAccentColor = site.site_theme_accent || 'blue';
-        if (signature !== LiqPayService.sign(data, sitePrivateKey)) {
+        if (!PaymentService.verifySignature(data, signature, sitePrivateKey)) {
             throw new ServiceError(403, 'Invalid signature');
         }
-        if (status === 'success' || status === 'wait_accept' || status === 'sandbox') {
-            if (order.status === 'pending') {
-                const items = await OrderRepository.findItems(realOrderId);
-                const { newStatus, digitalItems } = settlementOf(items);
-                await OrderRepository.updateStatus(realOrderId, newStatus);
-                await decrementStockFor(items);
-                if (digitalItems.length > 0) {
-                    await emailService.sendDigitalGoodsEmail(order.customer_email, order.customer_name, digitalItems, siteAccentColor);
-                }
-            }
+        if (!PaymentService.isPaidStatus(payload.status) || order.status !== 'pending') return;
+        PaymentService.assertPaymentMatches(payload, { amount: order.total_amount });
+        const digitalItems = await OrderRepository.transaction(async (connection) => {
+            const items = await OrderRepository.findItems(realOrderId, connection);
+            const settlement = settlementOf(items);
+            if (!await OrderRepository.settleIfPending(realOrderId, settlement.newStatus, connection)) return [];
+            await decrementStockFor(items, connection);
+            return settlement.digitalItems;
+        });
+        if (digitalItems.length > 0) {
+            await emailService.sendDigitalGoodsEmail(order.customer_email, order.customer_name, digitalItems, siteAccentColor);
         }
     }
 
     static async payWithGooglePay(orderId, userId, paymentData) {
-        await OrderRepository.transaction(async (connection) => {
-            const order = await OrderRepository.findById(orderId, connection);
-            if (!order) {
-                throw new ServiceError(404, 'Замовлення не знайдено');
-            }
-            if (String(order.customer_id) !== String(userId)) {
-                throw new ServiceError(403, 'Доступ заборонено');
-            }
-            if (order.status === 'paid' || order.status === 'completed') {
+        const order = await OrderRepository.findById(orderId);
+        if (!order) {
+            throw new ServiceError(404, 'Замовлення не знайдено');
+        }
+        if (String(order.customer_id) !== String(userId)) {
+            throw new ServiceError(403, 'Доступ заборонено');
+        }
+        if (order.status === 'paid' || order.status === 'completed') {
+            throw new ServiceError(400, 'Замовлення вже оплачено');
+        }
+        assertAwaitingOnlinePayment(order);
+        const verified = await PaymentService.verifyGooglePay(paymentData, {
+            amount: order.total_amount,
+            currency: 'UAH',
+            reference: order.id
+        });
+        const settled = await OrderRepository.transaction(async (connection) => {
+            const items = await OrderRepository.findItems(orderId, connection);
+            const settlement = settlementOf(items);
+            if (!await OrderRepository.settleIfPending(orderId, settlement.newStatus, connection)) {
                 throw new ServiceError(400, 'Замовлення вже оплачено');
             }
-            const items = await OrderRepository.findItems(orderId, connection);
-            const { newStatus, digitalItems } = settlementOf(items);
-            await OrderRepository.updateStatusAndTouch(orderId, newStatus, connection);
             await decrementStockFor(items, connection);
             const site = await OrderRepository.findSiteOwnerAndAccent(order.site_id, connection);
-            const siteOwnerId = site.user_id;
-            const siteAccentColor = site.site_theme_accent || 'blue';
-            if (digitalItems.length > 0) {
-                await emailService.sendDigitalGoodsEmail(order.customer_email, order.customer_name, digitalItems, siteAccentColor);
-            }
-            const providerId = paymentData?.paymentMethodData?.tokenizationData?.token
-                ? 'gpay_' + paymentData.paymentMethodData.tokenizationData.token.substring(0, 20)
-                : 'gpay_test_' + Date.now();
             await TransactionRepository.create({
                 id: crypto.randomUUID(),
-                userId: siteOwnerId,
+                userId: site.user_id,
                 amount: order.total_amount,
                 currency: 'UAH',
                 status: 'success',
-                providerId,
+                providerId: verified.providerId,
                 description: `Оплата замовлення #${orderId} через Google Pay`
             }, connection);
+            return { digitalItems: settlement.digitalItems, accent: site.site_theme_accent || 'blue' };
         });
+        if (settled.digitalItems.length > 0) {
+            await emailService.sendDigitalGoodsEmail(order.customer_email, order.customer_name, settled.digitalItems, settled.accent);
+        }
     }
 
     static async listForSite(siteId) {

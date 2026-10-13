@@ -9,6 +9,7 @@ const ProductRepository = require('../../repositories/ProductRepository');
 const GlobalSettingsRepository = require('../../repositories/GlobalSettingsRepository');
 const TransactionRepository = require('../../repositories/TransactionRepository');
 const LiqPayService = require('../../services/LiqPayService');
+const PaymentService = require('../../services/PaymentService');
 const emailService = require('../../utils/emailService');
 const { encrypt } = require('../../utils/encryption');
 const { ServiceError } = require('../../services/ServiceError');
@@ -60,7 +61,7 @@ beforeEach(() => {
     findItemsForPayment: vi.spyOn(OrderRepository, 'findItemsForPayment').mockResolvedValue([]),
     findItemsWithImages: vi.spyOn(OrderRepository, 'findItemsWithImages').mockResolvedValue([]),
     updateStatus: vi.spyOn(OrderRepository, 'updateStatus').mockImplementation(async () => { log.push('updateStatus'); }),
-    updateStatusAndTouch: vi.spyOn(OrderRepository, 'updateStatusAndTouch').mockImplementation(async () => { log.push('updateStatusAndTouch'); }),
+    settleIfPending: vi.spyOn(OrderRepository, 'settleIfPending').mockImplementation(async () => { log.push('settleIfPending'); return true; }),
   };
   products = {
     findForCheckout: vi.spyOn(ProductRepository, 'findForCheckout').mockImplementation(async (id) => ({ 10: PHYSICAL, 11: DIGITAL }[id])),
@@ -74,6 +75,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllEnvs();
 });
 
 describe('billing', () => {
@@ -442,9 +444,9 @@ describe('createPayment', () => {
 });
 
 describe('handleLiqPayCallback', () => {
-  const ORDER = { id: 'ORD1', site_id: 3, status: 'pending', customer_email: 'buyer@test.local', customer_name: 'Іван' };
+  const ORDER = { id: 'ORD1', site_id: 3, status: 'pending', total_amount: '200.00', customer_email: 'buyer@test.local', customer_name: 'Іван' };
   const payload = (overrides = {}) => {
-    const data = Buffer.from(JSON.stringify({ order_id: 'ORD1_1700000000', status: 'success', ...overrides })).toString('base64');
+    const data = Buffer.from(JSON.stringify({ order_id: 'ORD1_1700000000', status: 'success', amount: 200, currency: 'UAH', ...overrides })).toString('base64');
     return { data, signature: LiqPayService.sign(data, PRIVATE_KEY) };
   };
 
@@ -486,41 +488,94 @@ describe('handleLiqPayCallback', () => {
     const { data } = payload();
     const error = await serviceFailure(() => OrderService.handleLiqPayCallback({ data, signature: 'bad' }));
     expect([error.status, error.message]).toEqual([403, 'Invalid signature']);
-    expect(repo.updateStatus).not.toHaveBeenCalled();
+    expect(repo.settleIfPending).not.toHaveBeenCalled();
   });
 
-  it('пошкоджені дані — звичайна помилка (контролер відповість 500)', async () => {
-    const data = Buffer.from('не json').toString('base64');
-    const error = await failure(() => OrderService.handleLiqPayCallback({ data, signature: 'x' }));
-    expect(error).not.toBeInstanceOf(ServiceError);
+  it.each([
+    ['не JSON', Buffer.from('не json').toString('base64')],
+    ['JSON-масив', Buffer.from('[]').toString('base64')],
+    ['JSON-значення null', Buffer.from('null').toString('base64')],
+    ['об\'єкт без order_id', Buffer.from('{"status":"success"}').toString('base64')],
+  ])('D-SEC-07: пошкоджені дані (%s) — 400', async (_title, data) => {
+    const error = await serviceFailure(() => OrderService.handleLiqPayCallback({ data, signature: 'x' }));
+    expect([error.status, error.message]).toEqual([400, 'Invalid payload']);
+    expect(repo.findById).not.toHaveBeenCalled();
   });
 
-  it('фізичне замовлення стає paid, залишок списується', async () => {
+  it('фізичне замовлення стає paid, залишок списується в транзакції', async () => {
     await OrderService.handleLiqPayCallback(payload());
-    expect(repo.updateStatus).toHaveBeenCalledWith('ORD1', 'paid');
-    expect(products.decrementStock).toHaveBeenCalledWith(10, 2, undefined);
+    expect(repo.transaction).toHaveBeenCalledTimes(1);
+    expect(repo.settleIfPending).toHaveBeenCalledWith('ORD1', 'paid', CONN);
+    expect(repo.findItems).toHaveBeenCalledWith('ORD1', CONN);
+    expect(products.decrementStock).toHaveBeenCalledWith(10, 2, CONN);
     expect(emailService.sendDigitalGoodsEmail).not.toHaveBeenCalled();
   });
 
-  it.each([['success'], ['wait_accept'], ['sandbox']])('D-CFG-01: статус %s приймається як успішна оплата', async (status) => {
+  it.each([['success'], ['wait_accept']])('статус %s приймається як успішна оплата', async (status) => {
     await OrderService.handleLiqPayCallback(payload({ status }));
-    expect(repo.updateStatus).toHaveBeenCalledWith('ORD1', 'paid');
+    expect(repo.settleIfPending).toHaveBeenCalledWith('ORD1', 'paid', CONN);
+  });
+
+  it('D-CFG-01: статус sandbox не приймається, поки LIQPAY_SANDBOX не ввімкнено', async () => {
+    await OrderService.handleLiqPayCallback(payload({ status: 'sandbox' }));
+    expect(repo.settleIfPending).not.toHaveBeenCalled();
+  });
+
+  it('D-CFG-01: статус sandbox приймається, коли LIQPAY_SANDBOX=1', async () => {
+    vi.stubEnv('LIQPAY_SANDBOX', '1');
+    await OrderService.handleLiqPayCallback(payload({ status: 'sandbox' }));
+    expect(repo.settleIfPending).toHaveBeenCalledWith('ORD1', 'paid', CONN);
   });
 
   it.each([['failure'], ['error'], ['reversed'], [undefined]])('статус %s замовлення не змінює', async (status) => {
     await OrderService.handleLiqPayCallback(payload({ status }));
-    expect(repo.updateStatus).not.toHaveBeenCalled();
+    expect(repo.settleIfPending).not.toHaveBeenCalled();
+    expect(repo.transaction).not.toHaveBeenCalled();
   });
 
-  it('D-SEC-07: сума й валюта зворотного виклику не порівнюються із замовленням', async () => {
-    await OrderService.handleLiqPayCallback(payload({ amount: 0.01, currency: 'USD' }));
-    expect(repo.updateStatus).toHaveBeenCalledWith('ORD1', 'paid');
+  it.each([
+    ['сума менша', { amount: 0.01 }],
+    ['сума більша', { amount: 200.01 }],
+    ['валюта інша', { currency: 'USD' }],
+    ['сума й валюта інші', { amount: 0.01, currency: 'USD' }],
+    ['суми немає', { amount: undefined }],
+    ['валюти немає', { currency: undefined }],
+    ['сума не число', { amount: 'багато' }],
+    ['сума порожній рядок', { amount: '' }],
+    ['сума null', { amount: null }],
+  ])('D-SEC-07: %s — 400, замовлення не змінюється', async (_title, overrides) => {
+    const error = await serviceFailure(() => OrderService.handleLiqPayCallback(payload(overrides)));
+    expect([error.status, error.message]).toEqual([400, 'Amount or currency mismatch']);
+    expect(repo.transaction).not.toHaveBeenCalled();
+    expect(products.decrementStock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['число', { amount: 200 }],
+    ['рядок', { amount: '200.00' }],
+    ['рядок без копійок', { amount: '200' }],
+    ['валюта в нижньому регістрі', { currency: 'uah' }],
+  ])('D-SEC-07: збіжна сума й валюта (%s) приймаються', async (_title, overrides) => {
+    await OrderService.handleLiqPayCallback(payload(overrides));
+    expect(repo.settleIfPending).toHaveBeenCalledWith('ORD1', 'paid', CONN);
   });
 
   it.each([['paid'], ['completed'], ['cancelled'], ['shipped']])('замовлення зі статусом %s повторно не обробляється', async (status) => {
     repo.findById.mockResolvedValue({ ...ORDER, status });
     await OrderService.handleLiqPayCallback(payload());
-    expect(repo.updateStatus).not.toHaveBeenCalled();
+    expect(repo.transaction).not.toHaveBeenCalled();
+    expect(repo.settleIfPending).not.toHaveBeenCalled();
+  });
+
+  it('якщо паралельний callback уже закрив замовлення, залишок і лист не повторюються', async () => {
+    repo.settleIfPending.mockResolvedValue(false);
+    repo.findItems.mockResolvedValue([
+      { product_id: 10, quantity: 2, type: 'physical', digital_file_url: null },
+      { product_id: 11, quantity: 1, type: 'digital', digital_file_url: 'https://f.test/b.pdf' },
+    ]);
+    await OrderService.handleLiqPayCallback(payload());
+    expect(products.decrementStock).not.toHaveBeenCalled();
+    expect(emailService.sendDigitalGoodsEmail).not.toHaveBeenCalled();
   });
 
   it('суто цифрове замовлення стає completed, лист з файлами надсилається, залишок не списується', async () => {
@@ -529,7 +584,7 @@ describe('handleLiqPayCallback', () => {
       { product_id: 12, quantity: 1, type: 'digital', digital_file_url: null },
     ]);
     await OrderService.handleLiqPayCallback(payload());
-    expect(repo.updateStatus).toHaveBeenCalledWith('ORD1', 'completed');
+    expect(repo.settleIfPending).toHaveBeenCalledWith('ORD1', 'completed', CONN);
     expect(products.decrementStock).not.toHaveBeenCalled();
     expect(emailService.sendDigitalGoodsEmail).toHaveBeenCalledWith(
       'buyer@test.local', 'Іван', [{ product_id: 11, quantity: 1, type: 'digital', digital_file_url: 'https://f.test/b.pdf' }], 'green'
@@ -539,7 +594,7 @@ describe('handleLiqPayCallback', () => {
   it('замовлення без позицій стає paid', async () => {
     repo.findItems.mockResolvedValue([]);
     await OrderService.handleLiqPayCallback(payload());
-    expect(repo.updateStatus).toHaveBeenCalledWith('ORD1', 'paid');
+    expect(repo.settleIfPending).toHaveBeenCalledWith('ORD1', 'paid', CONN);
   });
 
   it('змішане замовлення: paid, списання залишку лише для фізичних, лист із цифровими файлами', async () => {
@@ -548,18 +603,23 @@ describe('handleLiqPayCallback', () => {
       { product_id: 11, quantity: 1, type: 'digital', digital_file_url: 'https://f.test/b.pdf' },
     ]);
     await OrderService.handleLiqPayCallback(payload());
-    expect(repo.updateStatus).toHaveBeenCalledWith('ORD1', 'paid');
+    expect(repo.settleIfPending).toHaveBeenCalledWith('ORD1', 'paid', CONN);
     expect(products.decrementStock).toHaveBeenCalledTimes(1);
     expect(emailService.sendDigitalGoodsEmail).toHaveBeenCalledTimes(1);
   });
 
-  it('порядок: статус → списання залишку → лист', async () => {
+  it('порядок: статус → списання залишку → лист після завершення транзакції', async () => {
     repo.findItems.mockResolvedValue([
       { product_id: 10, quantity: 1, type: 'physical', digital_file_url: null },
       { product_id: 11, quantity: 1, type: 'digital', digital_file_url: 'https://f.test/b.pdf' },
     ]);
+    repo.transaction.mockImplementation(async (work) => {
+      const result = await work(CONN);
+      log.push('commit');
+      return result;
+    });
     await OrderService.handleLiqPayCallback(payload());
-    expect(log).toEqual(['updateStatus', 'decrementStock', 'email']);
+    expect(log).toEqual(['settleIfPending', 'decrementStock', 'commit', 'email']);
   });
 
   it('колір акценту за замовчуванням — blue', async () => {
@@ -571,11 +631,17 @@ describe('handleLiqPayCallback', () => {
 });
 
 describe('payWithGooglePay', () => {
-  const ORDER = { id: 'ORD1', site_id: 3, customer_id: 2, status: 'pending', total_amount: '100.00', customer_email: 'b@test.local', customer_name: 'Іван' };
+  const ORDER = { id: 'ORD1', site_id: 3, customer_id: 2, status: 'pending', payment_method: 'online', total_amount: '100.00', customer_email: 'b@test.local', customer_name: 'Іван' };
+  const PAYMENT = { paymentMethodData: { tokenizationData: { token: 'abcdefghijklmnopqrstuvwxyz' } } };
+  let verify;
 
   beforeEach(() => {
     repo.findById.mockResolvedValue({ ...ORDER });
     repo.findItems.mockResolvedValue([{ product_id: 10, quantity: 2, type: 'physical', digital_file_url: null }]);
+    verify = vi.spyOn(PaymentService, 'verifyGooglePay').mockImplementation(async () => {
+      log.push('verify');
+      return { providerId: 'gpay_verified_1' };
+    });
   });
 
   it('замовлення не знайдено — 404', async () => {
@@ -587,85 +653,108 @@ describe('payWithGooglePay', () => {
   it('чуже замовлення — 403', async () => {
     const error = await serviceFailure(() => OrderService.payWithGooglePay('ORD1', 99, {}));
     expect([error.status, error.message]).toEqual([403, 'Доступ заборонено']);
+    expect(verify).not.toHaveBeenCalled();
   });
 
   it('власник порівнюється як рядок', async () => {
     await OrderService.payWithGooglePay('ORD1', '2', {});
-    expect(repo.updateStatusAndTouch).toHaveBeenCalled();
+    expect(repo.settleIfPending).toHaveBeenCalled();
   });
 
   it.each([['paid'], ['completed']])('уже %s — 400', async (status) => {
     repo.findById.mockResolvedValue({ ...ORDER, status });
     const error = await serviceFailure(() => OrderService.payWithGooglePay('ORD1', 2, {}));
     expect([error.status, error.message]).toEqual([400, 'Замовлення вже оплачено']);
-    expect(repo.updateStatusAndTouch).not.toHaveBeenCalled();
+    expect(verify).not.toHaveBeenCalled();
+    expect(repo.settleIfPending).not.toHaveBeenCalled();
   });
 
-  it.each([['cancelled'], ['shipped'], ['pending']])('D-BIZ-08: замовлення зі статусом %s «оплачується»', async (status) => {
+  it.each([['cancelled'], ['shipped']])('D-BIZ-08: замовлення зі статусом %s не оплачується — 400', async (status) => {
     repo.findById.mockResolvedValue({ ...ORDER, status });
-    await OrderService.payWithGooglePay('ORD1', 2, {});
-    expect(repo.updateStatusAndTouch).toHaveBeenCalledWith('ORD1', 'paid', CONN);
+    const error = await serviceFailure(() => OrderService.payWithGooglePay('ORD1', 2, {}));
+    expect([error.status, error.message]).toEqual([400, 'Це замовлення вже оплачено або скасовано.']);
+    expect(verify).not.toHaveBeenCalled();
+    expect(repo.settleIfPending).not.toHaveBeenCalled();
   });
 
-  it('D-BIZ-08: замовлення з післяплатою теж «оплачується»', async () => {
+  it('D-BIZ-08: замовлення з післяплатою не оплачується — 400', async () => {
     repo.findById.mockResolvedValue({ ...ORDER, payment_method: 'cod' });
-    await OrderService.payWithGooglePay('ORD1', 2, {});
-    expect(repo.updateStatusAndTouch).toHaveBeenCalled();
+    const error = await serviceFailure(() => OrderService.payWithGooglePay('ORD1', 2, {}));
+    expect([error.status, error.message]).toEqual([400, 'Це замовлення оформлено з оплатою при отриманні. Онлайн оплата недоступна.']);
+    expect(verify).not.toHaveBeenCalled();
   });
 
-  it('D-SEC-02: токен платежу не перевіряється — підходить будь-яке тіло', async () => {
-    await OrderService.payWithGooglePay('ORD1', 2, undefined);
-    expect(repo.updateStatusAndTouch).toHaveBeenCalled();
+  it('D-SEC-02: без підтвердження платежу сервером замовлення не змінюється (за замовчуванням — 501)', async () => {
+    verify.mockRestore();
+    const error = await serviceFailure(() => OrderService.payWithGooglePay('ORD1', 2, undefined));
+    expect(error.status).toBe(501);
+    expect(repo.transaction).not.toHaveBeenCalled();
+    expect(repo.settleIfPending).not.toHaveBeenCalled();
+    expect(TransactionRepository.create).not.toHaveBeenCalled();
+    expect(emailService.sendDigitalGoodsEmail).not.toHaveBeenCalled();
+  });
+
+  it('D-SEC-02: відмова перевірки передається як є, нічого не записується', async () => {
+    verify.mockRejectedValue(new ServiceError(402, 'declined'));
+    const error = await serviceFailure(() => OrderService.payWithGooglePay('ORD1', 2, PAYMENT));
+    expect([error.status, error.message]).toEqual([402, 'declined']);
+    expect(repo.settleIfPending).not.toHaveBeenCalled();
+    expect(TransactionRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('перевірці передаються токен, сума, валюта й номер замовлення', async () => {
+    await OrderService.payWithGooglePay('ORD1', 2, PAYMENT);
+    expect(verify).toHaveBeenCalledWith(PAYMENT, { amount: '100.00', currency: 'UAH', reference: 'ORD1' });
   });
 
   it('усе виконується в одній транзакції на її з\'єднанні', async () => {
-    await OrderService.payWithGooglePay('ORD1', 2, {});
+    await OrderService.payWithGooglePay('ORD1', 2, PAYMENT);
     expect(repo.transaction).toHaveBeenCalledTimes(1);
-    expect(repo.findById).toHaveBeenCalledWith('ORD1', CONN);
     expect(repo.findItems).toHaveBeenCalledWith('ORD1', CONN);
+    expect(repo.settleIfPending).toHaveBeenCalledWith('ORD1', 'paid', CONN);
     expect(products.decrementStock).toHaveBeenCalledWith(10, 2, CONN);
     expect(repo.findSiteOwnerAndAccent).toHaveBeenCalledWith(3, CONN);
     expect(TransactionRepository.create.mock.calls[0][1]).toBe(CONN);
   });
 
-  it('транзакція платформи записується власнику магазину на суму замовлення', async () => {
-    await OrderService.payWithGooglePay('ORD1', 2, { paymentMethodData: { tokenizationData: { token: 'abcdefghijklmnopqrstuvwxyz' } } });
+  it('транзакція платформи записується власнику магазину з ідентифікатором від перевірки', async () => {
+    await OrderService.payWithGooglePay('ORD1', 2, PAYMENT);
     const [row] = TransactionRepository.create.mock.calls[0];
     expect(row).toMatchObject({
       userId: 1, amount: '100.00', currency: 'UAH', status: 'success',
-      providerId: 'gpay_abcdefghijklmnopqrst', description: 'Оплата замовлення #ORD1 через Google Pay',
+      providerId: 'gpay_verified_1', description: 'Оплата замовлення #ORD1 через Google Pay',
     });
     expect(row.id).toMatch(/^[0-9a-f-]{36}$/);
   });
 
-  it('без токена ідентифікатор постачальника має префікс gpay_test_', async () => {
-    await OrderService.payWithGooglePay('ORD1', 2, {});
-    expect(TransactionRepository.create.mock.calls[0][0].providerId).toMatch(/^gpay_test_\d+$/);
+  it('якщо паралельна оплата вже закрила замовлення — 400, залишок і транзакція не повторюються', async () => {
+    repo.settleIfPending.mockResolvedValue(false);
+    const error = await serviceFailure(() => OrderService.payWithGooglePay('ORD1', 2, PAYMENT));
+    expect([error.status, error.message]).toEqual([400, 'Замовлення вже оплачено']);
+    expect(products.decrementStock).not.toHaveBeenCalled();
+    expect(TransactionRepository.create).not.toHaveBeenCalled();
   });
 
   it('цифрове замовлення: completed, лист з файлами, залишок не списується', async () => {
     repo.findItems.mockResolvedValue([{ product_id: 11, quantity: 1, type: 'digital', digital_file_url: 'u' }]);
-    await OrderService.payWithGooglePay('ORD1', 2, {});
-    expect(repo.updateStatusAndTouch).toHaveBeenCalledWith('ORD1', 'completed', CONN);
+    await OrderService.payWithGooglePay('ORD1', 2, PAYMENT);
+    expect(repo.settleIfPending).toHaveBeenCalledWith('ORD1', 'completed', CONN);
     expect(products.decrementStock).not.toHaveBeenCalled();
     expect(emailService.sendDigitalGoodsEmail).toHaveBeenCalledWith('b@test.local', 'Іван', [{ product_id: 11, quantity: 1, type: 'digital', digital_file_url: 'u' }], 'green');
   });
 
-  it('порядок: статус → залишок → лист → запис транзакції', async () => {
+  it('порядок: перевірка → статус → залишок → запис транзакції → лист після завершення транзакції', async () => {
     repo.findItems.mockResolvedValue([
       { product_id: 10, quantity: 1, type: 'physical', digital_file_url: null },
       { product_id: 11, quantity: 1, type: 'digital', digital_file_url: 'u' },
     ]);
-    await OrderService.payWithGooglePay('ORD1', 2, {});
-    expect(log).toEqual(['updateStatusAndTouch', 'decrementStock', 'email', 'transaction']);
-  });
-
-  it('збій листа переривається помилкою транзакції, запис транзакції не виконується', async () => {
-    repo.findItems.mockResolvedValue([{ product_id: 11, quantity: 1, type: 'digital', digital_file_url: 'u' }]);
-    const boom = new Error('mail down');
-    emailService.sendDigitalGoodsEmail.mockImplementation(async () => { throw boom; });
-    await expect(OrderService.payWithGooglePay('ORD1', 2, {})).rejects.toBe(boom);
-    expect(TransactionRepository.create).not.toHaveBeenCalled();
+    repo.transaction.mockImplementation(async (work) => {
+      const result = await work(CONN);
+      log.push('commit');
+      return result;
+    });
+    await OrderService.payWithGooglePay('ORD1', 2, PAYMENT);
+    expect(log).toEqual(['verify', 'settleIfPending', 'decrementStock', 'transaction', 'commit', 'email']);
   });
 });
 

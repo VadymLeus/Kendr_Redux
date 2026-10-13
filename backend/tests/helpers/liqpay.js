@@ -29,3 +29,11 @@ export function postLiqpay(app, url, payload, privateKey) {
 
 // Ідентифікатор платежу LiqPay для замовлення має вигляд "<orderId>_<час>" (orderController.generateLiqPayData).
 export const liqpayOrderId = (orderId) => `${orderId}_${Date.now()}`;
+
+export const paidCallback = (order, overrides = {}) => ({
+  order_id: liqpayOrderId(order.id),
+  status: 'success',
+  amount: Number(order.total_amount),
+  currency: 'UAH',
+  ...overrides,
+});

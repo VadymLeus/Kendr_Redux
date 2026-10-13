@@ -24,7 +24,7 @@ npm run test:coverage         # покриття (v8)
 - `tests/helpers/testEnv.mjs` задає змінні середовища тестів і містить захист: `assertTestDatabase` зупиняє тести, якщо вони спрямовані не на `127.0.0.1:3307/kendr_test`.
 - Перед кожним тестом `resetDb()` очищає всі таблиці й додає рядок `global_settings`; дані створюють фабрики (`tests/helpers/factories.js`) прямими SQL-запитами.
 - Застосунок береться з `backend/app.js` (`app.listen` винесено в `server.js`). Модулі backend завантажуються рідним `require` Node, тож підміна властивості модуля (`emailService.sendDigitalGoodsEmail`) діє на контролери.
-- Платіжний шлюз LiqPay емулюється підписом (`tests/helpers/liqpay.js`), листи з цифровими товарами перехоплюються.
+- Платіжний шлюз LiqPay емулюється підписом (`tests/helpers/liqpay.js`; `paidCallback(order)` будує повідомлення про успішну оплату із сумою й валютою замовлення), листи з цифровими товарами перехоплюються. Перевірку платежу Google Pay тести підміняють через `paymentService.verifyGooglePay` (за замовчуванням вона відхиляє платіж). Режим `sandbox` вимкнено в `testEnv.mjs`, тести вмикають його через `vi.stubEnv('LIQPAY_SANDBOX', '1')`.
 - Листи автентифікації (`sendOtpEmail`) і запит перевірки Turnstile перехоплює `tests/helpers/outbound.js`: контролери автентифікації імпортують `sendOtpEmail` деструктуризацією, тож підмінити функцію в модулі неможливо, і замість цього підміняється глобальний `fetch` (ним користуються SDK Resend і `verifyTurnstile`). Одноразовий код тест бере з тексту перехопленого листа; запит до невідомої адреси перериває тест.
 - Обмежувачі частоти (`express-rate-limit`) ведуть лічильник у пам'яті процесу за `req.ip`. Застосунок працює з `trust proxy = 1`, тому `tests/helpers/client.js` задає кожному запиту власну адресу заголовком `X-Forwarded-For`; тести самих обмежувачів шлють усі запити з однієї адреси. Ліміти автентифікації закріплено в `testEnv.mjs`, щоб локальний `.env` їх не змінював.
 - Тест D-SEC-19 і D-ARC-12 створює файли-мітки в `backend/uploads/avatars/custom/` і `backend/tests/.tmp/` (останній каталог у `.gitignore`); мітки видаляються після тесту.
@@ -45,9 +45,11 @@ npm run test:coverage         # покриття (v8)
 | `sendServiceError.test.js` | `utils/sendServiceError.js`: `ServiceError` → `res.status(status).json({ message, ...extra })`, решта помилок → `next(error)` |
 | `ProductService.test.js` | `services/ProductService.js`: права доступу, нормалізація полів товару, правила відгуків; фіксує D-DEAD-08, D-SEC-18, D-SEC-06 на рівні сервісу |
 | `PageService.test.js` | `services/PageService.js`: права доступу до сторінки, обов'язкові поля, переклад дубля slug у 400, правила видалення (головна й остання сторінка), D-BLK-05 на рівні сервісу |
-| `OrderService.test.js` | `services/OrderService.js`: оформлення замовлення (перевірки магазину, ліміт неоплачених, залишок, адреса, цифрові товари), оплата LiqPay і Google Pay, списки замовлень; фіксує D-BIZ-01, D-BIZ-02, D-BIZ-08, D-BIZ-09, D-SEC-02, D-SEC-03, D-SEC-07, D-CFG-01 на рівні сервісу |
+| `OrderService.test.js` | `services/OrderService.js`: оформлення замовлення (перевірки магазину, ліміт неоплачених, залишок, адреса, цифрові товари), оплата LiqPay і Google Pay, списки замовлень; фіксує D-BIZ-01, D-BIZ-02, D-BIZ-09, D-SEC-03 на рівні сервісу; перевіряє виправлення D-BIZ-08, D-SEC-02, D-SEC-07, D-CFG-01 (v2.0) |
 | `PricingService.test.js` | `services/PricingService.js`: сума замовлення без знижок і надбавок (D-BIZ-01), поведінка при від'ємній і нечисловій кількості |
-| `LiqPayService.test.js` | `services/LiqPayService.js`: підпис і параметри платежу, адреси зворотного виклику |
+| `LiqPayService.test.js` | `services/LiqPayService.js`: підпис, параметри платежу замовлення й тарифу, адреси зворотного виклику, режим `sandbox` за `LIQPAY_SANDBOX` (D-CFG-01) |
+| `PaymentService.test.js` | `services/PaymentService.js`: розбір callback, порівняння підпису функцією сталого часу, успішні статуси, збіг суми й валюти (D-SEC-07), відмова Google Pay без серверної перевірки (D-SEC-01, D-SEC-02) |
+| `SubscriptionService.test.js` | `services/SubscriptionService.js`: початок оплати тарифу, callback LiqPay (статус, сума, валюта, повторна обробка), оплата Google Pay лише після підтвердження |
 | `PlanPolicy.test.js` | `services/PlanPolicy.js`: ліміти тарифів FREE, PLUS, ADMIN, невідомий тариф, регістр і пробіли |
 | `siteAccess.test.js` | `services/siteAccess.js`: `requireSiteAccess` і `hasSiteAccess` (власник або будь-який співавтор, D-SEC-06) |
 | `SiteService.test.js` | `services/SiteService.js`: створення сайту (вимкнене створення, адреса, шаблон, транзакція), каталог, відкриття за адресою (статуси suspended, probation, private), збереження налаштувань (права, блокування, статус), перейменування, скидання до шаблону, закріплення, аналітика; фіксує D-ARC-10, D-BIZ-03, D-SEC-05, D-SEC-06, D-SEC-17 на рівні сервісу |
@@ -61,20 +63,22 @@ npm run test:coverage         # покриття (v8)
 
 Назва й коментар тесту, що фіксує помилкову поведінку з реєстру дефектів, містять `KNOWN-DEFECT D-xx`. Усі такі тести зелені на `v0`. При виправленні дефекту очікування змінюється на правильне й маркер видаляється; перелік змін заноситься в `docs/04-results`.
 
+Після виправлення назва тесту починається з `D-xx:` (наприклад, `D-SEC-07: підписаний callback сумою відхиляється…`), тож тести виправлених дефектів знаходить пошук за номером. Перелік змін етапу 7 ведеться в `docs/04-results/v2.0/fixes.md`.
+
 ## Покриття дефектів
 
 | Дефект | Файл | Що фіксується |
 |---|---|---|
-| D-SEC-01 | `transactions.upgrade.test.js` | тариф PLUS видається без оплати (`POST /api/transactions/upgrade/gpay`) |
-| D-SEC-02 | `orders.payment.test.js` | замовлення позначається оплаченим без шлюзу; цифровий товар видається безкоштовно |
+| D-SEC-01 | `transactions.upgrade.test.js` | `POST /api/transactions/upgrade/gpay` без серверного підтвердження платежу відповідає 501 і тариф не видає (виправлено в v2.0, крок 7.1) |
+| D-SEC-02 | `orders.payment.test.js` | `POST /api/orders/:orderId/pay/gpay` без серверного підтвердження відповідає 501, замовлення, залишок і пошта не змінюються (виправлено в v2.0, крок 7.1) |
 | D-SEC-03 | `orders.access.test.js` | сторонній користувач читає замовлення чужого сайту й змінює їхній статус |
-| D-SEC-07 | `orders.payment.test.js`, `transactions.upgrade.test.js` | сума й валюта callback не порівнюються |
+| D-SEC-07 | `orders.payment.test.js`, `transactions.upgrade.test.js` | callback з іншою сумою, валютою або без них відхиляється кодом 400 (виправлено в v2.0, крок 7.1) |
 | D-BIZ-01 | `orders.checkout.test.js` | сервер ігнорує знижку, надбавки варіантів і ціну з клієнта |
 | D-BIZ-02 | `orders.stock.test.js`, `orders.checkout.input.test.js` | залишок не списується при оформленні, перепродаж можливий (також через дубль товару в позиціях) |
-| D-BIZ-08 | `orders.payment.test.js` | Google Pay «оплачує» скасовані, відправлені й післяплатні замовлення |
+| D-BIZ-08 | `orders.payment.test.js` | Google Pay не оплачує скасовані, відправлені й післяплатні замовлення — 400 (виправлено в v2.0, крок 7.1) |
 | D-BIZ-09 | `orders.checkout.input.test.js` | від'ємна й нульова кількість у замовленні приймаються |
 | D-ARC-10 | `orders.checkout.input.test.js`, `sites.create.test.js`, `sites.access.test.js`, `products.test.js`, `team.test.js` | збій SQL повертається як 400 із текстом БД; помилки клієнта (немає шаблону, дубль категорії, відсутній пароль) повертаються як 500; код `createSite` визначається за фрагментом тексту |
-| D-CFG-01 | `orders.payment.test.js`, `transactions.upgrade.test.js` | статус `sandbox` приймається як успішна оплата |
+| D-CFG-01 | `orders.checkout.test.js`, `orders.payment.test.js`, `transactions.upgrade.test.js` | `sandbox: 1` і статус `sandbox` діють лише за `LIQPAY_SANDBOX=1` (виправлено в v2.0, крок 7.1) |
 | D-SEC-05 | `sites.public.test.js` | `author_email` віддається без токена двома маршрутами (`/info/:id`, `/:site_path`), перебір ідентифікаторів збирає email власників |
 | D-SEC-06 | `sites.access.test.js`, `pages.test.js`, `products.test.js` | співавтор без прав керує ключами LiqPay і публікацією, сторінками, товарами, категоріями, відгуками; viewer стирає вміст сайту (скидання до шаблону) і змінює закріплення; категорії співавтор створює, але змінити й видалити не може |
 | D-SEC-14 | `products.test.js` | `digital_file_url` входить до відповідей чотирьох публічних маршрутів |

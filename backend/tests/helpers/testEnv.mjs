@@ -18,6 +18,7 @@ export const testEnv = {
   // Ключі платформи LiqPay (оплата тарифу): вигадані, у шлюз не надсилаються
   LIQPAY_PUBLIC_KEY: 'sandbox_platform_public',
   LIQPAY_PRIVATE_KEY: 'platform-private-secret',
+  LIQPAY_SANDBOX: '',
   // Заглушки, без яких модулі не завантажуються (ключ Resend, Google OAuth, Cloudinary)
   RESEND_API_KEY: 're_test_dummy',
   GOOGLE_CLIENT_ID: 'test-client-id',

@@ -9,6 +9,8 @@ const require = createRequire(import.meta.url);
 export const app = require('../../app');
 export const appPool = require('../../config/db');
 export const emailService = require('../../utils/emailService');
+export const paymentService = require('../../services/PaymentService');
+export const { ServiceError } = require('../../services/ServiceError');
 export const { clearSettingsCache } = require('../../middleware/platformGuards');
 
 export async function closeApp() {
