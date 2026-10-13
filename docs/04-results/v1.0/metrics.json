@@ -325,6 +325,48 @@
         "total": 2174,
         "pct": 63.43146274149034
       }
+    },
+    "backendLayers": {
+      "controllers": {
+        "files": 20,
+        "covered": 1041,
+        "total": 1903
+      },
+      "services": {
+        "files": 12,
+        "covered": 626,
+        "total": 627
+      },
+      "repositories": {
+        "files": 9,
+        "covered": 299,
+        "total": 356
+      },
+      "models": {
+        "files": 9,
+        "covered": 133,
+        "total": 226
+      },
+      "middleware": {
+        "files": 9,
+        "covered": 178,
+        "total": 215
+      },
+      "utils": {
+        "files": 5,
+        "covered": 89,
+        "total": 145
+      },
+      "config": {
+        "files": 5,
+        "covered": 68,
+        "total": 71
+      },
+      "routes": {
+        "files": 21,
+        "covered": 281,
+        "total": 281
+      }
     }
   },
   "tests": {

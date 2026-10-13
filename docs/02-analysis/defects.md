@@ -30,10 +30,10 @@
 | Планове виправлення | Кількість |
 |---|---|
 | до v1.0 | 2 |
-| v1.0 | 21 |
+| v1.0 | 17 |
 | v1.0 → v2.0 | 1 |
 | v2.0 | 42 |
-| Перспективи | 24 |
+| Перспективи | 28 |
 
 Шкала серйозності: **критична**: обхід оплати або автентифікації без особливих умов; **висока**: доступ до чужих даних, втрата коштів чи функції, що вимагає лише звичайного облікового запису; **середня**: ризик за додаткових умов або помітна функціональна помилка; **низька**: підтримуваність, дрібні помилки.
 
@@ -125,10 +125,10 @@
 
 | ID | Серйозність | Місце | Опис | Підтвердження | Виправлення |
 |---|---|---|---|---|---|
-| D-DUP-01 | Середня | `ProductManager.jsx:25`; `GeneralSettingsTab.jsx:59`; `GeneralTemplatesSection.jsx:66`; `CreateSitePage.jsx:179`; `HeaderBlock.jsx:21`; `MediaInspector.jsx:18`; `CartPage.jsx:275`; `MyOrdersPage.jsx:42`; `TicketDetailPage.jsx:202`; `SiteCoverDisplay.jsx:10`; `SiteGridCard.jsx:226`; `UniversalMediaInput.jsx:26`; `Avatar.jsx:25`; `SiteHeader.jsx:6` | Перетворення шляху до медіа в повну адресу реалізовано не менше ніж у 14 локальних функціях, тоді як спільна `getMediaUrl` (`shared/utils/mediaUtils.js:14`) існує. Знайдено пошуком за іменами функцій, тож реальна кількість може бути більшою. | читання коду | v1.0 (за наявності часу) |
-| D-DUP-02 | Низька | `AdminBillingPage.jsx:60`; `OrdersTab.jsx:64`; `AnalyticsTab.jsx:16`; `ProductCard.jsx:64`; `CartPage.jsx:42`; `MyOrdersPage.jsx:69`; `ProductDetailPage.jsx:135` | Таблиця символів валют `currencyMap` оголошена у сім місцях. | читання коду | v1.0 (за наявності часу) |
-| D-DUP-03 | Середня | `SiteDisplayPage.jsx:27–57`; `SiteDashboardPage.jsx:300–335`; `ProductDetailPage.jsx:101–124`; `SitePreviewer.jsx:197–214` | Обчислення теми сайту (кольори світлого й темного режимів, CSS-змінні, розбір `theme_settings`) повторюється щонайменше у чотирьох місцях (jscpd: клони 12–18 рядків). | jscpd + читання коду | v1.0 (за наявності часу) |
-| D-DUP-04 | Низька | `SiteDashboardPage.jsx:26,83` ↔ `SitePreviewer.jsx:12`, `BlockEditor.jsx:13` | Компонент `DeviceIframe` та хук `useDragAutoScroll` скопійовано (jscpd: клони 36 і 45 рядків). | jscpd | v1.0 (за наявності часу) |
+| D-DUP-01 | Середня | `ProductManager.jsx:25`; `GeneralSettingsTab.jsx:59`; `GeneralTemplatesSection.jsx:66`; `CreateSitePage.jsx:179`; `HeaderBlock.jsx:21`; `MediaInspector.jsx:18`; `CartPage.jsx:275`; `MyOrdersPage.jsx:42`; `TicketDetailPage.jsx:202`; `SiteCoverDisplay.jsx:10`; `SiteGridCard.jsx:226`; `UniversalMediaInput.jsx:26`; `Avatar.jsx:25`; `SiteHeader.jsx:6` | Перетворення шляху до медіа в повну адресу реалізовано не менше ніж у 14 локальних функціях, тоді як спільна `getMediaUrl` (`shared/utils/mediaUtils.js:14`) існує. Знайдено пошуком за іменами функцій, тож реальна кількість може бути більшою. | читання коду | Перспективи (у `v1.0` не виконано) |
+| D-DUP-02 | Низька | `AdminBillingPage.jsx:60`; `OrdersTab.jsx:64`; `AnalyticsTab.jsx:16`; `ProductCard.jsx:64`; `CartPage.jsx:42`; `MyOrdersPage.jsx:69`; `ProductDetailPage.jsx:135` | Таблиця символів валют `currencyMap` оголошена у сім місцях. | читання коду | Перспективи (у `v1.0` не виконано) |
+| D-DUP-03 | Середня | `SiteDisplayPage.jsx:27–57`; `SiteDashboardPage.jsx:300–335`; `ProductDetailPage.jsx:101–124`; `SitePreviewer.jsx:197–214` | Обчислення теми сайту (кольори світлого й темного режимів, CSS-змінні, розбір `theme_settings`) повторюється щонайменше у чотирьох місцях (jscpd: клони 12–18 рядків). | jscpd + читання коду | Перспективи (у `v1.0` не виконано) |
+| D-DUP-04 | Низька | `SiteDashboardPage.jsx:26,83` ↔ `SitePreviewer.jsx:12`, `BlockEditor.jsx:13` | Компонент `DeviceIframe` та хук `useDragAutoScroll` скопійовано (jscpd: клони 36 і 45 рядків). | jscpd | Перспективи (у `v1.0` не виконано) |
 | D-DUP-05 | Низька | `shared/hooks/useConfirm.js` та `app/providers/ConfirmContext.jsx`; `shared/hooks/useConfirmDialog.js` (`MyTicketsPage.jsx:10,48`; `TicketDetailPage.jsx:9,31`) | Два механізми підтвердження дій: контекстний `useConfirm` (використовується широко) і локальний `useConfirmDialog` (дві сторінки). | читання коду | Перспективи |
 | D-DUP-06 | Низька | `OrdersTab.jsx` ↔ `MyOrdersPage.jsx` (23 рядки); `MediaPickerModal.jsx` ↔ `MediaLibraryPage.jsx` (23 + 10 + 10); `NewTicketPage.jsx` ↔ `TicketDetailPage.jsx` (24 + 11); `AdminUsersSitesPage.jsx` ↔ `ProfilePage.jsx` (14 + 18 + 10); `CatalogSettings.jsx` ↔ `ShowCaseSettings.jsx` | Решта значних клонів за звітом jscpd (повний перелік у `raw/jscpd/jscpd-report.json`). | jscpd | Перспективи |
 | D-DUP-07 | Низька | `SiteDashboardPage.jsx:417–428`; `SiteDisplayPage.jsx:111–127`; `ProductDetailPage.jsx:78–95`; `SitePreviewer.jsx:240,271` | Перетворення глобальних хедера й футера (`type: header \| footer` → `global-header \| global-footer`, дані з `sites.header_content` / `footer_content`, запасний варіант із `getDefaultBlockData`) скопійовано у чотирьох місцях з однаковою логікою розбору JSON. Бекенд при створенні сайту записує тип `header` (`siteController.js:168,380,512`), редактор і рендерер перейменовують його на льоту. | читання коду | v1.0 (ADR-002) |

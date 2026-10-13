@@ -164,6 +164,22 @@ const coverageTotals = (json) => {
   return { lines: pick('lines'), statements: pick('statements'), functions: pick('functions'), branches: pick('branches') };
 };
 
+const coverageLayers = (json) => {
+  if (!json) return null;
+  const layers = {};
+  for (const name of ['controllers', 'services', 'repositories', 'models', 'middleware', 'utils', 'config', 'routes']) layers[name] = { files: 0, covered: 0, total: 0 };
+  for (const [file, value] of Object.entries(json)) {
+    if (file === 'total') continue;
+    const match = file.replace(/\\/g, '/').match(/\/backend\/(controllers|services|repositories|models|middleware|utils|config|routes)\//);
+    if (!match) continue;
+    const layer = layers[match[1]];
+    layer.files += 1;
+    layer.covered += value.lines.covered;
+    layer.total += value.lines.total;
+  }
+  return layers;
+};
+
 const testTotals = (json) => {
   if (!json) return null;
   return { files: json.testResults?.length ?? 0, tests: json.numTotalTests, passed: json.numPassedTests, failed: json.numFailedTests };
@@ -199,6 +215,7 @@ const metrics = {
   coverage: {
     frontend: coverageTotals(first(readJson('coverage-frontend', 'coverage-summary.json'), readJson('coverage-frontend-tests', 'coverage-summary.json'))),
     backend: coverageTotals(readJson('coverage-backend', 'coverage-summary.json')),
+    backendLayers: coverageLayers(readJson('coverage-backend', 'coverage-summary.json')),
   },
   tests: { frontend: testTotals(readJson('tests-frontend.json')), backend: testTotals(readJson('tests-backend.json')) },
 };
@@ -358,6 +375,7 @@ if (metrics.knip.frontend || metrics.knip.backend) {
   const verified = versions.map((m) => (m.backendUnusedExports ? m.backendUnusedExports.length : null));
   table(head, [
     compare('Frontend: невикористаних файлів', 'knip.frontend.files'),
+    compare('Frontend: невикористаних залежностей (`dependencies`)', 'knip.frontend.dependencies'),
     compare('Frontend: невикористаних `devDependencies`', 'knip.frontend.devDependencies'),
     compare('Frontend: невикористаних експортів', 'knip.frontend.exports'),
     compare('Frontend: експортів і за іменем, і за замовчуванням', 'knip.frontend.duplicates'),
@@ -418,6 +436,14 @@ for (const part of ['frontend', 'backend']) {
     out(`Покриття ${part} (${tag}): рядків ${num(c.lines.covered)} із ${num(c.lines.total)}, операторів ${num(c.statements.covered)} із ${num(c.statements.total)}, функцій ${num(c.functions.covered)} із ${num(c.functions.total)}, гілок ${num(c.branches.covered)} із ${num(c.branches.total)}.`);
     out();
   }
+}
+
+if (metrics.coverage.backendLayers && Object.keys(metrics.coverage.backendLayers).length) {
+  out('Покриття рядків backend за шарами:');
+  out();
+  table(['Шар', 'Файлів', 'Рядків покрито', 'Рядків усього', 'Частка'], Object.entries(metrics.coverage.backendLayers).map(([layer, v]) => [
+    `\`${layer}\``, num(v.files), num(v.covered), num(v.total), pct(v.total ? (v.covered / v.total) * 100 : null),
+  ]));
 }
 
 mkdirSync(path.dirname(outJson), { recursive: true });
