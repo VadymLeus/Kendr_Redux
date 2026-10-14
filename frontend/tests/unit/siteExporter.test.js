@@ -95,7 +95,31 @@ describe('exportSiteToZip', () => {
             expect(apiClient.get.mock.calls.map((c) => c[0])).toEqual(['/sites/5/pages', '/pages/1', '/pages/2']);
         });
 
-        it('глобальні шапка й підвал з даних сайту потрапляють на кожну сторінку (якщо їхній тип header/footer)', async () => {
+        it('D-BLK-06: блоки global-header і global-footer зі сторінки беруть дані сайту (так їх зберігає редактор)', async () => {
+            const globals = (text) => [
+                { type: 'global-header', block_id: 'h', data: {} },
+                textBlock(text),
+                { type: 'global-footer', block_id: 'f', data: {} },
+            ];
+            mockApi({ 1: globals('A'), 2: globals('B') });
+            await exportSiteToZip(
+                site({
+                    header_content: { site_title: 'Шапка', show_title: true, nav_items: [{ id: 'n', label: 'Меню', link: '/menu' }] },
+                    footer_content: { copyright: 'Підвал', links: [{ id: 'l', label: 'Умови', link: '/terms' }] },
+                })
+            );
+            ['index.html', 'about.html'].forEach((name) => {
+                const html = zipState.files[name];
+                expect(html.match(/<header/g)).toHaveLength(1);
+                expect(html.match(/<footer/g)).toHaveLength(1);
+                expect(html).toContain('>Шапка</span>');
+                expect(html).toContain('href="menu.html"');
+                expect(html).toContain('Підвал');
+                expect(html).toContain('href="terms.html"');
+            });
+        });
+
+        it('глобальні шапка й підвал з даних сайту потрапляють на кожну сторінку', async () => {
             mockApi({ 1: [textBlock('A')], 2: [textBlock('B')] });
             await exportSiteToZip(
                 site({

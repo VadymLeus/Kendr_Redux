@@ -519,6 +519,8 @@ const SiteDashboardPage = () => {
         console.error("Помилка при збереженні:", error);
         if (error.response && (error.response.status === 503 || error.response.data?.editor_locked)) {
             setIsReadOnly(true);
+        } else if (error.response?.status === 400 && error.response.data?.message) {
+            toast.error(error.response.data.message);
         } else {
             toast.error('Не вдалося зберегти зміни.');
         }

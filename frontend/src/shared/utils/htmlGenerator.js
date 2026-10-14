@@ -1,6 +1,8 @@
 // frontend/src/shared/utils/htmlGenerator.js
 import { escapeHTML } from './exportHtml';
 import { getBlockHtmlRenderer } from '../../modules/editor/core/blockRegistry';
+import { isHeaderType, isFooterType } from '../../modules/editor/core/globalBlockTypes';
+import { mergeGlobalBlocks } from '../../modules/editor/core/globalBlocks';
 
 const generateBlockHTML = (block) => {
     if (!block || !block.data) return '';
@@ -8,22 +10,32 @@ const generateBlockHTML = (block) => {
     return renderBlock ? renderBlock(block.data, { renderBlock: generateBlockHTML }) : '';
 };
 
-export const generateFullHTML = (siteData, blocks, pageTitle) => {
-    let allBlocks = Array.isArray(blocks) ? [...blocks] : [];
-    if (siteData.header_content && !allBlocks.find(b => b.type === 'header')) {
-        let headerBlock = Array.isArray(siteData.header_content) ? siteData.header_content[0] : siteData.header_content;
-        if (headerBlock) {
-             headerBlock = {
-                 ...headerBlock,
-                 data: { ...headerBlock.data, ...siteData } 
-             };
-             allBlocks.unshift(headerBlock);
-        }
-    }
+// Дані шапки й підвалу в налаштуваннях сайту бувають масивом блоків (нові сайти, шаблони),
+// об'єктом-блоком або самим об'єктом даних (після збереження в редакторі), тому розбирає їх mergeGlobalBlocks.
+const hasSiteContent = (raw) => {
+    if (!raw) return false;
+    if (Array.isArray(raw)) return raw.length > 0;
+    if (typeof raw === 'object') return Object.keys(raw).length > 0;
+    const text = String(raw).trim();
+    return text !== '' && text !== '{}' && text !== '[]';
+};
 
-    if (siteData.footer_content && !allBlocks.find(b => b.type === 'footer')) {
-        const footerBlock = Array.isArray(siteData.footer_content) ? siteData.footer_content[0] : siteData.footer_content;
-        if (footerBlock) allBlocks.push(footerBlock);
+const siteGlobalBlock = (type, siteData) => {
+    const [block] = mergeGlobalBlocks([{ type, block_id: `site-${type}`, data: {} }], siteData);
+    return type === 'global-header' ? { ...block, data: { ...block.data, ...siteData } } : block;
+};
+
+export const generateFullHTML = (siteData, blocks, pageTitle) => {
+    const pageBlocks = mergeGlobalBlocks(
+        (Array.isArray(blocks) ? blocks : []).filter(block => block && typeof block === 'object'),
+        siteData
+    );
+    const allBlocks = [...pageBlocks];
+    if (hasSiteContent(siteData.header_content) && !pageBlocks.some(block => isHeaderType(block.type))) {
+        allBlocks.unshift(siteGlobalBlock('global-header', siteData));
+    }
+    if (hasSiteContent(siteData.footer_content) && !pageBlocks.some(block => isFooterType(block.type))) {
+        allBlocks.push(siteGlobalBlock('global-footer', siteData));
     }
 
     const blocksHTML = allBlocks.map(generateBlockHTML).join('\n');

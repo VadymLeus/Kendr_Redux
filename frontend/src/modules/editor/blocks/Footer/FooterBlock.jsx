@@ -4,6 +4,7 @@ import { useBlockFonts } from '../../../../shared/hooks/useBlockFonts';
 import { BASE_URL } from '../../../../shared/config';
 import { Facebook, Instagram, Send, Youtube, Music, Twitter, Linkedin, Github } from 'lucide-react';
 import { areBlockPropsEqual } from '../../core/blockProps';
+import { resolveSiteLink } from '../../../../shared/utils/linkUtils';
 
 const IconsMap = {
     facebook: Facebook,
@@ -111,7 +112,7 @@ const FooterBlock = ({ blockData, siteData, isEditorPreview, style }) => {
                                 {links.map((link, idx) => (
                                     <a 
                                         key={link.id || idx} 
-                                        href={link.link || '#'}
+                                        href={resolveSiteLink(link.link, siteData?.site_path)}
                                         className="transition-opacity duration-200 no-underline text-inherit opacity-80 hover:opacity-100"
                                         style={{ fontFamily: fontStyles.content }}
                                         onClick={(e) => isEditorPreview && e.preventDefault()}
@@ -128,7 +129,7 @@ const FooterBlock = ({ blockData, siteData, isEditorPreview, style }) => {
                                     return (
                                         <a 
                                             key={social.id || idx} 
-                                            href={social.link || '#'} 
+                                            href={resolveSiteLink(social.link, siteData?.site_path)} 
                                             className="transition-transform duration-200 no-underline text-inherit opacity-80 hover:opacity-100 hover:scale-110"
                                             title={social.platform}
                                             onClick={(e) => isEditorPreview && e.preventDefault()}

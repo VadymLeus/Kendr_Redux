@@ -177,7 +177,7 @@ describe('GET /api/pages/:pageId', () => {
 
 describe('PUT /api/pages/:pageId/content', () => {
   const NEW_BLOCKS = [
-    { block_id: 'n1', type: 'heading', data: { text: 'Заголовок' } },
+    { block_id: 'n1', type: 'hero', data: { title: 'Заголовок' } },
     { block_id: 'n2', type: 'text', data: { text: 'Текст' } },
   ];
 
@@ -222,42 +222,89 @@ describe('PUT /api/pages/:pageId/content', () => {
     expect((await getPage(home.id)).block_content).toEqual(BLOCKS);
   });
 
-  // KNOWN-DEFECT D-BLK-05: block_content зберігається як є, без перевірки типу значення, переліку type і форми data.
-  describe('KNOWN-DEFECT D-BLK-05: вміст без перевірки', () => {
-    it('замість масиву блоків приймається об\'єкт', async () => {
+  // D-BLK-05: сервер перевіряє block_content (масив; block_id, type з blockTypes.js, data-об'єкт; layout рекурсивно).
+  describe('D-BLK-05: перевірка вмісту', () => {
+    const NOT_ARRAY = 'Вміст сторінки (block_content) має бути масивом блоків.';
+    const unchanged = async () => expect((await getPage(home.id)).block_content).toEqual(BLOCKS);
+
+    it('замість масиву блоків об\'єкт — 400, вміст не змінюється', async () => {
       const res = await saveContent(owner, home.id, { block_content: { foo: 'bar' } });
-      expect(res.status).toBe(200);
-      expect((await getPage(home.id)).block_content).toEqual({ foo: 'bar' });
-      const read = await readPage(owner, home.id);
-      expect(read.body.block_content).toEqual({ foo: 'bar' });
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe(NOT_ARRAY);
+      await unchanged();
+      expect((await readPage(owner, home.id)).body.block_content).toEqual(BLOCKS);
     });
 
-    it('невідомі типи блоків і довільні елементи масиву приймаються', async () => {
-      const junk = [{ type: 'no-such-block', data: 'not-an-object' }, 42, null, 'текст'];
+    it.each([
+      ['невідомий type', [{ block_id: 'x1', type: 'no-such-block', data: {} }]],
+      ['type heading, якого немає в реєстрі', [{ block_id: 'x1', type: 'heading', data: { text: 'Т' } }]],
+      ['data не об\'єкт', [{ block_id: 'x1', type: 'text', data: 'not-an-object' }]],
+      ['немає block_id', [{ type: 'text', data: {} }]],
+      ['довільні елементи масиву', [42, null, 'текст']],
+    ])('%s — 400, вміст не змінюється', async (_name, junk) => {
       const res = await saveContent(owner, home.id, { block_content: junk });
-      expect(res.status).toBe(200);
-      expect((await getPage(home.id)).block_content).toEqual(junk);
+      expect(res.status).toBe(400);
+      await unchanged();
     });
 
-    it('розмітка в полях блока зберігається без обробки', async () => {
+    it('невідомий тип у колонці макета — 400', async () => {
+      const blocks = [{ block_id: 'l1', type: 'layout', data: { columns: [[{ block_id: 'c1', type: 'evil', data: {} }]] } }];
+      const res = await saveContent(owner, home.id, { block_content: blocks });
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe('Блок [0].data.columns[0][0] має невідомий тип.');
+      await unchanged();
+    });
+
+    it('макет із вкладеними блоками, шапка й підвал із порожнім data та старі імена типів зберігаються', async () => {
+      const blocks = [
+        { block_id: 'h', type: 'global-header', data: {} },
+        { block_id: 'l1', type: 'layout', data: { columns: [[{ block_id: 'c1', type: 'text', data: { content: 'А' } }], []] } },
+        { block_id: 'f', type: 'footer', data: {} },
+      ];
+      const res = await saveContent(owner, home.id, { block_content: blocks });
+      expect(res.status).toBe(200);
+      expect((await getPage(home.id)).block_content).toEqual(blocks);
+    });
+
+    it('вміст понад 2 МБ — 400', async () => {
+      const blocks = [{ block_id: 'big', type: 'text', data: { content: 'x'.repeat(2 * 1024 * 1024) } }];
+      const res = await saveContent(owner, home.id, { block_content: blocks });
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe('Вміст сторінки перевищує 2 МБ.');
+      await unchanged();
+    });
+
+    it('розмітка в полях блока зберігається як є: екранування виконується під час виведення (D-SEC-27)', async () => {
       const blocks = [{ block_id: 'x1', type: 'text', data: { text: '<script>alert(1)</script>' } }];
       const res = await saveContent(owner, home.id, { block_content: blocks });
       expect(res.status).toBe(200);
       expect((await getPage(home.id)).block_content).toEqual(blocks);
     });
 
-    it('запит без block_content стирає вміст сторінки (замінює порожнім масивом)', async () => {
+    it('запит без block_content — 400, вміст сторінки не стирається', async () => {
       const res = await saveContent(owner, home.id, {});
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe(NOT_ARRAY);
+      await unchanged();
+    });
+
+    it('рядок, що не є JSON, — 400, сторінка лишається читабельною', async () => {
+      const res = await saveContent(owner, home.id, { block_content: 'це не JSON' });
+      expect(res.status).toBe(400);
+      expect((await readPage(owner, home.id)).status).toBe(200);
+      expect((await request(app).get('/api/sites/acme-shop')).status).toBe(200);
+    });
+
+    it('порожній масив дозволено: сторінку можна очистити', async () => {
+      const res = await saveContent(owner, home.id, { block_content: [] });
       expect(res.status).toBe(200);
       expect((await getPage(home.id)).block_content).toEqual([]);
     });
 
-    it('рядок, що не є JSON, зберігається й ламає читання сторінки в редакторі та на публічному сайті', async () => {
-      const res = await saveContent(owner, home.id, { block_content: 'це не JSON' });
-      expect(res.status).toBe(200);
-      expect((await readPage(owner, home.id)).status).toBe(500);
-      const publicRes = await request(app).get('/api/sites/acme-shop');
-      expect(publicRes.status).toBe(500);
+    it('сторонній користувач із некоректним вмістом отримує 403, а не 400', async () => {
+      const res = await saveContent(stranger, home.id, { block_content: 'це не JSON' });
+      expect(res.status).toBe(403);
+      await unchanged();
     });
   });
 

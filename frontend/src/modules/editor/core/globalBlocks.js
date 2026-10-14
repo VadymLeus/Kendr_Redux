@@ -50,8 +50,13 @@ const mergeGlobalContent = (block, raw, kind) => {
                 if (parsed['0'] && parsed['0'].data) {
                     data = { ...data, ...parsed['0'].data };
                 }
+                const isBlockShaped = kind.matches(parsed.type) && parsed.data && typeof parsed.data === 'object';
+                if (isBlockShaped) {
+                    data = { ...data, ...parsed.data };
+                }
                 const rootProps = { ...parsed };
                 delete rootProps['0']; delete rootProps.type; delete rootProps.block_id;
+                if (isBlockShaped) delete rootProps.data;
                 data = { ...data, ...rootProps };
             }
         } catch (e) {

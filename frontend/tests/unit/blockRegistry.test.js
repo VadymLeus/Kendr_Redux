@@ -152,16 +152,12 @@ describe('getSettingsComponent (панель налаштувань)', () => {
 });
 
 describe('getBlockHtmlRenderer (експорт сайту)', () => {
-    it.each(ALL_TYPES.filter((t) => !t.startsWith('global-')))('тип "%s" → toHtml дескриптора', (type) => {
+    it.each(ALL_TYPES)('тип "%s" → toHtml дескриптора', (type) => {
         expect(getBlockHtmlRenderer(type)).toBe(getBlockDescriptor(type).toHtml);
     });
 
     it.each([['header', 'global-header'], ['footer', 'global-footer']])('псевдонім "%s" веде до toHtml %s', (alias, type) => {
         expect(getBlockHtmlRenderer(alias)).toBe(getBlockDescriptor(type).toHtml);
-    });
-
-    it.each(['global-header', 'global-footer'])('KNOWN-DEFECT D-BLK-06: тип "%s" в експорті пропускається', (type) => {
-        expect(getBlockHtmlRenderer(type)).toBeUndefined();
     });
 
     it.each(['wat', 'constructor', undefined])('невідомий тип %j → undefined', (type) => {

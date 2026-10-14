@@ -1,9 +1,10 @@
 // Характеризаційні тести v0: експорт сайту в статичний HTML (generateFullHTML).
 // Експорт фактично є другим рендерером блоків (D-BLK-02). Тести фіксують його вивід такий, який він є,
 // включно з відомими дефектами; у v1.0 вивід лишається побайтово тим самим (золоті файли в tests/golden),
-// у v2.0 тести, позначені KNOWN-DEFECT, перевертаються свідомо.
+// у v2.0 тести, позначені KNOWN-DEFECT, перевернуто свідомо (D-BLK-06, D-SEC-27: див. docs/04-results/v2.0/fixes.md).
 import { describe, it, expect } from 'vitest';
 import { generateFullHTML } from '../../src/shared/utils/htmlGenerator';
+import { getBlockHtmlRenderer } from '../../src/modules/editor/core/blockRegistry';
 import { expectGolden } from '../helpers/golden';
 import { exportSiteData, exportPageBlocks } from '../fixtures/exportSite';
 
@@ -97,7 +98,7 @@ describe('generateFullHTML: глобальні хедер і футер сайт
         expect(body).toContain('Підвал');
     });
 
-    it('якщо на сторінці вже є header, header_content не додається; те саме для footer', () => {
+    it('якщо на сторінці вже є header або footer, вони не дублюються; дані беруться з налаштувань сайту, як на публічному сайті', () => {
         const body = render(
             [headerBlock, { type: 'footer', data: { content: 'Свій підвал' } }],
             {
@@ -106,10 +107,18 @@ describe('generateFullHTML: глобальні хедер і футер сайт
                 footer_content: [{ type: 'footer', data: { content: 'Глобальний підвал' } }],
             }
         );
+        expect(body.match(/<header/g)).toHaveLength(1);
+        expect(body.match(/<footer/g)).toHaveLength(1);
+        expect(body).toContain('Глобальна шапка');
+        expect(body).toContain('Глобальний підвал');
+        expect(body).not.toContain('Зі сторінки');
+        expect(body).not.toContain('Свій підвал');
+    });
+
+    it('без даних у налаштуваннях сайту блок на сторінці виводиться зі своїми даними', () => {
+        const body = render([headerBlock, { type: 'footer', data: { content: 'Свій підвал' } }], { title: 'T' });
         expect(body).toContain('Зі сторінки');
         expect(body).toContain('Свій підвал');
-        expect(body).not.toContain('Глобальна шапка');
-        expect(body).not.toContain('Глобальний підвал');
     });
 
     it('порожні масиви header_content і footer_content нічого не додають', () => {
@@ -140,17 +149,57 @@ describe('generateFullHTML: глобальні хедер і футер сайт
         expect(JSON.stringify(siteData)).toBe(siteBefore);
     });
 
-    it('KNOWN-DEFECT D-BLK-06: блоки global-header і global-footer в експорт не потрапляють', () => {
-        // У редакторі й на публічному сайті шапка й підвал мають тип global-header / global-footer
-        // (SiteDisplayPage.jsx:112), а експорт обробляє лише header / footer.
-        expect(one('global-header', { site_title: 'Шапка', show_title: true, nav_items: [] })).toBe('');
-        expect(one('global-footer', { copyright: '© Компанія' })).toBe('');
-        const injected = render([], {
-            title: 'T',
-            header_content: [{ type: 'global-header', data: { site_title: 'Шапка', show_title: true } }],
-            footer_content: [{ type: 'global-footer', data: { copyright: '© Компанія' } }],
+    describe('D-BLK-06: global-header і global-footer', () => {
+        const HEADER = { site_title: 'Шапка', show_title: true, nav_items: [{ id: 'n1', label: 'Меню', link: '/menu' }] };
+        const FOOTER = { copyright: '© Компанія', links: [{ id: 'l1', label: 'Умови', link: '/terms' }] };
+
+        it('блоки global-header і global-footer із даними потрапляють в експорт', () => {
+            const header = one('global-header', { site_title: 'Шапка', show_title: true, nav_items: [] });
+            expect(header).toContain('<header');
+            expect(header).toContain('>Шапка</span>');
+            const footer = one('global-footer', { copyright: '© Компанія' });
+            expect(footer).toContain('<footer');
+            expect(footer).toContain('© Компанія');
         });
-        expect(injected).toBe('');
+
+        it.each([
+            ['масив блоків', { header_content: [{ type: 'header', data: HEADER }], footer_content: [{ type: 'footer', data: FOOTER }] }],
+            ['об\'єкт-блок', { header_content: { type: 'global-header', data: HEADER }, footer_content: { type: 'global-footer', data: FOOTER } }],
+            ['об\'єкт даних (так редактор зберігає налаштування)', { header_content: HEADER, footer_content: FOOTER }],
+            ['рядок із JSON', { header_content: JSON.stringify(HEADER), footer_content: JSON.stringify(FOOTER) }],
+        ])('блоки сторінки з порожнім data (так їх зберігає редактор) беруть дані сайту: %s', (_name, site) => {
+            const body = render([{ type: 'global-header', data: {} }, { type: 'text', data: { content: 'Середина' } }, { type: 'global-footer', data: {} }], { title: 'T', ...site });
+            expect(body.match(/<header/g)).toHaveLength(1);
+            expect(body.match(/<footer/g)).toHaveLength(1);
+            expect(body).toContain('>Шапка</span>');
+            expect(body).toContain('href="menu.html"');
+            expect(body).toContain('© Компанія');
+            expect(body).toContain('href="terms.html"');
+            expect(body.indexOf('Шапка')).toBeLessThan(body.indexOf('Середина'));
+            expect(body.indexOf('Середина')).toBeLessThan(body.indexOf('© Компанія'));
+        });
+
+        it('шапка й підвал із налаштувань сайту додаються, якщо на сторінці їх немає, і мають глобальні типи', () => {
+            const injected = render([], {
+                title: 'T',
+                header_content: [{ type: 'global-header', data: { site_title: 'Шапка', show_title: true } }],
+                footer_content: [{ type: 'global-footer', data: { copyright: '© Компанія' } }],
+            });
+            expect(injected).toContain('>Шапка</span>');
+            expect(injected).toContain('© Компанія');
+        });
+
+        it('старі імена header і footer у налаштуваннях сайту й на сторінці дають той самий результат', () => {
+            const legacy = render([{ type: 'header', data: {} }, { type: 'footer', data: {} }], { title: 'T', header_content: HEADER, footer_content: FOOTER });
+            const current = render([{ type: 'global-header', data: {} }, { type: 'global-footer', data: {} }], { title: 'T', header_content: HEADER, footer_content: FOOTER });
+            expect(legacy).toBe(current);
+        });
+
+        it('порожній блок global-footer отримує дані за замовчуванням редактора (посилання й текст)', () => {
+            const body = one('global-footer', {});
+            expect(body).toContain('Назва компанії');
+            expect(body).toContain('href="privacy.html"');
+        });
     });
 });
 
@@ -214,10 +263,14 @@ describe('блоки: правила виводу', () => {
             expect(one('header', { show_title: true, site_title: 'S' })).not.toContain('<img');
         });
 
-        it('назва сайту показується лише з show_title, за замовчуванням "Site"', () => {
+        it('назва сайту показується лише з show_title', () => {
             expect(one('header', { show_title: true, site_title: 'Назва' })).toContain('>Назва</span>');
-            expect(one('header', { show_title: true })).toContain('>Site</span>');
             expect(one('header', { site_title: 'Назва' })).not.toContain('Назва');
+        });
+
+        it('без site_title у блоці сторінки береться назва з даних за замовчуванням редактора; сам рендерер підставляє "Site"', () => {
+            expect(one('header', { show_title: true })).toContain('>Мій Сайт</span>');
+            expect(getBlockHtmlRenderer('global-header')({ show_title: true })).toContain('>Site</span>');
         });
 
         it('пункти меню — посилання з transformLink; nav_style "button" малює їх як кнопки', () => {
@@ -580,9 +633,37 @@ describe('блоки: правила виводу', () => {
         it('власний текст екранується й виводиться як є', () => {
             expect(one('footer', { content: '© 2026 Компанія' })).toContain('© 2026 Компанія');
         });
-        it('без тексту підставляється поточний рік і "All rights reserved."', () => {
+        it('copyright (поле редактора) має пріоритет над content', () => {
+            const html = one('global-footer', { copyright: '© Нова', content: '© Стара' });
+            expect(html).toContain('© Нова');
+            expect(html).not.toContain('© Стара');
+        });
+        it('порожній блок footer на сторінці отримує дані за замовчуванням редактора', () => {
+            expect(one('footer', {})).toContain('Назва компанії');
+        });
+        it('рендерер без тексту підставляє поточний рік і "All rights reserved."', () => {
             const year = new Date().getFullYear();
-            expect(one('footer', {})).toContain(`© ${year} All rights reserved.`);
+            expect(getBlockHtmlRenderer('global-footer')({})).toContain(`© ${year} All rights reserved.`);
+        });
+        it('посилання підвалу проходять transformLink, пункти без назви пропускаються', () => {
+            const html = one('global-footer', {
+                copyright: 'К',
+                links: [
+                    { label: 'Контакти', link: '/contact' },
+                    { label: 'Умови', link: 'https://example.com/a?x=1&y=2' },
+                    { label: 'Небезпечне', link: 'javascript:alert(1)' },
+                    { label: '', link: '/hidden' },
+                    null,
+                ],
+            });
+            expect(html).toContain('<a href="contact.html" style="color: var(--site-text-secondary);">Контакти</a>');
+            expect(html).toContain('href="https://example.com/a?x=1&amp;y=2"');
+            expect(html).toContain('<a href="#" style="color: var(--site-text-secondary);">Небезпечне</a>');
+            expect(html).not.toContain('/hidden');
+            expect(html).not.toContain('javascript:');
+        });
+        it('без links навігація не виводиться', () => {
+            expect(one('global-footer', { copyright: 'К' })).not.toContain('<nav');
         });
     });
 });
@@ -593,23 +674,82 @@ describe('екранування значень', () => {
         expect(html).toContain('Він сказав &quot;привіт&quot; і &#39;бувай&#39;');
     });
 
-    it('KNOWN-DEFECT D-SEC-27: символи <, > і & у тексті не екрануються', () => {
-        // У карті escapeHTML значення для &, <, > збігаються з ключами (htmlGenerator.js:5–7).
-        // Очікувана поведінка після виправлення: &lt;script&gt;, &amp;.
+    it('D-SEC-27: символи <, > і & у тексті екрануються', () => {
         const html = one('text', { content: '<script>alert(1)</script> & <b>x</b>' });
-        expect(html).toContain('<script>alert(1)</script> & <b>x</b>');
-        expect(html).not.toContain('&lt;');
-        expect(html).not.toContain('&amp;');
+        expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt; &amp; &lt;b&gt;x&lt;/b&gt;');
+        expect(html).not.toContain('<script>');
+        expect(html).not.toContain('<b>');
     });
 
-    it('KNOWN-DEFECT D-SEC-27: розмітка в назві сайту й сторінки потрапляє в <title> без змін', () => {
-        const html = generateFullHTML({ title: 'A</title><script>x()</script>' }, [], 'P');
-        expect(html).toContain('<title>P - A</title><script>x()</script></title>');
+    it('D-SEC-27: розмітка в назві сайту й сторінки не виходить за межі <title>', () => {
+        const html = generateFullHTML({ title: 'A</title><script>x()</script>' }, [], 'P<b>');
+        expect(html).toContain('<title>P&lt;b&gt; - A&lt;/title&gt;&lt;script&gt;x()&lt;/script&gt;</title>');
+        expect(html).not.toContain('<script>x()');
     });
 
-    it('KNOWN-DEFECT D-SEC-27: лапка в посиланні виходить за межі атрибута href (transformLink не екранується)', () => {
+    it('D-SEC-27: розмітка в описі й адресі іконки екранується', () => {
+        const html = generateFullHTML({ seo_description: 'a" onload="x', favicon_url: 'f.png" onerror="x' }, [], 'P');
+        expect(html).toContain('<meta name="description" content="a&quot; onload=&quot;x">');
+        expect(html).toContain('href="f.png&quot; onerror=&quot;x"');
+    });
+
+    it('D-SEC-27: лапка в посиланні не виходить за межі атрибута href', () => {
         const html = one('button', { text: 'B', link: 'https://example.com/" onmouseover="alert(1)' });
-        expect(html).toContain('<a href="https://example.com/" onmouseover="alert(1)"');
+        expect(html).toContain('<a href="https://example.com/&quot; onmouseover=&quot;alert(1)"');
+        expect(html).not.toContain('" onmouseover=');
+    });
+
+    it('D-SEC-27: посилання з & у запиті записується як &amp; і лишається робочим', () => {
+        expect(one('button', { text: 'B', link: 'https://example.com/?a=1&b=2' })).toContain('href="https://example.com/?a=1&amp;b=2"');
+    });
+
+    it('D-SEC-27: посилання пунктів меню й соцмереж теж екрануються', () => {
+        const header = one('global-header', { nav_items: [{ label: 'M', link: 'https://e.com/" x="y' }] });
+        expect(header).toContain('href="https://e.com/&quot; x=&quot;y"');
+        const social = one('social_icons', { facebook: 'https://e.com/" x="y' });
+        expect(social).toContain('href="https://e.com/&quot; x=&quot;y"');
+    });
+
+    it('D-SEC-27: текст кнопки, заголовки, переваги й акордеон екрануються', () => {
+        const evil = '<img src=x onerror=alert(1)>';
+        expect(one('button', { text: evil, link: '/a' })).not.toContain('<img');
+        expect(one('hero', { title: evil, subtitle: evil })).not.toContain('<img');
+        expect(one('features', { title: evil, items: [{ title: evil, text: evil, icon: 'star' }] })).not.toContain('<img');
+        expect(one('accordion', { items: [{ title: evil, content: evil }] })).not.toContain('<img');
+        expect(one('global-header', { site_title: evil, show_title: true, nav_items: [{ label: evil, link: '/a' }] })).not.toContain('<img');
+    });
+
+    describe('D-SEC-27: числові значення в style не закривають атрибут', () => {
+        const INJECT = '1;" onmouseover="alert(1)';
+
+        it.each([
+            ['hero', { overlay_opacity: INJECT }],
+            ['layout', { columns: [], gap: INJECT, bg_type: 'image', overlay_opacity: INJECT }],
+            ['layout', { columns: [], overlay_opacity: INJECT, bg_type: 'image' }],
+            ['image', { mode: 'grid', items: [{ src: 'a.jpg' }], settings_grid: { columns: INJECT } }],
+            ['features', { columns: INJECT, items: [] }],
+            ['catalog', { columns: INJECT }],
+            ['showcase', { columns: INJECT }],
+            ['global-header', { logo_src: 'a.png', logo_radius: INJECT }],
+            ['button', { text: 'B', link: '/a', borderRadius: INJECT }],
+            ['text', { content: 'x', styles: { paddingTop: INJECT, paddingBottom: INJECT } }],
+            ['text', { content: 'x', padding: INJECT }],
+        ])('%s: %j', (type, data) => {
+            expect(one(type, data)).not.toContain('onmouseover');
+        });
+
+        it('допустимі числа (число або рядок із числом) зберігаються', () => {
+            expect(one('hero', { overlay_opacity: '0.3' })).toContain('opacity: 0.3');
+            expect(one('layout', { columns: [], gap: '12' })).toContain('gap: 12px');
+            expect(one('button', { text: 'B', borderRadius: '10' })).toContain('border-radius: 10px');
+        });
+
+        it('недопустиме значення замінюється значенням за замовчуванням', () => {
+            expect(one('hero', { overlay_opacity: 'abc' })).toContain('opacity: 0.5');
+            expect(one('layout', { columns: [], gap: 'abc' })).toContain('gap: 20px');
+            expect(one('features', { columns: 'abc', items: [] })).toContain('repeat(3, 1fr)');
+            expect(one('text', { content: 'x', padding: 'abc' })).toContain('padding-top: 40px; padding-bottom: 40px;');
+        });
     });
 });
 

@@ -2,6 +2,7 @@
 const PageRepository = require('../repositories/PageRepository');
 const { requireSiteAccess, read, write } = require('./siteAccess');
 const { ServiceError } = require('./ServiceError');
+const { validateBlockContent } = require('./blockContentValidation');
 
 const ACCESS_DENIED = 'Доступ заборонено.';
 const EDIT_DENIED = 'У вас немає прав на редагування цієї сторінки.';
@@ -60,7 +61,8 @@ class PageService {
 
     static async updateContent(pageId, userId, blockContent) {
         await PageService.getAccessible(pageId, userId, EDIT_DENIED, write('editor'));
-        await PageRepository.updateContent(pageId, blockContent || []);
+        validateBlockContent(blockContent);
+        await PageRepository.updateContent(pageId, blockContent);
     }
 
     static async updateSettings(pageId, userId, body) {

@@ -207,7 +207,7 @@ describe('CartPage: оформлення замовлення', () => {
             paymentMethod: 'cod',
         });
         expect(config).toEqual({ suppressToast: true });
-        // KNOWN-DEFECT D-BIZ-01: покупець бачив 144 ₴ (72 × 2), але сервер цього числа не отримує
+        // покупець бачив 144 ₴ (72 × 2); сервер цього числа не отримує й сам рахує ціну позиції з БД за правилом вітрини (D-BIZ-01)
         expect(Object.keys(payload.items[0]).sort()).toEqual(['id', 'options', 'quantity']);
         expect(payload).not.toHaveProperty('total');
 

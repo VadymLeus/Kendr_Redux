@@ -216,7 +216,7 @@ describe('getById', () => {
 });
 
 describe('updateContent', () => {
-  it('403 з текстом про редагування', async () => {
+  it('403 з текстом про редагування (доступ перевіряється раніше за вміст)', async () => {
     repo.findSiteInfo.mockResolvedValue(null);
     const error = await failure(() => PageService.updateContent(5, 11, [{ type: 'text' }]));
     expect(error.status).toBe(403);
@@ -224,15 +224,33 @@ describe('updateContent', () => {
     expect(repo.updateContent).not.toHaveBeenCalled();
   });
 
-  it('зберігає передані блоки без перевірки', async () => {
-    const blocks = [{ type: 'text', data: {} }];
+  it('зберігає перевірені блоки без змін', async () => {
+    const blocks = [{ block_id: 'b1', type: 'text', data: {} }];
     await PageService.updateContent(5, 11, blocks);
     expect(repo.updateContent).toHaveBeenCalledWith(5, blocks);
   });
 
-  it.each([[undefined], [null], [0], ['']])('D-BLK-05: відсутній вміст %j замінюється на [] і стирає сторінку', async (value) => {
-    await PageService.updateContent(5, 11, value);
+  it('порожній масив дозволено: редактор очищає сторінку', async () => {
+    await PageService.updateContent(5, 11, []);
     expect(repo.updateContent).toHaveBeenCalledWith(5, []);
+  });
+
+  it.each([[undefined], [null], [0], [''], ['не JSON'], [{ foo: 'bar' }]])('D-BLK-05: вміст %j → 400, сторінка не змінюється', async (value) => {
+    const error = await failure(() => PageService.updateContent(5, 11, value));
+    expect(error.status).toBe(400);
+    expect(error.message).toBe('Вміст сторінки (block_content) має бути масивом блоків.');
+    expect(repo.updateContent).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [[{ type: 'text', data: {} }]],
+    [[{ block_id: 'b1', type: 'no-such-block', data: {} }]],
+    [[{ block_id: 'b1', type: 'text', data: 'not-an-object' }]],
+    [[42]],
+  ])('D-BLK-05: некоректний блок %j → 400, сторінка не змінюється', async (blocks) => {
+    const error = await failure(() => PageService.updateContent(5, 11, blocks));
+    expect(error.status).toBe(400);
+    expect(repo.updateContent).not.toHaveBeenCalled();
   });
 });
 

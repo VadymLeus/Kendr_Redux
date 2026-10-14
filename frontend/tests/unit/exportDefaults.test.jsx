@@ -1,6 +1,6 @@
-// Характеризаційний тест v0: як експорт показує блоки, щойно додані з редактора (зі значеннями за замовчуванням).
-// Фіксує розбіжності між редактором і експортом, які в реєстрі блоків (v1.0) зникнуть тільки за рішенням,
-// ухваленим окремо: у v1.0 вивід лишається тим самим.
+// Характеризаційний тест: як експорт показує блоки, щойно додані з редактора (зі значеннями за замовчуванням).
+// Фіксує розбіжності між редактором і експортом, які реєстр блоків (v1.0) не усував: у v1.0 вивід лишався тим самим,
+// у v2.0 шапка й підвал потрапляють в експорт (D-BLK-06).
 import { describe, it, expect } from 'vitest';
 import { generateFullHTML } from '../../src/shared/utils/htmlGenerator';
 import { BLOCK_LIBRARY, getDefaultBlockData } from '../../src/modules/editor/core/blockRegistry';
@@ -10,13 +10,16 @@ const blockOf = (type, options) => ({ type, block_id: `default-${type}`, data: g
 const bodyOf = (html) => html.slice(html.indexOf('<body>') + '<body>'.length, html.lastIndexOf('<script>'));
 const squash = (text) => text.replace(/\s+/g, ' ').trim();
 const exportOne = (type) => squash(bodyOf(generateFullHTML({ title: 'T' }, [blockOf(type)], 'P')));
+// Рік у значенні за замовчуванням залежить від дати, тому в золотому файлі текст підвалу закріплено.
+const PINNED_COPYRIGHT = '© 2026 Назва компанії';
+const pinYear = (block) => (block.type === 'global-footer' ? { ...block, data: { ...block.data, copyright: PINNED_COPYRIGHT } } : block);
 
 describe('експорт блоків зі значеннями за замовчуванням', () => {
-    const exportable = BLOCK_LIBRARY.map((b) => b.type).filter((t) => !t.startsWith('global-'));
+    const exportable = BLOCK_LIBRARY.map((b) => b.type);
 
     it('золотий файл: усі блоки каталогу в одній сторінці', () => {
         const blocks = [
-            ...BLOCK_LIBRARY.map((b) => b.type).map((type) => blockOf(type)),
+            ...BLOCK_LIBRARY.map((b) => b.type).map((type) => pinYear(blockOf(type))),
             blockOf('layout', { preset: '25-25-25-25', columns: 4 }),
         ];
         expectGolden(generateFullHTML({ title: 'Значення за замовчуванням' }, blocks, 'Блоки'), 'export/editor-defaults.html');
@@ -42,12 +45,18 @@ describe('експорт блоків зі значеннями за замов�
         expect(exportOne('text')).toContain('<p style="font-size: 1rem; font-weight: 400;');
     });
 
-    it('глобальні блоки (global-header, global-footer) в експорті порожні (D-BLK-06)', () => {
-        expect(exportOne('global-header')).toBe('');
-        expect(exportOne('global-footer')).toBe('');
+    it('глобальні блоки (global-header, global-footer) потрапляють в експорт (D-BLK-06)', () => {
+        const header = exportOne('global-header');
+        expect(header).toContain('<header');
+        expect(header).toContain('>Мій Сайт</span>');
+        expect(header).toContain('href="contacts.html"');
+        const footer = exportOne('global-footer');
+        expect(footer).toContain('<footer');
+        expect(footer).toContain('Назва компанії');
+        expect(footer).toContain('href="privacy.html"');
     });
 
-    it('усі решта типи каталогу, крім зображення й мапи, дають непорожній HTML', () => {
+    it('усі типи каталогу, крім зображення й мапи, дають непорожній HTML', () => {
         const empty = exportable.filter((type) => exportOne(type) === '');
         expect(empty.sort()).toEqual(['image', 'map']);
     });

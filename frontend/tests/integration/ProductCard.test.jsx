@@ -1,6 +1,6 @@
-// Характеризаційні тести v0: картка товару (ProductCard) — перше з трьох місць, де клієнт рахує ціну (D-BIZ-01).
-// Картка враховує лише знижку самого товару (sale_percentage) і не знає про надбавки варіантів і знижки категорій,
-// які застосовує сторінка товару. Сервер при оформленні бере price з БД без жодної знижки (backend: orders.checkout.test.js).
+// Картка товару (ProductCard) — перше з трьох місць, де клієнт рахує ціну (D-BIZ-01).
+// Картка враховує знижку самого товару (sale_percentage), а якщо її немає, найбільшу знижку категорій; надбавок варіантів
+// вона не додає: їх обирає покупець на сторінці товару. Ціну замовлення сервер рахує сам (backend: orders.checkout.test.js).
 import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
@@ -71,17 +71,51 @@ describe('ProductCard: ціна', () => {
         expect(screen.getByText('100.00 ₴')).toBeInTheDocument();
     });
 
-    it('KNOWN-DEFECT D-BIZ-01: знижка категорії й надбавки варіантів на картці не враховуються', () => {
-        // Сторінка товару з такими самими даними покаже 70 ₴ (знижка категорії 30 %), а варіант L додасть 30 ₴.
+    it('D-BIZ-01: знижка категорії враховується: підсумкова ціна, закреслена початкова й значок із відсотком', () => {
+        renderCard({ product: { ...base, categories: [{ id: 1, name: 'Одяг', discount_percentage: 30 }] } });
+        expect(screen.getByText('70 ₴')).toBeInTheDocument();
+        expect(screen.getByText('100 ₴')).toBeInTheDocument();
+        expect(screen.getByText('-30%')).toBeInTheDocument();
+    });
+
+    it('D-BIZ-01: з кількох категорій береться найбільша знижка, DECIMAL-рядок читається числом', () => {
+        renderCard({
+            product: {
+                ...base,
+                categories: [
+                    { id: 1, name: 'А', discount_percentage: '10.00' },
+                    { id: 2, name: 'Б', discount_percentage: '25.00' },
+                    { id: 3, name: 'В', discount_percentage: 5 },
+                ],
+            },
+        });
+        expect(screen.getByText('75 ₴')).toBeInTheDocument();
+        expect(screen.getByText('-25%')).toBeInTheDocument();
+    });
+
+    it('D-BIZ-01: знижка самого товару має пріоритет над знижкою категорії', () => {
+        renderCard({ product: { ...base, sale_percentage: 20, categories: [{ id: 1, name: 'Одяг', discount_percentage: 30 }] } });
+        expect(screen.getByText('80 ₴')).toBeInTheDocument();
+        expect(screen.getByText('-20%')).toBeInTheDocument();
+        expect(screen.queryByText('70 ₴')).toBeNull();
+    });
+
+    it('категорії без знижки або з нечисловою знижкою ціну не змінюють', () => {
+        renderCard({
+            product: { ...base, categories: [{ id: 1, name: 'А', discount_percentage: null }, { id: 2, name: 'Б', discount_percentage: 'abc' }, { id: 3, name: 'В' }] },
+        });
+        expect(screen.getByText('100 ₴')).toBeInTheDocument();
+        expect(screen.queryByText(/^-\d+%$/)).toBeNull();
+    });
+
+    it('надбавки варіантів на картці не додаються: їх обирає покупець на сторінці товару', () => {
         const product = {
             ...base,
-            categories: [{ id: 1, name: 'Одяг', discount_percentage: 30 }],
             variants: [{ name: 'Розмір', values: [{ label: 'S', priceModifier: 0 }, { label: 'L', priceModifier: 30 }] }],
         };
         renderCard({ product });
         expect(screen.getByText('100 ₴')).toBeInTheDocument();
-        expect(screen.queryByText('70 ₴')).toBeNull();
-        expect(screen.queryByText(/^-\d+%$/)).toBeNull();
+        expect(screen.queryByText('130 ₴')).toBeNull();
     });
 
     it.each([
@@ -186,6 +220,13 @@ describe('ProductCard: додавання в кошик', () => {
         expect(product).toMatchObject({ id: 5, name: 'Футболка', site_path: 'shop', site_name: 'Магазин', currency: 'UAH' });
         expect(options).toEqual({});
         expect(priceInfo).toEqual({ finalPrice: 80, originalPrice: 100, discount: 20 });
+    });
+
+    it('знижка категорії потрапляє в priceInfo так само, як знижка товару', () => {
+        const product = { ...base, categories: [{ id: 1, name: 'Одяг', discount_percentage: 30 }] };
+        const { addToCart } = renderCard({ product, user: buyer });
+        fireEvent.click(screen.getByTitle('Додати в кошик'));
+        expect(addToCart.mock.calls[0][2]).toEqual({ finalPrice: 70, originalPrice: 100, discount: 30 });
     });
 
     it('без знижки у priceInfo лежать початкова ціна й нульова знижка', () => {

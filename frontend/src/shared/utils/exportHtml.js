@@ -1,16 +1,26 @@
 // frontend/src/shared/utils/exportHtml.js
-export const escapeHTML = (str) => {
-    if (typeof str !== 'string') return str;
-    return str.replace(/[&<>'"]/g, tag => ({
-        '&': '&',
-        '<': '<',
-        '>': '>',
-        "'": '&#39;',
-        '"': '&quot;'
-    }[tag]));
+const HTML_ESCAPES = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    "'": '&#39;',
+    '"': '&quot;'
 };
 
-export const transformLink = (link) => {
+export const escapeHTML = (str) => {
+    if (typeof str !== 'string') return str;
+    return str.replace(/[&<>'"]/g, (tag) => HTML_ESCAPES[tag]);
+};
+
+// Число для підстановки в style="...": будь-що, що не є скінченним числом, замінюється запасним значенням
+// (D-SEC-27: сире значення з даних блока могло закрити атрибут).
+export const cssNumber = (value, fallback) => {
+    if (typeof value === 'number') return Number.isFinite(value) ? value : fallback;
+    if (typeof value === 'string' && value.trim() !== '' && Number.isFinite(Number(value))) return Number(value);
+    return fallback;
+};
+
+const resolveExportLink = (link) => {
     if (!link || typeof link !== 'string') return '#';
     const trimmed = link.trim();
     if (/^(javascript|data|vbscript):/i.test(trimmed)) {
@@ -24,6 +34,9 @@ export const transformLink = (link) => {
     if (!cleanLink.endsWith('.html')) cleanLink += '.html';
     return cleanLink;
 };
+
+// Результат підставляється в href="...", тож повертається вже екранованим (D-SEC-27).
+export const transformLink = (link) => escapeHTML(resolveExportLink(link));
 
 export const renderIcon = (iconName, className = '', style = '') => {
     if (!iconName || iconName === 'none') return '';
@@ -84,7 +97,7 @@ export const renderButtonHTML = (config, extraStyle = '') => {
         background: ${bgVar}; color: ${textVar}; border: 2px solid ${borderVar};
         padding: ${paddingMap[size] || paddingMap.medium};
         font-size: ${fontSizeMap[size] || fontSizeMap.medium};
-        border-radius: ${borderRadius ? borderRadius + 'px' : '4px'};
+        border-radius: ${borderRadius ? cssNumber(borderRadius, 4) + 'px' : '4px'};
         width: ${width === 'full' ? '100%' : 'auto'};
         text-decoration: none; font-weight: 600; cursor: pointer;
         transition: opacity 0.2s; ${extraStyle}
@@ -107,5 +120,5 @@ export const renderButtonHTML = (config, extraStyle = '') => {
 export const getPaddingStyle = (data) => {
     const pt = data.styles?.paddingTop !== undefined ? data.styles.paddingTop : (data.padding ? parseInt(data.padding) : 40);
     const pb = data.styles?.paddingBottom !== undefined ? data.styles.paddingBottom : (data.padding ? parseInt(data.padding) : 40);
-    return `padding-top: ${pt}px; padding-bottom: ${pb}px;`;
+    return `padding-top: ${cssNumber(pt, 40)}px; padding-bottom: ${cssNumber(pb, 40)}px;`;
 };

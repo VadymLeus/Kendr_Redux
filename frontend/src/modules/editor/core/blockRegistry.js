@@ -3,11 +3,11 @@ import React, { lazy } from 'react';
 import { Image, FileText, MousePointerClick, Star, Grid, ShoppingBag, List, Mail, Video, MapPin, HelpCircle, Share2, Globe } from 'lucide-react';
 import { generateBlockId } from './blockId';
 import { LEGACY_TYPE_ALIASES } from './globalBlockTypes';
-import { escapeHTML, transformLink, renderIcon, parseSrcFromIframe, getGridTemplate, renderButtonHTML, getPaddingStyle } from '../../../shared/utils/exportHtml';
+import { escapeHTML, transformLink, cssNumber, renderIcon, parseSrcFromIframe, getGridTemplate, renderButtonHTML, getPaddingStyle } from '../../../shared/utils/exportHtml';
 
 const renderProductGridHtml = (data, isCatalog) => {
-    const cols = data.columns || 3;
-    const mockItems = Array.from({length: data.items_per_page || 4}).fill(0);
+    const cols = cssNumber(data.columns || 3, 3);
+    const mockItems = Array.from({length: cssNumber(data.items_per_page || 4, 4)}).fill(0);
     return `
         <section style="${getPaddingStyle(data)}">
             <div class="container">
@@ -59,7 +59,7 @@ const DEFINITIONS = [
             <div style="position: absolute; inset: 0; background: ${heroBg} center/cover no-repeat; z-index: 0;">
                 ${data.bg_type === 'video' && data.bg_video ? `<video src="${escapeHTML(data.bg_video)}" autoplay muted loop playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>` : ''}
             </div>
-            <div style="position: absolute; inset: 0; background-color: ${escapeHTML(data.overlay_color || '#000')}; opacity: ${data.overlay_opacity || 0.5}; z-index: 1;"></div>
+            <div style="position: absolute; inset: 0; background-color: ${escapeHTML(data.overlay_color || '#000')}; opacity: ${cssNumber(data.overlay_opacity || 0.5, 0.5)}; z-index: 1;"></div>
             <div class="container" style="position: relative; z-index: 2; display: flex; flex-direction: column; align-items: ${heroAlign};">
                 ${data.title ? `<h1 style="font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 800; margin-bottom: 1rem; line-height: 1.1;">${escapeHTML(data.title)}</h1>` : ''}
                 ${data.subtitle ? `<p style="font-size: clamp(1rem, 2vw, 1.25rem); margin-bottom: 2rem; opacity: 0.9; max-width: 600px;">${escapeHTML(data.subtitle)}</p>` : ''}
@@ -131,7 +131,7 @@ const DEFINITIONS = [
             const imgRender = (src) => `<img src="${escapeHTML(src)}" alt="" style="width: 100%; height: 100%; object-fit: ${escapeHTML(data.objectFit || 'cover')}; border-radius: ${imgRadius}; display: block;">`;
             let imgContent = '';
             if (data.mode === 'grid') {
-                 imgContent = `<div style="display: grid; grid-template-columns: repeat(${data.settings_grid?.columns || 3}, 1fr); gap: 16px;">
+                 imgContent = `<div style="display: grid; grid-template-columns: repeat(${cssNumber(data.settings_grid?.columns || 3, 3)}, 1fr); gap: 16px;">
                     ${items.map(i => `<div style="aspect-ratio: 1/1;">${imgRender(i.src)}</div>`).join('')}
                  </div>`;
             } else {
@@ -218,9 +218,9 @@ const DEFINITIONS = [
             `).join('');
             return `
         <section style="position: relative; min-height: ${layoutHeight}; ${bgStyle} ${getPaddingStyle(data)}">
-            ${(data.bg_type === 'image' || data.bg_type === 'video') ? `<div style="position: absolute; inset: 0; background-color: ${escapeHTML(data.overlay_color || '')}; opacity: ${data.overlay_opacity || 0}; pointer-events: none;"></div>` : ''}
+            ${(data.bg_type === 'image' || data.bg_type === 'video') ? `<div style="position: absolute; inset: 0; background-color: ${escapeHTML(data.overlay_color || '')}; opacity: ${cssNumber(data.overlay_opacity || 0, 0)}; pointer-events: none;"></div>` : ''}
             <div class="container" style="position: relative; z-index: 1;">
-                <div style="display: grid; grid-template-columns: ${gridCols}; gap: ${data.gap || 20}px; align-items: ${data.verticalAlign === 'middle' ? 'center' : 'start'};">
+                <div style="display: grid; grid-template-columns: ${gridCols}; gap: ${cssNumber(data.gap || 20, 20)}px; align-items: ${data.verticalAlign === 'middle' ? 'center' : 'start'};">
                     ${columnsHTML}
                 </div>
             </div>
@@ -269,7 +269,7 @@ const DEFINITIONS = [
         <section style="background-color: var(--site-bg); ${getPaddingStyle(data)}">
             <div class="container">
                 ${data.title ? `<h2 style="text-align: center; font-size: 2rem; margin-bottom: 2rem; color: var(--site-text-primary);">${escapeHTML(data.title)}</h2>` : ''}
-                <div style="display: grid; grid-template-columns: repeat(${data.columns || 3}, 1fr); gap: 24px;">
+                <div style="display: grid; grid-template-columns: repeat(${cssNumber(data.columns || 3, 3)}, 1fr); gap: 24px;">
                     ${(data.items || []).map(item => `
                         <div style="padding: ${isCard ? '24px' : '0'}; background: ${isCard ? 'var(--site-card-bg)' : 'transparent'}; border: ${isCard ? '1px solid var(--site-border-color)' : 'none'}; border-radius: ${escapeHTML(data.borderRadius || '8px')}; display: flex; flex-direction: ${data.layout === 'list' ? 'row' : 'column'}; align-items: ${data.align === 'center' ? 'center' : 'flex-start'}; gap: 16px; text-align: ${data.layout === 'list' ? 'left' : escapeHTML(data.align)};">
                             <div style="color: var(--site-accent); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: ${data.showIconBackground ? 'var(--site-accent)' : 'transparent'}; color: ${data.showIconBackground ? '#fff' : 'var(--site-accent)'}; border-radius: 50%;">
@@ -458,7 +458,7 @@ const DEFINITIONS = [
             <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
                 <a href="index.html" style="display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--site-text-primary);">
                     ${logoImage 
-                        ? `<img src="${escapeHTML(logoImage)}" alt="Logo" style="height: ${data.logo_size === 'large' ? 80 : (data.logo_size === 'small' ? 30 : 50)}px; width: auto; border-radius: ${data.logo_radius || 0}px;">` 
+                        ? `<img src="${escapeHTML(logoImage)}" alt="Logo" style="height: ${data.logo_size === 'large' ? 80 : (data.logo_size === 'small' ? 30 : 50)}px; width: auto; border-radius: ${cssNumber(data.logo_radius || 0, 0)}px;">` 
                         : ''}
                     ${data.show_title ? `<span style="font-weight: 700; font-size: 1.2rem;">${escapeHTML(data.site_title || 'Site')}</span>` : ''}
                 </a>
@@ -502,10 +502,15 @@ const DEFINITIONS = [
             block_theme: 'auto'
         }),
         toHtml: (data) => {
+            const text = data.copyright || data.content || `© ${new Date().getFullYear()} All rights reserved.`;
+            const links = (Array.isArray(data.links) ? data.links : []).filter(item => item && item.label);
             return `
         <footer style="background-color: var(--site-card-bg); border-top: 1px solid var(--site-border-color); padding: 40px 0;">
             <div class="container" style="text-align: center; color: var(--site-text-secondary);">
-                ${escapeHTML(data.content || `© ${new Date().getFullYear()} All rights reserved.`)}
+                ${escapeHTML(text)}${links.length ? `
+                <nav style="display: flex; justify-content: center; flex-wrap: wrap; gap: 16px; margin-top: 12px;">
+                    ${links.map(item => `<a href="${transformLink(item.link)}" style="color: var(--site-text-secondary);">${escapeHTML(item.label)}</a>`).join('')}
+                </nav>` : ''}
             </div>
         </footer>`;
         },
@@ -541,9 +546,7 @@ export const getSettingsComponent = (type) => find(type, 'settings')?.Settings;
 export const getBlockHtmlRenderer = (type) => {
     const resolved = resolveType(type, 'export');
     const descriptor = BY_TYPE.get(resolved);
-    if (!descriptor) return undefined;
-    if (descriptor.isGlobal && resolved === type) return undefined;
-    return descriptor.toHtml;
+    return descriptor ? descriptor.toHtml : undefined;
 };
 
 export const getDefaultBlockData = (type, options = {}) => {
