@@ -209,7 +209,7 @@ class ProductRepository {
     }
 
     static async findReviewById(reviewId) {
-        const [rows] = await db.query('SELECT user_id FROM product_reviews WHERE id = ?', [reviewId]);
+        const [rows] = await db.query('SELECT user_id, product_id FROM product_reviews WHERE id = ?', [reviewId]);
         return rows[0] || null;
     }
 

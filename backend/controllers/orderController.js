@@ -69,9 +69,12 @@ exports.processGooglePay = async (req, res) => {
 exports.getSiteOrders = async (req, res) => {
     const { siteId } = req.params;
     try {
-        const orders = await OrderService.listForSite(siteId);
+        const orders = await OrderService.listForSite(siteId, req.user.id);
         res.status(200).json(orders);
     } catch (error) {
+        if (error instanceof ServiceError) {
+            return res.status(error.status).json({ message: error.message });
+        }
         console.error("Помилка отримання замовлень:", error);
         res.status(500).json({ message: 'Помилка отримання замовлень' });
     }
@@ -81,9 +84,12 @@ exports.updateOrderStatus = async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
     try {
-        await OrderService.updateStatus(id, status);
+        await OrderService.updateStatus(id, req.user.id, status);
         res.status(200).json({ message: 'Статус оновлено' });
     } catch (error) {
+        if (error instanceof ServiceError) {
+            return res.status(error.status).json({ message: error.message });
+        }
         res.status(500).json({ message: 'Помилка оновлення статусу' });
     }
 };

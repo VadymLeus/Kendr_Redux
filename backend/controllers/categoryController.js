@@ -1,6 +1,7 @@
 // backend/controllers/categoryController.js
 const Category = require('../models/Category');
-const SiteRepository = require('../repositories/SiteRepository');
+const { requireSiteAccess, write } = require('../services/siteAccess');
+const sendServiceError = require('../utils/sendServiceError');
 
 exports.getCategoriesForSite = async (req, res, next) => {
     try {
@@ -17,15 +18,12 @@ exports.createCategory = async (req, res, next) => {
         const { siteId, name, discount_percentage, icon } = req.body;
         const userId = req.user.id;
 
-        const site = await SiteRepository.findByIdAndUserId(siteId, userId);
-        if (!site) {
-            return res.status(403).json({ message: 'У вас немає прав для додавання категорій на цей сайт.' });
-        }
-        
+        await requireSiteAccess(siteId, userId, write('commerce'), 'У вас немає прав для додавання категорій на цей сайт.');
+
         const newCategory = await Category.create(siteId, name, discount_percentage, icon);
         res.status(201).json(newCategory);
     } catch (error) {
-        next(error);
+        sendServiceError(error, res, next);
     }
 };
 
@@ -44,15 +42,13 @@ exports.updateCategory = async (req, res, next) => {
             return res.status(404).json({ message: 'Категорію не знайдено.' });
         }
 
-        if (category.user_id !== userId) {
-            return res.status(403).json({ message: 'У вас немає прав на редагування цієї категорії.' });
-        }
+        await requireSiteAccess(category.site_id, userId, write('commerce'), 'У вас немає прав на редагування цієї категорії.');
 
         await Category.update(categoryId, name.trim(), discount_percentage, icon);
         res.json({ message: 'Категорію оновлено.' });
 
     } catch (error) {
-        next(error);
+        sendServiceError(error, res, next);
     }
 };
 
@@ -65,13 +61,11 @@ exports.deleteCategory = async (req, res, next) => {
         if (!category) {
             return res.status(404).json({ message: 'Категорію не знайдено.' });
         }
-        if (category.user_id !== userId) {
-            return res.status(403).json({ message: 'У вас немає прав на видалення цієї категорії.' });
-        }
+        await requireSiteAccess(category.site_id, userId, write('commerce'), 'У вас немає прав на видалення цієї категорії.');
 
         await Category.delete(categoryId);
         res.json({ message: 'Категорію успішно видалено.' });
     } catch (error) {
-        next(error);
+        sendServiceError(error, res, next);
     }
 };

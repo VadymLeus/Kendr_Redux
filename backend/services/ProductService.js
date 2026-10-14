@@ -1,7 +1,7 @@
 // backend/services/ProductService.js
 const ProductRepository = require('../repositories/ProductRepository');
 const OrderRepository = require('../repositories/OrderRepository');
-const { requireSiteAccess, hasSiteAccess } = require('./siteAccess');
+const { requireSiteAccess, hasSiteAccess, write } = require('./siteAccess');
 const { ServiceError } = require('./ServiceError');
 
 const parseDecimal = (value) => {
@@ -35,13 +35,13 @@ class ProductService {
 
     static async getAccessible(productId, userId, forbiddenMessage) {
         const product = await ProductService.getById(productId);
-        await requireSiteAccess(product.site_id, userId, forbiddenMessage);
+        await requireSiteAccess(product.site_id, userId, write('commerce'), forbiddenMessage);
         return product;
     }
 
     static async create(userId, body) {
         const { site_id, name, description, price, category_ids, stock_quantity, image_gallery, variants, sale_percentage, type, digital_file_url } = body;
-        await requireSiteAccess(site_id, userId, 'У вас немає прав для додавання товарів на цей сайт.');
+        await requireSiteAccess(site_id, userId, write('commerce'), 'У вас немає прав для додавання товарів на цей сайт.');
         let galleryData = [];
         if (Array.isArray(image_gallery)) {
             galleryData = image_gallery;
@@ -145,26 +145,32 @@ class ProductService {
         await ProductRepository.addReview(productId, userId, rating, comment);
     }
 
+    static async findReviewOfProduct(productId, reviewId) {
+        const review = await ProductRepository.findReviewById(reviewId);
+        if (!review || String(review.product_id) !== String(productId)) {
+            throw new ServiceError(404, 'Відгук не знайдено.');
+        }
+        return review;
+    }
+
     static async replyToReview(productId, reviewId, userId, ownerReply) {
-        await ProductService.getAccessible(productId, userId, 'Тільки власник магазину може відповідати на відгуки.');
+        await ProductService.getAccessible(productId, userId, 'У вас немає прав відповідати на відгуки цього магазину.');
+        await ProductService.findReviewOfProduct(productId, reviewId);
         await ProductRepository.updateReviewReply(reviewId, ownerReply || null);
     }
 
     static async deleteReview(productId, reviewId, user) {
-        const review = await ProductRepository.findReviewById(reviewId);
-        if (!review) {
-            throw new ServiceError(404, 'Відгук не знайдено.');
-        }
+        const review = await ProductService.findReviewOfProduct(productId, reviewId);
         const isAuthor = review.user_id === user.id;
         const isPlatformStaff = user.role === 'admin' || user.role === 'moderator';
-        let isSiteOwner = false;
+        let isSiteStaff = false;
         if (!isAuthor && !isPlatformStaff) {
             const product = await ProductRepository.findById(productId);
             if (product) {
-                isSiteOwner = await hasSiteAccess(product.site_id, user.id);
+                isSiteStaff = await hasSiteAccess(product.site_id, user.id, write('commerce'));
             }
         }
-        if (!isAuthor && !isSiteOwner && !isPlatformStaff) {
+        if (!isAuthor && !isSiteStaff && !isPlatformStaff) {
             throw new ServiceError(403, 'У вас немає прав для видалення цього відгуку.');
         }
         await ProductRepository.deleteReview(reviewId);

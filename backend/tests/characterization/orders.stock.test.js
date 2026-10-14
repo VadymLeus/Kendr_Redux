@@ -98,7 +98,7 @@ describe('списання залишку при оплаті', () => {
 
   // KNOWN-DEFECT D-BIZ-02: зміна статусу не пов'язана із залишками.
   it('KNOWN-DEFECT D-BIZ-02: updateOrderStatus не чіпає залишок', async () => {
-    const order = await createOrder(site, buyer, { items: [{ product, quantity: 2 }] });
+    const order = await createOrder(site, buyer, { payment_method: 'cod', items: [{ product, quantity: 2 }] });
     const res = await request(app).put(`/api/orders/${order.id}/status`).set(authHeader(seller)).send({ status: 'paid' });
     expect(res.status).toBe(200);
     expect(await stockOf(product)).toBe(5);

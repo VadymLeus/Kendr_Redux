@@ -163,6 +163,16 @@ class SiteRepository {
     return rows[0] || null;
   }
 
+  static async findWithCollaborator(siteId, userId) {
+    const [rows] = await db.query(`
+        SELECT s.*, sc.role AS collaborator_role, sc.permissions AS collaborator_permissions
+        FROM sites s
+        LEFT JOIN site_collaborators sc ON sc.site_id = s.id AND sc.user_id = ?
+        WHERE s.id = ?
+    `, [userId, siteId]);
+    return rows[0] || null;
+  }
+
   static async findAllByUserId(userId) {
     const [rows] = await db.query('SELECT * FROM sites WHERE user_id = ?', [userId]);
     return rows;

@@ -9,6 +9,10 @@ const OrderRepository = require('../../repositories/OrderRepository');
 const SiteRepository = require('../../repositories/SiteRepository');
 const { ServiceError } = require('../../services/ServiceError');
 
+const OWNER_SITE = { id: 3, user_id: 11, collaborator_role: null, collaborator_permissions: null };
+const collaboratorSite = (role, permissions) => ({
+  id: 3, user_id: 1, collaborator_role: role, collaborator_permissions: permissions,
+});
 const PRODUCT = { id: 7, site_id: 3, name: 'Кава', categories: [{ id: 1 }, { id: 2 }], image_gallery: ['/a.jpg'] };
 
 async function failure(fn) {
@@ -33,11 +37,11 @@ beforeEach(() => {
     addReview: vi.spyOn(ProductRepository, 'addReview').mockResolvedValue(undefined),
     updateReviewReply: vi.spyOn(ProductRepository, 'updateReviewReply').mockResolvedValue(undefined),
     deleteReview: vi.spyOn(ProductRepository, 'deleteReview').mockResolvedValue(undefined),
-    findReviewById: vi.spyOn(ProductRepository, 'findReviewById').mockResolvedValue({ user_id: 50 }),
+    findReviewById: vi.spyOn(ProductRepository, 'findReviewById').mockResolvedValue({ user_id: 50, product_id: 7 }),
     getReviewByUser: vi.spyOn(ProductRepository, 'getReviewByUser').mockResolvedValue(null),
     hasPurchased: vi.spyOn(OrderRepository, 'hasPurchased').mockResolvedValue(true),
   };
-  site = vi.spyOn(SiteRepository, 'findByIdAndUserId').mockResolvedValue({ id: 3 });
+  site = vi.spyOn(SiteRepository, 'findWithCollaborator').mockResolvedValue(OWNER_SITE);
 });
 
 afterEach(() => {
@@ -58,7 +62,7 @@ describe('getById', () => {
 });
 
 describe('getAccessible', () => {
-  it('перевіряє доступ до сайту товару: Site.findByIdAndUserId(product.site_id, userId)', async () => {
+  it('перевіряє доступ до сайту товару: Site.findWithCollaborator(product.site_id, userId)', async () => {
     expect(await ProductService.getAccessible(7, 11, 'нема прав')).toBe(PRODUCT);
     expect(site).toHaveBeenCalledWith(3, 11);
   });
@@ -276,7 +280,7 @@ describe('replyToReview', () => {
     site.mockResolvedValue(null);
     const error = await failure(() => ProductService.replyToReview(7, 21, 11, 'Дякуємо'));
     expect(error.status).toBe(403);
-    expect(error.message).toBe('Тільки власник магазину може відповідати на відгуки.');
+    expect(error.message).toBe('У вас немає прав відповідати на відгуки цього магазину.');
     expect(repo.updateReviewReply).not.toHaveBeenCalled();
   });
 
@@ -287,9 +291,59 @@ describe('replyToReview', () => {
     expect(repo.updateReviewReply).toHaveBeenLastCalledWith(21, null);
   });
 
-  it('D-SEC-18: відгук не перевіряється на належність до товару productId', async () => {
-    await ProductService.replyToReview(7, 21, 11, 'Дякуємо');
-    expect(repo.findReviewById).not.toHaveBeenCalled();
+  it('D-SEC-18: відгук іншого товару → 404 і відповідь не записується', async () => {
+    repo.findReviewById.mockResolvedValue({ user_id: 50, product_id: 8 });
+    const error = await failure(() => ProductService.replyToReview(7, 21, 11, 'Дякуємо'));
+    expect(error.status).toBe(404);
+    expect(error.message).toBe('Відгук не знайдено.');
+    expect(repo.updateReviewReply).not.toHaveBeenCalled();
+  });
+
+  it('D-SEC-18: неіснуючий відгук → 404', async () => {
+    repo.findReviewById.mockResolvedValue(null);
+    const error = await failure(() => ProductService.replyToReview(7, 21, 11, 'Дякуємо'));
+    expect(error.status).toBe(404);
+    expect(repo.updateReviewReply).not.toHaveBeenCalled();
+  });
+
+  it('D-SEC-18: ідентифікатор товару порівнюється як рядок', async () => {
+    repo.findReviewById.mockResolvedValue({ user_id: 50, product_id: 7 });
+    await ProductService.replyToReview('7', 21, 11, 'Дякуємо');
+    expect(repo.updateReviewReply).toHaveBeenCalledWith(21, 'Дякуємо');
+  });
+});
+
+describe('D-SEC-06: права співавторів на товари', () => {
+  const calls = [
+    ['create', () => ProductService.create(11, { site_id: 3, name: 'Чай', price: '12', type: 'physical' })],
+    ['getAccessible', () => ProductService.getAccessible(7, 11, 'нема прав')],
+    ['replyToReview', () => ProductService.replyToReview(7, 21, 11, 'Дякуємо')],
+  ];
+
+  it.each(calls)('%s: редактор із секцією commerce дозволений', async (name, call) => {
+    site.mockResolvedValue(collaboratorSite('editor', '["commerce"]'));
+    await call();
+  });
+
+  it.each(calls)('%s: редактор без секції commerce отримує 403', async (name, call) => {
+    site.mockResolvedValue(collaboratorSite('editor', '["editor","theme"]'));
+    const error = await failure(call);
+    expect(error.status).toBe(403);
+  });
+
+  it.each(calls)('%s: глядач із секцією commerce отримує 403', async (name, call) => {
+    site.mockResolvedValue(collaboratorSite('viewer', '["commerce"]'));
+    const error = await failure(call);
+    expect(error.status).toBe(403);
+  });
+
+  it('заборонені операції нічого не записують', async () => {
+    site.mockResolvedValue(collaboratorSite('viewer', '["commerce"]'));
+    for (const [, call] of calls) {
+      await call().catch(() => {});
+    }
+    expect(repo.create).not.toHaveBeenCalled();
+    expect(repo.updateReviewReply).not.toHaveBeenCalled();
   });
 });
 
@@ -305,7 +359,7 @@ describe('deleteReview', () => {
   });
 
   it('автор видаляє свій відгук без звернення до товару й сайту', async () => {
-    repo.findReviewById.mockResolvedValue({ user_id: 11 });
+    repo.findReviewById.mockResolvedValue({ user_id: 11, product_id: 7 });
     await ProductService.deleteReview(7, 21, customer);
     expect(repo.deleteReview).toHaveBeenCalledWith(21);
     expect(repo.findById).not.toHaveBeenCalled();
@@ -322,6 +376,29 @@ describe('deleteReview', () => {
     await ProductService.deleteReview(7, 21, customer);
     expect(site).toHaveBeenCalledWith(3, 11);
     expect(repo.deleteReview).toHaveBeenCalledWith(21);
+  });
+
+  it('D-SEC-18: відгук іншого товару → 404, навіть для автора', async () => {
+    repo.findReviewById.mockResolvedValue({ user_id: 11, product_id: 8 });
+    const error = await failure(() => ProductService.deleteReview(7, 21, customer));
+    expect(error.status).toBe(404);
+    expect(repo.deleteReview).not.toHaveBeenCalled();
+  });
+
+  it('D-SEC-06: співавтор-редактор із секцією commerce видаляє чужий відгук', async () => {
+    site.mockResolvedValue(collaboratorSite('editor', '["commerce"]'));
+    await ProductService.deleteReview(7, 21, customer);
+    expect(repo.deleteReview).toHaveBeenCalledWith(21);
+  });
+
+  it.each([
+    ['editor', '["theme"]'],
+    ['viewer', '["commerce"]'],
+  ])('D-SEC-06: співавтор %s з дозволами %s не видаляє чужий відгук', async (role, permissions) => {
+    site.mockResolvedValue(collaboratorSite(role, permissions));
+    const error = await failure(() => ProductService.deleteReview(7, 21, customer));
+    expect(error.status).toBe(403);
+    expect(repo.deleteReview).not.toHaveBeenCalled();
   });
 
   it('403 для стороннього користувача', async () => {

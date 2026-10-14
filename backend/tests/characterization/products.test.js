@@ -1,7 +1,4 @@
-// Товари, категорії та відгуки: публічні маршрути, створення, зміна, видалення, права доступу.
-// Фіксує D-SEC-06 (права співавторів), D-SEC-14 (посилання на цифровий файл у публічній видачі), D-SEC-18 (відгуки
-// не прив'язані до товару з URL), D-BIZ-03 (ліміти тарифу), D-BIZ-10, D-BIZ-11 (обробка полів товару),
-// D-DEAD-08 (маршрути галереї), D-ARC-10 (помилки валідації повертаються як 500).
+// backend/tests/characterization/products.test.js
 import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import { app } from '../helpers/app.js';
@@ -17,21 +14,26 @@ useTestDatabase();
 
 const FILE_URL = 'https://files.test/secret-book.pdf';
 
-let owner, editor, viewer, stranger, buyer, site, product;
+let owner, editor, viewer, themeOnly, bare, stranger, buyer, site, product;
 
 beforeEach(async () => {
   owner = await createUser();
   editor = await createUser();
   viewer = await createUser();
+  themeOnly = await createUser();
+  bare = await createUser();
   stranger = await createUser();
   buyer = await createUser();
   site = await createSite(owner, { site_path: 'acme-shop' });
-  await addCollaborator(site, editor, 'editor', []);
-  await addCollaborator(site, viewer, 'viewer', []);
+  await addCollaborator(site, editor, 'editor', ['commerce']);
+  await addCollaborator(site, viewer, 'viewer', ['commerce']);
+  await addCollaborator(site, themeOnly, 'editor', ['theme']);
+  await addCollaborator(site, bare, 'editor', []);
   product = await createProduct(site, { name: 'Кава', price: 150, stock_quantity: 10 });
 });
 
-const actor = (name) => ({ anon: null, stranger, viewer, editor, owner })[name];
+const actor = (name) => ({ anon: null, stranger, bare, themeOnly, viewer, editor, owner })[name];
+const DENIED_WRITERS = ['viewer', 'themeOnly', 'bare'];
 const withAuth = (req, user) => (user ? req.set(authHeader(user)) : req);
 
 const addProduct = (user, body) => withAuth(request(app).post('/api/products'), user).send(body);
@@ -219,10 +221,16 @@ describe('POST /api/products', () => {
     expect(res.status).toBe(403);
   });
 
-  // KNOWN-DEFECT D-SEC-06
-  it.each(['viewer', 'editor'])('KNOWN-DEFECT D-SEC-06: співавтор %s без прав додає товар', async (who) => {
-    const res = await addProduct(actor(who), BODY());
+  it('D-SEC-06: редактор із секцією commerce додає товар', async () => {
+    const res = await addProduct(editor, BODY());
     expect(res.status).toBe(201);
+  });
+
+  it.each(DENIED_WRITERS)('D-SEC-06: співавтор %s не додає товар', async (who) => {
+    const res = await addProduct(actor(who), BODY());
+    expect(res.status).toBe(403);
+    expect(res.body.message).toBe('У вас немає прав для додавання товарів на цей сайт.');
+    expect(await countRows('products', 'site_id = ?', [site.id])).toBe(1);
   });
 });
 
@@ -288,11 +296,17 @@ describe('PUT /api/products/:productId', () => {
     expect((await updateProduct(null, product.id, BODY)).status).toBe(401);
   });
 
-  // KNOWN-DEFECT D-SEC-06
-  it.each(['viewer', 'editor'])('KNOWN-DEFECT D-SEC-06: співавтор %s без прав змінює товар', async (who) => {
-    const res = await updateProduct(actor(who), product.id, BODY);
+  it('D-SEC-06: редактор із секцією commerce змінює товар', async () => {
+    const res = await updateProduct(editor, product.id, BODY);
     expect(res.status).toBe(200);
     expect((await getProduct(product.id)).name).toBe('Кава преміум');
+  });
+
+  it.each(DENIED_WRITERS)('D-SEC-06: співавтор %s не змінює товар', async (who) => {
+    const res = await updateProduct(actor(who), product.id, BODY);
+    expect(res.status).toBe(403);
+    expect(res.body.message).toBe('У вас немає прав для зміни цього товару.');
+    expect((await getProduct(product.id)).name).toBe('Кава');
   });
 });
 
@@ -324,11 +338,17 @@ describe('DELETE /api/products/:productId', () => {
     expect((await deleteProduct(null, product.id)).status).toBe(401);
   });
 
-  // KNOWN-DEFECT D-SEC-06
-  it.each(['viewer', 'editor'])('KNOWN-DEFECT D-SEC-06: співавтор %s без прав видаляє товар', async (who) => {
-    const res = await deleteProduct(actor(who), product.id);
+  it('D-SEC-06: редактор із секцією commerce видаляє товар', async () => {
+    const res = await deleteProduct(editor, product.id);
     expect(res.status).toBe(200);
     expect(await getProduct(product.id)).toBeUndefined();
+  });
+
+  it.each(DENIED_WRITERS)('D-SEC-06: співавтор %s не видаляє товар', async (who) => {
+    const res = await deleteProduct(actor(who), product.id);
+    expect(res.status).toBe(403);
+    expect(res.body.message).toBe('У вас немає прав для видалення товарів на цьому сайті.');
+    expect(await getProduct(product.id)).toBeDefined();
   });
 });
 
@@ -425,10 +445,16 @@ describe('категорії', () => {
       expect((await addCategory(null, { siteId: site.id, name: 'Напої' })).status).toBe(401);
     });
 
-    // KNOWN-DEFECT D-SEC-06
-    it.each(['viewer', 'editor'])('KNOWN-DEFECT D-SEC-06: співавтор %s без прав створює категорію', async (who) => {
-      const res = await addCategory(actor(who), { siteId: site.id, name: 'Напої' });
+    it('D-SEC-06: редактор із секцією commerce створює категорію', async () => {
+      const res = await addCategory(editor, { siteId: site.id, name: 'Напої' });
       expect(res.status).toBe(201);
+    });
+
+    it.each(DENIED_WRITERS)('D-SEC-06: співавтор %s не створює категорію', async (who) => {
+      const res = await addCategory(actor(who), { siteId: site.id, name: 'Напої' });
+      expect(res.status).toBe(403);
+      expect(res.body.message).toBe('У вас немає прав для додавання категорій на цей сайт.');
+      expect(await countRows('categories', 'site_id = ?', [site.id])).toBe(0);
     });
   });
 
@@ -470,10 +496,17 @@ describe('категорії', () => {
       expect(res.body.message).toBe('У вас немає прав на редагування цієї категорії.');
     });
 
-    // KNOWN-DEFECT D-SEC-06: категорії співавтор створює (findByIdAndUserId), але змінити не може (порівняння з user_id власника).
-    it('KNOWN-DEFECT D-SEC-06: співавтор editor створює категорії, але змінити їх не може — правила доступу різні в одного контролера', async () => {
+    it('D-SEC-06: редактор із секцією commerce змінює категорію — ті самі правила, що й для створення', async () => {
       const res = await updateCategory(editor, category.id, { name: 'Нова' });
+      expect(res.status).toBe(200);
+      expect((await getCategory(category.id)).name).toBe('Нова');
+    });
+
+    it.each(DENIED_WRITERS)('D-SEC-06: співавтор %s не змінює категорію', async (who) => {
+      const res = await updateCategory(actor(who), category.id, { name: 'Нова' });
       expect(res.status).toBe(403);
+      expect(res.body.message).toBe('У вас немає прав на редагування цієї категорії.');
+      expect((await getCategory(category.id)).name).toBe('Напої');
     });
   });
 
@@ -506,10 +539,17 @@ describe('категорії', () => {
       expect(await getCategory(category.id)).toBeDefined();
     });
 
-    // KNOWN-DEFECT D-SEC-06
-    it('KNOWN-DEFECT D-SEC-06: співавтор editor не може видалити категорію, яку міг створити', async () => {
+    it('D-SEC-06: редактор із секцією commerce видаляє категорію', async () => {
       const res = await deleteCategory(editor, category.id);
+      expect(res.status).toBe(200);
+      expect(await getCategory(category.id)).toBeUndefined();
+    });
+
+    it.each(DENIED_WRITERS)('D-SEC-06: співавтор %s не видаляє категорію', async (who) => {
+      const res = await deleteCategory(actor(who), category.id);
       expect(res.status).toBe(403);
+      expect(res.body.message).toBe('У вас немає прав на видалення цієї категорії.');
+      expect(await getCategory(category.id)).toBeDefined();
     });
   });
 });
@@ -648,23 +688,42 @@ describe('відгуки на товари', () => {
     it('сторонній користувач — 403', async () => {
       const res = await replyVia(stranger, product.id, reviewId, { owner_reply: 'Дякуємо!' });
       expect(res.status).toBe(403);
-      expect(res.body.message).toBe('Тільки власник магазину може відповідати на відгуки.');
+      expect(res.body.message).toBe('У вас немає прав відповідати на відгуки цього магазину.');
+      expect((await getReview(reviewId)).owner_reply).toBeNull();
     });
 
-    // KNOWN-DEFECT D-SEC-06: повідомлення говорить «тільки власник», але пускає будь-якого співавтора.
-    it.each(['viewer', 'editor'])('KNOWN-DEFECT D-SEC-06: співавтор %s без прав відповідає від імені магазину', async (who) => {
-      const res = await replyVia(actor(who), product.id, reviewId, { owner_reply: 'Відповідь співавтора' });
+    it('D-SEC-06: редактор із секцією commerce відповідає від імені магазину', async () => {
+      const res = await replyVia(editor, product.id, reviewId, { owner_reply: 'Відповідь співавтора' });
       expect(res.status).toBe(200);
       expect((await getReview(reviewId)).owner_reply).toBe('Відповідь співавтора');
     });
 
-    // KNOWN-DEFECT D-SEC-18: reviewId не зіставляється з productId з URL.
-    it('KNOWN-DEFECT D-SEC-18: власник іншого сайту ставить відповідь на відгук чужого товару, підставивши власний productId', async () => {
+    it.each(DENIED_WRITERS)('D-SEC-06: співавтор %s не відповідає від імені магазину', async (who) => {
+      const res = await replyVia(actor(who), product.id, reviewId, { owner_reply: 'Відповідь співавтора' });
+      expect(res.status).toBe(403);
+      expect((await getReview(reviewId)).owner_reply).toBeNull();
+    });
+
+    it('D-SEC-18: власник іншого сайту не може відповісти на відгук чужого товару, підставивши власний productId', async () => {
       const seller = await createUser();
       const ownProduct = await createProduct(await createSite(seller));
       const res = await replyVia(seller, ownProduct.id, reviewId, { owner_reply: 'Підроблена відповідь' });
-      expect(res.status).toBe(200);
-      expect((await getReview(reviewId)).owner_reply).toBe('Підроблена відповідь');
+      expect(res.status).toBe(404);
+      expect(res.body.message).toBe('Відгук не знайдено.');
+      expect((await getReview(reviewId)).owner_reply).toBeNull();
+    });
+
+    it('D-SEC-18: власник сайту не відповідає на відгук іншого товару свого ж сайту через чужий productId', async () => {
+      const second = await createProduct(site, { name: 'Чай' });
+      const res = await replyVia(owner, second.id, reviewId, { owner_reply: 'Не той товар' });
+      expect(res.status).toBe(404);
+      expect((await getReview(reviewId)).owner_reply).toBeNull();
+    });
+
+    it('D-SEC-18: неіснуючий відгук — 404', async () => {
+      const res = await replyVia(owner, product.id, 999999, { owner_reply: 'Дякуємо!' });
+      expect(res.status).toBe(404);
+      expect(res.body.message).toBe('Відгук не знайдено.');
     });
   });
 
@@ -699,19 +758,33 @@ describe('відгуки на товари', () => {
       expect(res.body.message).toBe('Відгук не знайдено.');
     });
 
-    // KNOWN-DEFECT D-SEC-06
-    it.each(['viewer', 'editor'])('KNOWN-DEFECT D-SEC-06: співавтор %s без прав видаляє відгук', async (who) => {
-      const res = await removeVia(actor(who), product.id, reviewId);
+    it('D-SEC-06: редактор із секцією commerce видаляє відгук', async () => {
+      const res = await removeVia(editor, product.id, reviewId);
       expect(res.status).toBe(200);
+      expect(await getReview(reviewId)).toBeUndefined();
     });
 
-    // KNOWN-DEFECT D-SEC-18
-    it('KNOWN-DEFECT D-SEC-18: власник іншого сайту видаляє відгук чужого товару, підставивши власний productId', async () => {
+    it.each(DENIED_WRITERS)('D-SEC-06: співавтор %s не видаляє відгук', async (who) => {
+      const res = await removeVia(actor(who), product.id, reviewId);
+      expect(res.status).toBe(403);
+      expect(res.body.message).toBe('У вас немає прав для видалення цього відгуку.');
+      expect(await getReview(reviewId)).toBeDefined();
+    });
+
+    it('D-SEC-18: власник іншого сайту не видаляє відгук чужого товару, підставивши власний productId', async () => {
       const seller = await createUser();
       const ownProduct = await createProduct(await createSite(seller));
       const res = await removeVia(seller, ownProduct.id, reviewId);
-      expect(res.status).toBe(200);
-      expect(await getReview(reviewId)).toBeUndefined();
+      expect(res.status).toBe(404);
+      expect(res.body.message).toBe('Відгук не знайдено.');
+      expect(await getReview(reviewId)).toBeDefined();
+    });
+
+    it('D-SEC-18: автор відгуку не видаляє його через productId іншого товару', async () => {
+      const second = await createProduct(site, { name: 'Чай' });
+      const res = await removeVia(buyer, second.id, reviewId);
+      expect(res.status).toBe(404);
+      expect(await getReview(reviewId)).toBeDefined();
     });
   });
 });

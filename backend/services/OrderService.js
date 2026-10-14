@@ -10,7 +10,9 @@ const PaymentService = require('./PaymentService');
 const emailService = require('../utils/emailService');
 const { decrypt } = require('../utils/encryption');
 const { ServiceError } = require('./ServiceError');
+const { requireSiteAccess, read, write } = require('./siteAccess');
 
+const SELLER_STATUSES = ['paid', 'shipped', 'completed', 'cancelled'];
 const BILLING_PAUSED = 'Прийом платежів тимчасово призупинено адміністрацією платформи.';
 
 const generateOrderNumber = (size = 12) => {
@@ -278,7 +280,8 @@ class OrderService {
         }
     }
 
-    static async listForSite(siteId) {
+    static async listForSite(siteId, userId) {
+        await requireSiteAccess(siteId, userId, read('commerce'), 'У вас немає прав переглядати замовлення цього сайту.');
         const orders = await OrderRepository.findBySite(siteId);
         for (const order of orders) {
             order.items = await OrderRepository.findItemsWithImages(order.id);
@@ -298,7 +301,18 @@ class OrderService {
         return orders;
     }
 
-    static async updateStatus(orderId, status) {
+    static async updateStatus(orderId, userId, status) {
+        const order = await OrderRepository.findById(orderId);
+        if (!order) {
+            throw new ServiceError(404, 'Замовлення не знайдено');
+        }
+        await requireSiteAccess(order.site_id, userId, write('commerce'), 'У вас немає прав змінювати замовлення цього сайту.');
+        if (!SELLER_STATUSES.includes(status)) {
+            throw new ServiceError(400, 'Недопустимий статус замовлення.');
+        }
+        if (order.status === 'pending' && order.payment_method === 'online' && status !== 'cancelled') {
+            throw new ServiceError(400, 'Замовлення з онлайн-оплатою можна позначити оплаченим лише після підтвердження платежу.');
+        }
         await OrderRepository.updateStatus(orderId, status);
     }
 }

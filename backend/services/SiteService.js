@@ -7,10 +7,10 @@ const CollaboratorRepository = require('../repositories/CollaboratorRepository')
 const GlobalSettingsRepository = require('../repositories/GlobalSettingsRepository');
 const OrderRepository = require('../repositories/OrderRepository');
 const { ServiceError } = require('./ServiceError');
-const { requireSiteAccess } = require('./siteAccess');
+const { requireSiteAccess, isAllowed, OWNER, read, write } = require('./siteAccess');
 const { validateSlug, validateSiteCreation } = require('./siteValidation');
 const { regenerateBlockIds, readTemplate, parseTemplateContent } = require('./siteTemplate');
-const { buildSettingsUpdate, assertStatusChangeAllowed } = require('./siteSettings');
+const { buildSettingsUpdate, assertStatusChangeAllowed, requiredSections } = require('./siteSettings');
 const { v4: uuidv4 } = require('uuid');
 
 const DEFAULT_LOGOS = ['/logos/logo1.png', '/logos/logo2.png', '/logos/logo3.png'];
@@ -218,10 +218,10 @@ class SiteService {
         if (!site) {
             throw new ServiceError(404, 'Сайт не знайдено.');
         }
-        const isOwner = site.user_id === userId;
         const collaborator = await CollaboratorRepository.findBySiteAndUser(site.id, userId);
-        const isEditor = Boolean(collaborator) && collaborator.role === 'editor';
-        if (!isOwner && !isEditor) {
+        const sections = requiredSections(body);
+        const requirements = sections.length > 0 ? sections.map((section) => write(section)) : [write()];
+        if (!requirements.every((requirement) => isAllowed(site.user_id, collaborator, userId, requirement))) {
             throw new ServiceError(403, 'У вас немає прав редагувати цей сайт.');
         }
         const lock = await SiteRepository.findLock(site.id);
@@ -277,7 +277,7 @@ class SiteService {
     static async resetToTemplate(siteId, userId, body) {
         const { templateId } = body;
         const isBlank = body.isBlank || templateId === 'blank';
-        const site = await requireSiteAccess(siteId, userId, 'Сайт не знайдено або у вас немає прав (тільки власник).');
+        const site = await requireSiteAccess(siteId, userId, OWNER, 'Сайт не знайдено або у вас немає прав (тільки власник).');
         let content;
         if (!isBlank) {
             const template = await TemplateRepository.findById(templateId);
@@ -323,7 +323,7 @@ class SiteService {
     }
 
     static async togglePin(siteId, userId) {
-        await requireSiteAccess(siteId, userId, 'Сайт не знайдено або у вас немає прав (тільки власник).', 404);
+        await requireSiteAccess(siteId, userId, OWNER, 'Сайт не знайдено або у вас немає прав (тільки власник).', 404);
         return SiteRepository.togglePin(siteId);
     }
 
@@ -341,9 +341,8 @@ class SiteService {
         if (!site) {
             throw new ServiceError(404, 'Сайт не знайдено');
         }
-        const isOwner = site.user_id === userId;
         const collaborator = await CollaboratorRepository.findBySiteAndUser(siteId, userId);
-        if (!isOwner && !collaborator) {
+        if (!isAllowed(site.user_id, collaborator, userId, read('overview'))) {
             throw new ServiceError(403, 'У вас немає прав доступу до аналітики цього сайту');
         }
         const stats = (await OrderRepository.findStatsBySite(siteId)) || {};

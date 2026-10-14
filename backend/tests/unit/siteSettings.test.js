@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const { buildSettingsUpdate, assertStatusChangeAllowed } = require('../../services/siteSettings');
+const { buildSettingsUpdate, assertStatusChangeAllowed, requiredSections, SECTION_FIELDS } = require('../../services/siteSettings');
 const { encrypt, decrypt } = require('../../utils/encryption');
 const { ServiceError } = require('../../services/ServiceError');
 
@@ -271,5 +271,70 @@ describe('buildSettingsUpdate: ключ LiqPay', () => {
     const stored = encrypt('old');
     const update = buildSettingsUpdate(makeSite({ liqpay_private_key: stored }), { liqpay_private_key: '********' });
     expect(update.liqpay_private_key).toBe(stored);
+  });
+});
+
+describe('requiredSections', () => {
+  it('порожнє тіло не вимагає секцій', () => {
+    expect(requiredSections({})).toEqual([]);
+  });
+
+  it('невідомі поля не вимагають секцій', () => {
+    expect(requiredSections({ user_id: 5, is_pinned: 1, id: 3 })).toEqual([]);
+  });
+
+  it.each([
+    ['header_content', 'editor'],
+    ['footer_content', 'editor'],
+    ['site_theme_mode', 'theme'],
+    ['site_theme_accent', 'theme'],
+    ['theme_settings', 'theme'],
+    ['currency', 'commerce'],
+    ['liqpay_public_key', 'commerce'],
+    ['liqpay_private_key', 'commerce'],
+    ['is_online_payment_enabled', 'commerce'],
+    ['is_cod_enabled', 'commerce'],
+    ['title', 'settings'],
+    ['status', 'settings'],
+    ['tags', 'settings'],
+    ['logo_url', 'settings'],
+    ['dashboard_config', 'settings'],
+    ['favicon_url', 'settings'],
+    ['site_title_seo', 'settings'],
+    ['cover_image', 'settings'],
+    ['cover_layout', 'settings'],
+    ['cover_logo_size', 'settings'],
+    ['cover_logo_radius', 'settings'],
+    ['cover_title_size', 'settings'],
+    ['cookie_banner_enabled', 'settings'],
+    ['cookie_banner_text', 'settings'],
+    ['cookie_banner_size', 'settings'],
+    ['cookie_banner_position', 'settings'],
+    ['cookie_banner_blur', 'settings'],
+  ])('поле %s належить до секції %s', (field, section) => {
+    expect(requiredSections({ [field]: 'x' })).toEqual([section]);
+  });
+
+  it('значення null і 0 теж вважаються переданими, undefined — ні', () => {
+    expect(requiredSections({ currency: null })).toEqual(['commerce']);
+    expect(requiredSections({ is_cod_enabled: 0 })).toEqual(['commerce']);
+    expect(requiredSections({ currency: undefined })).toEqual([]);
+  });
+
+  it('повертає кожну секцію один раз, у порядку editor, theme, commerce, settings', () => {
+    const body = { title: 'a', cookie_banner_text: 'b', currency: 'USD', site_theme_mode: 'dark', header_content: [] };
+    expect(requiredSections(body)).toEqual(['editor', 'theme', 'commerce', 'settings']);
+  });
+
+  it('кожне оновлюване поле buildSettingsUpdate закріплене за секцією', () => {
+    const mapped = Object.values(SECTION_FIELDS).flat();
+    const updated = Object.keys(buildSettingsUpdate(makeSite(), {}));
+    const unmapped = updated.filter((field) => !mapped.includes(field));
+    expect(unmapped).toEqual([]);
+  });
+
+  it('жодне поле не належить до двох секцій', () => {
+    const mapped = Object.values(SECTION_FIELDS).flat();
+    expect(new Set(mapped).size).toBe(mapped.length);
   });
 });

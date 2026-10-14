@@ -81,7 +81,7 @@ beforeEach(() => {
     findSuspendedWithAppeals: vi.spyOn(SiteRepository, 'findSuspendedWithAppeals').mockResolvedValue([]),
     findAllAccessible: vi.spyOn(SiteRepository, 'findAllAccessible').mockResolvedValue([]),
     findByPath: vi.spyOn(SiteRepository, 'findByPath').mockResolvedValue(null),
-    findByIdAndUserId: vi.spyOn(SiteRepository, 'findByIdAndUserId').mockResolvedValue(makeSite()),
+    findWithCollaborator: vi.spyOn(SiteRepository, 'findWithCollaborator').mockResolvedValue(makeSite()),
     getPublic: vi.spyOn(SiteRepository, 'getPublic').mockResolvedValue([]),
     updateSettings: vi.spyOn(SiteRepository, 'updateSettings').mockResolvedValue({}),
     updateTags: vi.spyOn(SiteRepository, 'updateTags').mockResolvedValue(undefined),
@@ -706,10 +706,117 @@ describe('updateSettings', () => {
     expect(error.status).toBe(403);
   });
 
-  it('KNOWN-DEFECT D-SEC-06: співавтор editor без жодного права змінює налаштування сайту', async () => {
-    collaborators.findBySiteAndUser.mockResolvedValue({ role: 'editor', permissions: [] });
-    await SiteService.updateSettings('shop', 2, { title: 'Нова' });
-    expect(repo.updateSettings).toHaveBeenCalledWith(7, expect.objectContaining({ title: 'Нова' }));
+  describe('D-SEC-06: права співавтора за групами полів', () => {
+    const editorWith = (permissions) => {
+      collaborators.findBySiteAndUser.mockResolvedValue({ role: 'editor', permissions });
+    };
+
+    it('редактор без жодного права не змінює нічого', async () => {
+      editorWith([]);
+      const error = await serviceFailure(() => SiteService.updateSettings('shop', 2, { title: 'Нова назва' }));
+      expect(error.status).toBe(403);
+      expect(error.message).toBe('У вас немає прав редагувати цей сайт.');
+      expect(repo.updateSettings).not.toHaveBeenCalled();
+    });
+
+    it('редактор без жодного права не проходить навіть з порожнім тілом', async () => {
+      editorWith([]);
+      const error = await serviceFailure(() => SiteService.updateSettings('shop', 2, {}));
+      expect(error.status).toBe(403);
+    });
+
+    it('порожнє тіло проходить для редактора з будь-яким правом', async () => {
+      editorWith(['theme']);
+      await SiteService.updateSettings('shop', 2, {});
+      expect(repo.updateSettings).toHaveBeenCalled();
+    });
+
+    it('невідомі поля не вимагають секцій', async () => {
+      editorWith(['theme']);
+      await SiteService.updateSettings('shop', 2, { is_pinned: 1, user_id: 99 });
+      expect(repo.updateSettings).toHaveBeenCalled();
+    });
+
+    it.each([
+      ['settings', { title: 'Нова назва' }],
+      ['settings', { status: 'private' }],
+      ['settings', { tags: [1] }],
+      ['settings', { cookie_banner_enabled: 1, cookie_banner_text: 'текст' }],
+      ['settings', { cover_image: '/c.png', cover_logo_size: 40 }],
+      ['settings', { logo_url: '/uploads/l.png' }],
+      ['theme', { site_theme_mode: 'dark', site_theme_accent: 'green' }],
+      ['theme', { theme_settings: '{"radius":4}' }],
+      ['commerce', { currency: 'EUR' }],
+      ['commerce', { liqpay_public_key: 'pub', liqpay_private_key: 'priv' }],
+      ['commerce', { is_online_payment_enabled: 1, is_cod_enabled: 0 }],
+      ['editor', { header_content: '[]' }],
+      ['editor', { footer_content: '[]' }],
+    ])('редактор із секцією %s може змінити %j', async (section, body) => {
+      editorWith([section]);
+      await SiteService.updateSettings('shop', 2, body);
+      expect(repo.updateSettings).toHaveBeenCalled();
+    });
+
+    it.each([
+      ['editor', { title: 'Нова назва' }],
+      ['editor', { currency: 'EUR' }],
+      ['theme', { header_content: '[]' }],
+      ['theme', { liqpay_private_key: 'priv' }],
+      ['commerce', { title: 'Нова назва' }],
+      ['commerce', { site_theme_mode: 'dark' }],
+      ['settings', { currency: 'EUR' }],
+      ['settings', { is_online_payment_enabled: 1 }],
+      ['settings', { liqpay_public_key: 'pub' }],
+      ['settings', { site_theme_accent: 'red' }],
+      ['overview', { title: 'Нова назва' }],
+    ])('редактор із секцією %s не може змінити %j', async (section, body) => {
+      editorWith([section]);
+      const error = await serviceFailure(() => SiteService.updateSettings('shop', 2, body));
+      expect(error.status).toBe(403);
+      expect(repo.updateSettings).not.toHaveBeenCalled();
+      expect(repo.updateTags).not.toHaveBeenCalled();
+    });
+
+    it('запит із полями кількох груп вимагає всіх відповідних секцій', async () => {
+      editorWith(['settings']);
+      const error = await serviceFailure(() => SiteService.updateSettings('shop', 2, { title: 'Нова назва', currency: 'EUR' }));
+      expect(error.status).toBe(403);
+      expect(repo.updateSettings).not.toHaveBeenCalled();
+      editorWith(['settings', 'commerce']);
+      await SiteService.updateSettings('shop', 2, { title: 'Нова назва', currency: 'EUR' });
+      expect(repo.updateSettings).toHaveBeenCalledWith(7, expect.objectContaining({ title: 'Нова назва', currency: 'EUR' }));
+    });
+
+    it('права у вигляді JSON-рядка розбираються', async () => {
+      editorWith('["commerce"]');
+      await SiteService.updateSettings('shop', 2, { currency: 'EUR' });
+      expect(repo.updateSettings).toHaveBeenCalled();
+    });
+
+    it.each([[{}], [null], ['commerce']])('нетипові права %j рахуються порожніми', async (permissions) => {
+      editorWith(permissions);
+      const error = await serviceFailure(() => SiteService.updateSettings('shop', 2, { currency: 'EUR' }));
+      expect(error.status).toBe(403);
+    });
+
+    it('глядач із усіма секціями не змінює нічого', async () => {
+      collaborators.findBySiteAndUser.mockResolvedValue({ role: 'viewer', permissions: ['editor', 'theme', 'commerce', 'overview', 'settings'] });
+      const error = await serviceFailure(() => SiteService.updateSettings('shop', 2, { title: 'Нова назва' }));
+      expect(error.status).toBe(403);
+      expect(repo.updateSettings).not.toHaveBeenCalled();
+    });
+
+    it('власник змінює поля будь-яких груп без запису співавтора', async () => {
+      await SiteService.updateSettings('shop', 1, { title: 'Нова назва', currency: 'EUR', site_theme_mode: 'dark', header_content: '[]' });
+      expect(repo.updateSettings).toHaveBeenCalled();
+    });
+
+    it('права перевіряються до блокування редагування', async () => {
+      repo.findLock.mockResolvedValue({ locked_by_user_id: 3, locked_until: new Date(Date.now() + 5 * 60 * 1000) });
+      editorWith([]);
+      const error = await serviceFailure(() => SiteService.updateSettings('shop', 2, { title: 'Нова назва' }));
+      expect(error.status).toBe(403);
+    });
   });
 
   it('власник зберігає налаштування й отримує оновлені поля', async () => {
@@ -876,7 +983,7 @@ describe('deleteSite', () => {
 
 describe('resetToTemplate: доступ і помилки шаблону', () => {
   it('немає доступу → 403 до будь-якої роботи з шаблоном', async () => {
-    repo.findByIdAndUserId.mockResolvedValue(null);
+    repo.findWithCollaborator.mockResolvedValue(null);
     const error = await serviceFailure(() => SiteService.resetToTemplate('7', 1, { templateId: 3 }));
     expect(error.status).toBe(403);
     expect(error.message).toBe(NO_ACCESS);
@@ -884,11 +991,19 @@ describe('resetToTemplate: доступ і помилки шаблону', () =>
     expect(repo.transaction).not.toHaveBeenCalled();
   });
 
-  it('KNOWN-DEFECT D-SEC-06: співавторові без прав доступ до скидання дозволений (перевірка лише наявності доступу)', async () => {
+  it.each([
+    ['editor', ['editor', 'theme', 'commerce', 'overview', 'settings']],
+    ['viewer', ['editor', 'theme', 'commerce', 'overview', 'settings']],
+    ['editor', []],
+  ])('D-SEC-06: співавтор %s (%j) не може скинути сайт власника', async (role, permissions) => {
+    repo.findWithCollaborator.mockResolvedValue({ ...makeSite({ user_id: 1 }), collaborator_role: role, collaborator_permissions: permissions });
     templates.findById.mockResolvedValue(makeTemplate({ pages: [] }));
-    await SiteService.resetToTemplate('7', 2, { templateId: 3 });
-    expect(repo.findByIdAndUserId).toHaveBeenCalledWith('7', 2);
-    expect(repo.transaction).toHaveBeenCalled();
+    const error = await serviceFailure(() => SiteService.resetToTemplate('7', 2, { templateId: 3 }));
+    expect(error.status).toBe(403);
+    expect(error.message).toBe(NO_ACCESS);
+    expect(repo.findWithCollaborator).toHaveBeenCalledWith('7', 2);
+    expect(repo.transaction).not.toHaveBeenCalled();
+    expect(pages.deleteBySiteId).not.toHaveBeenCalled();
   });
 
   it('KNOWN-DEFECT D-ARC-10: шаблон не знайдено — звичайна Error (500), а не ServiceError; сторінки не зачіпаються', async () => {
@@ -980,7 +1095,7 @@ describe('resetToTemplate: запис', () => {
   });
 
   it.each([[{ templateId: 'blank' }], [{ templateId: 3, isBlank: true }], [{ isBlank: true }]])('порожній сайт: %j', async (body) => {
-    repo.findByIdAndUserId.mockResolvedValue(makeSite({ title: 'Мій сайт', logo_url: '/uploads/mine.png' }));
+    repo.findWithCollaborator.mockResolvedValue(makeSite({ title: 'Мій сайт', logo_url: '/uploads/mine.png' }));
     await SiteService.resetToTemplate('7', 1, body);
     expect(templates.findById).not.toHaveBeenCalled();
     const applied = repo.applyContent.mock.calls[0][1];
@@ -999,7 +1114,7 @@ describe('resetToTemplate: запис', () => {
   });
 
   it('порожній сайт без логотипа отримує стандартний', async () => {
-    repo.findByIdAndUserId.mockResolvedValue(makeSite({ logo_url: null }));
+    repo.findWithCollaborator.mockResolvedValue(makeSite({ logo_url: null }));
     await SiteService.resetToTemplate('7', 1, { isBlank: true });
     expect(repo.applyContent.mock.calls[0][1].header[0].data.logo_src).toBe('/logos/logo1.png');
   });
@@ -1007,7 +1122,7 @@ describe('resetToTemplate: запис', () => {
 
 describe('togglePin', () => {
   it('немає доступу → 404', async () => {
-    repo.findByIdAndUserId.mockResolvedValue(null);
+    repo.findWithCollaborator.mockResolvedValue(null);
     const error = await serviceFailure(() => SiteService.togglePin('7', 2));
     expect(error.status).toBe(404);
     expect(error.message).toBe(NO_ACCESS);
@@ -1020,10 +1135,15 @@ describe('togglePin', () => {
     expect(repo.togglePin).toHaveBeenCalledWith('7');
   });
 
-  it('KNOWN-DEFECT D-SEC-06: співавтор будь-якої ролі перемикає закріплення сайту власника', async () => {
-    repo.findByIdAndUserId.mockResolvedValue(makeSite({ user_id: 1 }));
-    await SiteService.togglePin('7', 2);
-    expect(repo.togglePin).toHaveBeenCalledWith('7');
+  it.each([
+    ['editor', ['editor', 'theme', 'commerce', 'overview', 'settings']],
+    ['viewer', ['overview']],
+  ])('D-SEC-06: співавтор %s (%j) не перемикає закріплення сайту власника', async (role, permissions) => {
+    repo.findWithCollaborator.mockResolvedValue({ ...makeSite({ user_id: 1 }), collaborator_role: role, collaborator_permissions: permissions });
+    const error = await serviceFailure(() => SiteService.togglePin('7', 2));
+    expect(error.status).toBe(404);
+    expect(error.message).toBe(NO_ACCESS);
+    expect(repo.togglePin).not.toHaveBeenCalled();
   });
 });
 
@@ -1077,11 +1197,34 @@ describe('getAnalytics', () => {
     expect(orders.findRecentBySite).toHaveBeenCalledWith('7', 5);
   });
 
-  it('співавтор будь-якої ролі отримує зведення', async () => {
-    collaborators.findBySiteAndUser.mockResolvedValue({ role: 'viewer', permissions: [] });
+  it.each([
+    ['viewer', ['overview']],
+    ['editor', ['overview']],
+    ['editor', ['editor', 'overview']],
+  ])('D-SEC-06: співавтор %s із секцією overview (%j) отримує зведення', async (role, permissions) => {
+    collaborators.findBySiteAndUser.mockResolvedValue({ role, permissions });
     const result = await SiteService.getAnalytics('7', 2);
     expect(collaborators.findBySiteAndUser).toHaveBeenCalledWith('7', 2);
     expect(result.totalOrders).toBe(5);
+  });
+
+  it('права-рядок JSON розбираються', async () => {
+    collaborators.findBySiteAndUser.mockResolvedValue({ role: 'viewer', permissions: '["overview"]' });
+    expect((await SiteService.getAnalytics('7', 2)).totalOrders).toBe(5);
+  });
+
+  it.each([
+    ['viewer', []],
+    ['viewer', ['editor', 'theme', 'commerce', 'settings']],
+    ['editor', ['commerce']],
+    ['editor', []],
+  ])('D-SEC-06: співавтор %s без секції overview (%j) отримує 403', async (role, permissions) => {
+    collaborators.findBySiteAndUser.mockResolvedValue({ role, permissions });
+    const error = await serviceFailure(() => SiteService.getAnalytics('7', 2));
+    expect(error.status).toBe(403);
+    expect(error.message).toBe('У вас немає прав доступу до аналітики цього сайту');
+    expect(orders.findStatsBySite).not.toHaveBeenCalled();
+    expect(orders.findRecentBySite).not.toHaveBeenCalled();
   });
 
   it('порожні значення замінюються нулями й гривнею', async () => {

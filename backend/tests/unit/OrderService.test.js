@@ -6,6 +6,7 @@ const require = createRequire(import.meta.url);
 const OrderService = require('../../services/OrderService');
 const OrderRepository = require('../../repositories/OrderRepository');
 const ProductRepository = require('../../repositories/ProductRepository');
+const SiteRepository = require('../../repositories/SiteRepository');
 const GlobalSettingsRepository = require('../../repositories/GlobalSettingsRepository');
 const TransactionRepository = require('../../repositories/TransactionRepository');
 const LiqPayService = require('../../services/LiqPayService');
@@ -20,6 +21,10 @@ const SITE = {
   user_id: 1, liqpay_public_key: 'pub', liqpay_private_key: null, is_online_payment_enabled: 1, is_cod_enabled: 1,
 };
 const PHYSICAL = { id: 10, name: 'Кава', price: '100.00', type: 'physical', digital_file_url: null, stock_quantity: 5 };
+const OWNER_SITE = { id: 3, user_id: 1, collaborator_role: null, collaborator_permissions: null };
+const collaboratorSite = (role, permissions) => ({
+  id: 3, user_id: 99, collaborator_role: role, collaborator_permissions: permissions,
+});
 const DIGITAL = { id: 11, name: 'Книга', price: '50.00', type: 'digital', digital_file_url: 'https://f.test/b.pdf', stock_quantity: null };
 
 async function failure(fn) {
@@ -39,6 +44,7 @@ async function serviceFailure(fn) {
 
 let repo;
 let products;
+let site;
 let log;
 
 beforeEach(() => {
@@ -68,6 +74,7 @@ beforeEach(() => {
     findStock: vi.spyOn(ProductRepository, 'findStock').mockResolvedValue({ stock_quantity: 5, name: 'Кава' }),
     decrementStock: vi.spyOn(ProductRepository, 'decrementStock').mockImplementation(async () => { log.push('decrementStock'); }),
   };
+  site = vi.spyOn(SiteRepository, 'findWithCollaborator').mockResolvedValue(OWNER_SITE);
   vi.spyOn(GlobalSettingsRepository, 'findBilling').mockResolvedValue({ billing_enabled: 1 });
   vi.spyOn(TransactionRepository, 'create').mockImplementation(async () => { log.push('transaction'); });
   vi.spyOn(emailService, 'sendDigitalGoodsEmail').mockImplementation(async () => { log.push('email'); });
@@ -759,12 +766,48 @@ describe('payWithGooglePay', () => {
 });
 
 describe('списки замовлень', () => {
-  it('listForSite: D-SEC-03 — без перевірки власника, до кожного замовлення додаються позиції', async () => {
+  it('listForSite: до кожного замовлення додаються позиції', async () => {
     repo.findBySite.mockResolvedValue([{ id: 'A' }, { id: 'B' }]);
     repo.findItemsWithImages.mockImplementation(async (id) => [{ order_id: id }]);
-    const orders = await OrderService.listForSite(3);
+    const orders = await OrderService.listForSite(3, 1);
     expect(orders).toEqual([{ id: 'A', items: [{ order_id: 'A' }] }, { id: 'B', items: [{ order_id: 'B' }] }]);
     expect(repo.findBySite).toHaveBeenCalledWith(3);
+    expect(site).toHaveBeenCalledWith(3, 1);
+  });
+
+  it('D-SEC-03: listForSite — сторонній користувач отримує 403 і дані не читаються', async () => {
+    site.mockResolvedValue(collaboratorSite(null, null));
+    const error = await serviceFailure(() => OrderService.listForSite(3, 2));
+    expect(error.status).toBe(403);
+    expect(error.message).toBe('У вас немає прав переглядати замовлення цього сайту.');
+    expect(repo.findBySite).not.toHaveBeenCalled();
+  });
+
+  it('D-SEC-03: listForSite — неіснуючий сайт дає 403', async () => {
+    site.mockResolvedValue(null);
+    const error = await serviceFailure(() => OrderService.listForSite(3, 2));
+    expect(error.status).toBe(403);
+    expect(repo.findBySite).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['editor', '["commerce"]'],
+    ['viewer', '["commerce"]'],
+  ])('D-SEC-03: listForSite — співавтор %s із секцією commerce бачить замовлення', async (role, permissions) => {
+    site.mockResolvedValue(collaboratorSite(role, permissions));
+    repo.findBySite.mockResolvedValue([{ id: 'A' }]);
+    expect(await OrderService.listForSite(3, 2)).toEqual([{ id: 'A', items: [] }]);
+  });
+
+  it.each([
+    ['editor', '["editor","theme","overview","settings"]'],
+    ['viewer', '["overview"]'],
+    ['editor', '[]'],
+  ])('D-SEC-03: listForSite — співавтор %s без секції commerce (%s) отримує 403', async (role, permissions) => {
+    site.mockResolvedValue(collaboratorSite(role, permissions));
+    const error = await serviceFailure(() => OrderService.listForSite(3, 2));
+    expect(error.status).toBe(403);
+    expect(repo.findBySite).not.toHaveBeenCalled();
   });
 
   it('listForCustomer: посилання на цифровий файл приховано, доки замовлення не paid або completed', async () => {
@@ -779,8 +822,86 @@ describe('списки замовлень', () => {
 });
 
 describe('updateStatus', () => {
-  it('D-SEC-03: будь-який статус записується без перевірки власника й значення', async () => {
-    await OrderService.updateStatus('ORD1', 'whatever');
-    expect(repo.updateStatus).toHaveBeenCalledWith('ORD1', 'whatever');
+  const ORDER = { id: 'ORD1', site_id: 3, status: 'paid', payment_method: 'online' };
+
+  beforeEach(() => {
+    repo.findById.mockResolvedValue({ ...ORDER });
+  });
+
+  it('404, якщо замовлення не існує', async () => {
+    repo.findById.mockResolvedValue(undefined);
+    const error = await serviceFailure(() => OrderService.updateStatus('ORD1', 1, 'shipped'));
+    expect(error.status).toBe(404);
+    expect(error.message).toBe('Замовлення не знайдено');
+    expect(repo.updateStatus).not.toHaveBeenCalled();
+  });
+
+  it('D-SEC-03: власник сайту змінює статус', async () => {
+    await OrderService.updateStatus('ORD1', 1, 'shipped');
+    expect(repo.updateStatus).toHaveBeenCalledWith('ORD1', 'shipped');
+    expect(site).toHaveBeenCalledWith(3, 1);
+  });
+
+  it('D-SEC-03: сторонній користувач отримує 403, статус не змінюється', async () => {
+    site.mockResolvedValue(collaboratorSite(null, null));
+    const error = await serviceFailure(() => OrderService.updateStatus('ORD1', 2, 'shipped'));
+    expect(error.status).toBe(403);
+    expect(error.message).toBe('У вас немає прав змінювати замовлення цього сайту.');
+    expect(repo.updateStatus).not.toHaveBeenCalled();
+  });
+
+  it('D-SEC-03: редактор із секцією commerce змінює статус', async () => {
+    site.mockResolvedValue(collaboratorSite('editor', '["commerce"]'));
+    await OrderService.updateStatus('ORD1', 2, 'completed');
+    expect(repo.updateStatus).toHaveBeenCalledWith('ORD1', 'completed');
+  });
+
+  it.each([
+    ['viewer', '["commerce"]'],
+    ['editor', '["editor","theme"]'],
+    ['editor', '[]'],
+  ])('D-SEC-03: співавтор %s із дозволами %s не змінює статус', async (role, permissions) => {
+    site.mockResolvedValue(collaboratorSite(role, permissions));
+    const error = await serviceFailure(() => OrderService.updateStatus('ORD1', 2, 'shipped'));
+    expect(error.status).toBe(403);
+    expect(repo.updateStatus).not.toHaveBeenCalled();
+  });
+
+  it.each([['paid'], ['shipped'], ['completed'], ['cancelled']])('D-SEC-03: дозволений статус %s записується', async (status) => {
+    await OrderService.updateStatus('ORD1', 1, status);
+    expect(repo.updateStatus).toHaveBeenCalledWith('ORD1', status);
+  });
+
+  it.each([['whatever'], ['pending'], [''], [undefined], [null], [5], ['PAID']])('D-SEC-03: недопустиме значення %j → 400', async (status) => {
+    const error = await serviceFailure(() => OrderService.updateStatus('ORD1', 1, status));
+    expect(error.status).toBe(400);
+    expect(error.message).toBe('Недопустимий статус замовлення.');
+    expect(repo.updateStatus).not.toHaveBeenCalled();
+  });
+
+  it.each([['paid'], ['shipped'], ['completed']])('D-SEC-03: неоплачене онлайн-замовлення не можна перевести в %s', async (status) => {
+    repo.findById.mockResolvedValue({ ...ORDER, status: 'pending', payment_method: 'online' });
+    const error = await serviceFailure(() => OrderService.updateStatus('ORD1', 1, status));
+    expect(error.status).toBe(400);
+    expect(error.message).toBe('Замовлення з онлайн-оплатою можна позначити оплаченим лише після підтвердження платежу.');
+    expect(repo.updateStatus).not.toHaveBeenCalled();
+  });
+
+  it('неоплачене онлайн-замовлення можна скасувати', async () => {
+    repo.findById.mockResolvedValue({ ...ORDER, status: 'pending', payment_method: 'online' });
+    await OrderService.updateStatus('ORD1', 1, 'cancelled');
+    expect(repo.updateStatus).toHaveBeenCalledWith('ORD1', 'cancelled');
+  });
+
+  it.each([['paid'], ['shipped'], ['completed']])('замовлення з оплатою при отриманні в очікуванні можна перевести в %s', async (status) => {
+    repo.findById.mockResolvedValue({ ...ORDER, status: 'pending', payment_method: 'cod' });
+    await OrderService.updateStatus('ORD1', 1, status);
+    expect(repo.updateStatus).toHaveBeenCalledWith('ORD1', status);
+  });
+
+  it('права перевіряються до значення статусу', async () => {
+    site.mockResolvedValue(collaboratorSite(null, null));
+    const error = await serviceFailure(() => OrderService.updateStatus('ORD1', 2, 'whatever'));
+    expect(error.status).toBe(403);
   });
 });

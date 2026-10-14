@@ -1,6 +1,4 @@
-// Керування сайтом: налаштування, скидання до шаблону, закріплення, перейменування, видалення, аналітика.
-// Матриця доступу: власник / співавтор editor / співавтор viewer / сторонній / без токена.
-// Фіксує D-SEC-06 (права співавторів на сервері не перевіряються), D-ARC-10, D-BIZ-05.
+// backend/tests/characterization/sites.access.test.js
 import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import { app } from '../helpers/app.js';
@@ -24,23 +22,28 @@ const TEMPLATE = {
     { title: 'Контакти', slug: 'contacts', blocks: [] },
   ],
 };
+const SECTIONS = ['editor', 'theme', 'commerce', 'overview', 'settings'];
 const NOT_OWNER = 'Сайт не знайдено або у вас немає прав (тільки власник).';
 
-let owner, editor, viewer, stranger, site, home, about;
+let owner, editor, viewer, limited, bare, stranger, site, home, about;
 
 beforeEach(async () => {
   owner = await createUser({ plan: 'PLUS' });
   editor = await createUser();
   viewer = await createUser();
+  limited = await createUser();
+  bare = await createUser();
   stranger = await createUser();
   site = await createSite(owner, { site_path: 'acme-shop', title: 'Акме' });
-  await addCollaborator(site, editor, 'editor', []);
-  await addCollaborator(site, viewer, 'viewer', []);
+  await addCollaborator(site, editor, 'editor', SECTIONS);
+  await addCollaborator(site, viewer, 'viewer', SECTIONS);
+  await addCollaborator(site, limited, 'editor', ['theme']);
+  await addCollaborator(site, bare, 'editor', []);
   home = await createPage(site, { name: 'Головна', slug: 'home', is_homepage: 1, block_content: BLOCKS });
   about = await createPage(site, { name: 'Про нас', slug: 'about' });
 });
 
-const actor = (name) => ({ anon: null, stranger, viewer, editor, owner })[name];
+const actor = (name) => ({ anon: null, stranger, bare, limited, viewer, editor, owner })[name];
 const withAuth = (req, user) => (user ? req.set(authHeader(user)) : req);
 const putSettings = (user, body, sitePath = 'acme-shop') =>
   withAuth(request(app).put(`/api/sites/${sitePath}/settings`), user).send(body);
@@ -50,6 +53,8 @@ describe('PUT /api/sites/:site_path/settings: доступ', () => {
     ['без токена: 401', 'anon', 401],
     ['сторонній користувач: 403', 'stranger', 403],
     ['співавтор viewer: 403', 'viewer', 403],
+    ['співавтор editor без секції settings: 403', 'limited', 403],
+    ['співавтор editor без дозволів: 403', 'bare', 403],
     ['співавтор editor: 200', 'editor', 200],
     ['власник: 200', 'owner', 200],
   ])('%s', async (_label, who, status) => {
@@ -64,6 +69,82 @@ describe('PUT /api/sites/:site_path/settings: доступ', () => {
     const res = await putSettings(owner, { title: 'Нова назва' }, 'no-such-site');
     expect(res.status).toBe(404);
     expect(res.body.message).toBe('Сайт не знайдено.');
+  });
+});
+
+describe('PUT /api/sites/:site_path/settings: права за групами полів', () => {
+  const memberWith = async (permissions, role = 'editor') => {
+    const member = await createUser();
+    await addCollaborator(site, member, role, permissions);
+    return member;
+  };
+
+  it.each([
+    ['settings', { title: 'Нова назва' }, { title: 'Нова назва' }],
+    ['settings', { status: 'private' }, { status: 'private' }],
+    ['theme', { site_theme_mode: 'dark', site_theme_accent: 'green' }, { site_theme_mode: 'dark', site_theme_accent: 'green' }],
+    ['commerce', { currency: 'EUR', is_cod_enabled: 0 }, { currency: 'EUR', is_cod_enabled: 0 }],
+    ['settings', { cookie_banner_enabled: 1, cookie_banner_text: 'Cookies' }, { cookie_banner_enabled: 1, cookie_banner_text: 'Cookies' }],
+  ])('D-SEC-06: редактор із секцією %s зберігає %j', async (section, body, expected) => {
+    const member = await memberWith([section]);
+    const res = await putSettings(member, body);
+    expect(res.status).toBe(200);
+    expect(await getSite(site.id)).toMatchObject(expected);
+  });
+
+  it.each([
+    ['theme', { title: 'Нова назва' }],
+    ['theme', { currency: 'EUR' }],
+    ['commerce', { title: 'Нова назва' }],
+    ['commerce', { site_theme_mode: 'dark' }],
+    ['settings', { currency: 'EUR' }],
+    ['settings', { site_theme_accent: 'green' }],
+    ['overview', { title: 'Нова назва' }],
+    ['editor', { status: 'private' }],
+  ])('D-SEC-06: редактор із секцією %s не зберігає %j', async (section, body) => {
+    const member = await memberWith([section]);
+    const before = await getSite(site.id);
+    const res = await putSettings(member, body);
+    expect(res.status).toBe(403);
+    expect(res.body.message).toBe('У вас немає прав редагувати цей сайт.');
+    expect(await getSite(site.id)).toMatchObject({
+      title: before.title, status: before.status, currency: before.currency, site_theme_mode: before.site_theme_mode,
+    });
+  });
+
+  it('D-SEC-06: запит із полями двох груп потребує обох секцій', async () => {
+    const onlySettings = await memberWith(['settings']);
+    const denied = await putSettings(onlySettings, { title: 'Нова назва', currency: 'EUR' });
+    expect(denied.status).toBe(403);
+    expect((await getSite(site.id)).title).toBe('Акме');
+    const both = await memberWith(['settings', 'commerce']);
+    const allowed = await putSettings(both, { title: 'Нова назва', currency: 'EUR' });
+    expect(allowed.status).toBe(200);
+    expect(await getSite(site.id)).toMatchObject({ title: 'Нова назва', currency: 'EUR' });
+  });
+
+  it('D-SEC-06: теги змінює лише редактор із секцією settings', async () => {
+    const themeEditor = await memberWith(['theme']);
+    const denied = await putSettings(themeEditor, { tags: [] });
+    expect(denied.status).toBe(403);
+    const allowed = await putSettings(editor, { tags: [] });
+    expect(allowed.status).toBe(200);
+  });
+
+  it('D-SEC-06: глядач з усіма секціями не змінює нічого', async () => {
+    const res = await putSettings(viewer, { currency: 'EUR', site_theme_mode: 'dark' });
+    expect(res.status).toBe(403);
+    expect(await getSite(site.id)).toMatchObject({ currency: 'UAH', site_theme_mode: 'light' });
+  });
+
+  it('D-SEC-06: співавтор іншого сайту не змінює цей', async () => {
+    const otherOwner = await createUser({ plan: 'PLUS' });
+    const otherSite = await createSite(otherOwner);
+    const member = await createUser();
+    await addCollaborator(otherSite, member, 'editor', SECTIONS);
+    const res = await putSettings(member, { title: 'Нова назва' });
+    expect(res.status).toBe(403);
+    expect((await getSite(site.id)).title).toBe('Акме');
   });
 });
 
@@ -156,21 +237,41 @@ describe('PUT /api/sites/:site_path/settings: ключі LiqPay', () => {
     expect((await getSite(paid.id)).liqpay_private_key).toBeNull();
   });
 
-  // KNOWN-DEFECT D-SEC-06: роль editor без жодного права (permissions = []) керує платіжними ключами сайту.
-  it('KNOWN-DEFECT D-SEC-06: співавтор editor із порожніми правами змінює ключі LiqPay', async () => {
-    await addCollaborator(paid, editor, 'editor', []);
-    const res = await putSettings(editor, { liqpay_public_key: 'pub-hacked', liqpay_private_key: 'attacker-secret' }, 'pay-shop');
-    expect(res.status).toBe(200);
-    const row = await getSite(paid.id);
-    expect(row.liqpay_public_key).toBe('pub-hacked');
-    expect(decryptKey(row.liqpay_private_key)).toBe('attacker-secret');
+  it.each([[[]], [['theme']], [['editor', 'theme', 'overview', 'settings']]])(
+    'D-SEC-06: співавтор editor з дозволами %j не змінює ключі LiqPay',
+    async (permissions) => {
+      const member = await createUser();
+      await addCollaborator(paid, member, 'editor', permissions);
+      const res = await putSettings(member, { liqpay_public_key: 'pub-hacked', liqpay_private_key: 'attacker-secret' }, 'pay-shop');
+      expect(res.status).toBe(403);
+      const row = await getSite(paid.id);
+      expect(row.liqpay_public_key).toBe('pub-old');
+      expect(decryptKey(row.liqpay_private_key)).toBe(OLD_SECRET);
+    }
+  );
+
+  it('D-SEC-06: співавтор viewer із секцією commerce не змінює ключі LiqPay', async () => {
+    const member = await createUser();
+    await addCollaborator(paid, member, 'viewer', ['commerce']);
+    const res = await putSettings(member, { liqpay_private_key: 'attacker-secret' }, 'pay-shop');
+    expect(res.status).toBe(403);
+    expect(decryptKey((await getSite(paid.id)).liqpay_private_key)).toBe(OLD_SECRET);
   });
 
-  // KNOWN-DEFECT D-SEC-06
-  it('KNOWN-DEFECT D-SEC-06: співавтор editor із порожніми правами публікує й знімає сайт з публікації', async () => {
-    const res = await putSettings(editor, { status: 'maintenance' });
+  it('D-SEC-06: співавтор editor із секцією commerce змінює ключі LiqPay', async () => {
+    const member = await createUser();
+    await addCollaborator(paid, member, 'editor', ['commerce']);
+    const res = await putSettings(member, { liqpay_public_key: 'pub-team', liqpay_private_key: 'team-secret' }, 'pay-shop');
     expect(res.status).toBe(200);
-    expect((await getSite(site.id)).status).toBe('maintenance');
+    const row = await getSite(paid.id);
+    expect(row.liqpay_public_key).toBe('pub-team');
+    expect(decryptKey(row.liqpay_private_key)).toBe('team-secret');
+  });
+
+  it('D-SEC-06: співавтор editor без дозволів не публікує й не знімає сайт з публікації', async () => {
+    const res = await putSettings(bare, { status: 'maintenance' });
+    expect(res.status).toBe(403);
+    expect((await getSite(site.id)).status).toBe('published');
   });
 });
 
@@ -256,13 +357,13 @@ describe('PUT /api/sites/:siteId/reset-template', () => {
     expect(await countRows('pages', 'site_id = ?', [site.id])).toBe(2);
   });
 
-  // KNOWN-DEFECT D-SEC-06: повідомлення говорить «тільки власник», але findByIdAndUserId пускає будь-якого співавтора.
-  it.each(['viewer', 'editor'])('KNOWN-DEFECT D-SEC-06: співавтор %s без прав стирає весь вміст сайту', async (who) => {
+  it.each(['viewer', 'editor', 'limited', 'bare'])('D-SEC-06: співавтор %s не стирає вміст сайту', async (who) => {
     const res = await reset(actor(who), { isBlank: true });
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(403);
+    expect(res.body.message).toBe(NOT_OWNER);
     const pages = await getPages(site.id);
-    expect(pages).toHaveLength(1);
-    expect(pages[0].block_content).toEqual([]);
+    expect(pages).toHaveLength(2);
+    expect(pages.find((p) => p.slug === 'home').block_content).toEqual(BLOCKS);
   });
 });
 
@@ -284,11 +385,11 @@ describe('PATCH /api/sites/:siteId/pin', () => {
     expect((await getSite(site.id)).is_pinned).toBe(0);
   });
 
-  // KNOWN-DEFECT D-SEC-06: прапорець is_pinned один на сайт, а змінити його може будь-який співавтор.
-  it('KNOWN-DEFECT D-SEC-06: співавтор viewer змінює закріплення сайту власника', async () => {
-    const res = await pin(viewer);
-    expect(res.status).toBe(200);
-    expect((await getSite(site.id)).is_pinned).toBe(1);
+  it.each(['viewer', 'editor', 'limited', 'bare'])('D-SEC-06: співавтор %s не змінює закріплення сайту власника', async (who) => {
+    const res = await pin(actor(who));
+    expect(res.status).toBe(404);
+    expect(res.body.message).toBe(NOT_OWNER);
+    expect((await getSite(site.id)).is_pinned).toBe(0);
   });
 });
 
@@ -408,9 +509,25 @@ describe('GET /api/sites/:id/analytics', () => {
     expect(Object.keys(res.body.recentOrders[0]).sort()).toEqual(['created_at', 'customer_name', 'id', 'status', 'total_amount']);
   });
 
-  it.each(['editor', 'viewer'])('співавтор %s бачить аналітику', async (who) => {
+  it.each(['editor', 'viewer'])('співавтор %s із секцією overview бачить аналітику', async (who) => {
     const res = await analytics(actor(who));
     expect(res.status).toBe(200);
+  });
+
+  it.each(['limited', 'bare'])('D-SEC-06: співавтор %s без секції overview — 403, замовлення не читаються', async (who) => {
+    const res = await analytics(actor(who));
+    expect(res.status).toBe(403);
+    expect(res.body.message).toBe('У вас немає прав доступу до аналітики цього сайту');
+    expect(res.body.recentOrders).toBeUndefined();
+  });
+
+  it('D-SEC-06: співавтор іншого сайту не бачить аналітику цього', async () => {
+    const otherOwner = await createUser({ plan: 'PLUS' });
+    const otherSite = await createSite(otherOwner);
+    const member = await createUser();
+    await addCollaborator(otherSite, member, 'viewer', ['overview']);
+    const res = await analytics(member);
+    expect(res.status).toBe(403);
   });
 
   it('сторонній користувач — 403', async () => {

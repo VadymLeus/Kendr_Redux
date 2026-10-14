@@ -81,8 +81,7 @@ export async function createProduct(site, overrides = {}) {
   return { id: result.insertId, site_id: site.id, ...product };
 }
 
-// permissions за замовчуванням порожній об'єкт: застосунок їх не перевіряє (D-SEC-06), тест передає значення явно.
-export async function addCollaborator(site, user, role = 'editor', permissions = {}) {
+export async function addCollaborator(site, user, role = 'editor', permissions = []) {
   await query(
     `INSERT INTO site_collaborators (site_id, user_id, role, permissions) VALUES (?, ?, ?, ?)`,
     [site.id, user.id, role, JSON.stringify(permissions)]

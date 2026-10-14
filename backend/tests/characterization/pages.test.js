@@ -1,6 +1,4 @@
-// Сторінки сайту: список, створення, читання, збереження блоків, налаштування, видалення, головна сторінка.
-// Фіксує D-BLK-05 (block_content зберігається без перевірки), D-SEC-06 (права співавторів не перевіряються),
-// D-BIZ-12 (slug і назва сторінки не валідуються), D-ARC-10.
+// backend/tests/characterization/pages.test.js
 import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import { app } from '../helpers/app.js';
@@ -15,21 +13,26 @@ useTestDatabase();
 const BLOCKS = [{ block_id: 'b1', type: 'text', data: { text: 'Привіт' } }];
 const FORBIDDEN_EDIT = 'У вас немає прав на редагування цієї сторінки.';
 
-let owner, editor, viewer, stranger, site, home, about;
+let owner, editor, viewer, themeOnly, bare, stranger, site, home, about;
 
 beforeEach(async () => {
   owner = await createUser({ plan: 'PLUS' });
   editor = await createUser();
   viewer = await createUser();
+  themeOnly = await createUser();
+  bare = await createUser();
   stranger = await createUser();
   site = await createSite(owner, { site_path: 'acme-shop', title: 'Акме' });
-  await addCollaborator(site, editor, 'editor', []);
-  await addCollaborator(site, viewer, 'viewer', []);
+  await addCollaborator(site, editor, 'editor', ['editor']);
+  await addCollaborator(site, viewer, 'viewer', ['editor']);
+  await addCollaborator(site, themeOnly, 'editor', ['theme']);
+  await addCollaborator(site, bare, 'editor', []);
   home = await createPage(site, { name: 'Головна', slug: 'home', is_homepage: 1, block_content: BLOCKS });
   about = await createPage(site, { name: 'Про нас', slug: 'about', seo_title: 'Старий заголовок' });
 });
 
-const actor = (name) => ({ anon: null, stranger, viewer, editor, owner })[name];
+const actor = (name) => ({ anon: null, stranger, bare, themeOnly, viewer, editor, owner })[name];
+const DENIED_WRITERS = ['viewer', 'themeOnly', 'bare'];
 const withAuth = (req, user) => (user ? req.set(authHeader(user)) : req);
 
 const listPages = (user, siteId = site.id) => withAuth(request(app).get(`/api/sites/${siteId}/pages`), user);
@@ -52,8 +55,14 @@ describe('GET /api/sites/:siteId/pages', () => {
     expect(Object.keys(res.body[0]).sort()).toEqual(['created_at', 'id', 'is_homepage', 'name', 'slug']);
   });
 
-  it.each(['editor', 'viewer'])('співавтор %s отримує список', async (who) => {
+  it.each(['editor', 'viewer', 'themeOnly'])('співавтор %s отримує список', async (who) => {
     expect((await listPages(actor(who))).status).toBe(200);
+  });
+
+  it('D-SEC-06: співавтор без жодних дозволів — 403', async () => {
+    const res = await listPages(bare);
+    expect(res.status).toBe(403);
+    expect(res.body.message).toBe('Доступ заборонено.');
   });
 
   it('сторонній користувач — 403', async () => {
@@ -103,10 +112,17 @@ describe('POST /api/sites/:siteId/pages', () => {
     expect(await countRows('pages', 'site_id = ?', [site.id])).toBe(2);
   });
 
-  // KNOWN-DEFECT D-SEC-06: роль viewer не дає права змінювати вміст, але сервер її не перевіряє.
-  it.each(['viewer', 'editor'])('KNOWN-DEFECT D-SEC-06: співавтор %s без прав створює сторінку', async (who) => {
-    const res = await createPageVia(actor(who), { name: 'Контакти', slug: 'contacts' });
+  it('D-SEC-06: редактор із секцією editor створює сторінку', async () => {
+    const res = await createPageVia(editor, { name: 'Контакти', slug: 'contacts' });
     expect(res.status).toBe(201);
+    expect(await getPage(res.body.id)).toMatchObject({ site_id: site.id, slug: 'contacts' });
+  });
+
+  it.each(DENIED_WRITERS)('D-SEC-06: співавтор %s не створює сторінку', async (who) => {
+    const res = await createPageVia(actor(who), { name: 'Контакти', slug: 'contacts' });
+    expect(res.status).toBe(403);
+    expect(res.body.message).toBe('Доступ заборонено.');
+    expect(await countRows('pages', 'site_id = ?', [site.id])).toBe(2);
   });
 
   // KNOWN-DEFECT D-BIZ-12: формат slug і довжина назви на сервері не перевіряються.
@@ -136,8 +152,14 @@ describe('GET /api/pages/:pageId', () => {
     expect(res.body.block_content).toEqual(BLOCKS);
   });
 
-  it.each(['editor', 'viewer'])('співавтор %s отримує сторінку', async (who) => {
+  it.each(['editor', 'viewer', 'themeOnly'])('співавтор %s отримує сторінку', async (who) => {
     expect((await readPage(actor(who), home.id)).status).toBe(200);
+  });
+
+  it('D-SEC-06: співавтор без жодних дозволів — 403', async () => {
+    const res = await readPage(bare, home.id);
+    expect(res.status).toBe(403);
+    expect(res.body.message).toBe(FORBIDDEN_EDIT);
   });
 
   it('сторонній користувач — 403', async () => {
@@ -177,11 +199,27 @@ describe('PUT /api/pages/:pageId/content', () => {
     expect((await getPage(home.id)).block_content).toEqual(BLOCKS);
   });
 
-  // KNOWN-DEFECT D-SEC-06
-  it.each(['viewer', 'editor'])('KNOWN-DEFECT D-SEC-06: співавтор %s без прав змінює вміст сторінки', async (who) => {
-    const res = await saveContent(actor(who), home.id, { block_content: NEW_BLOCKS });
+  it('D-SEC-06: редактор із секцією editor змінює вміст сторінки', async () => {
+    const res = await saveContent(editor, home.id, { block_content: NEW_BLOCKS });
     expect(res.status).toBe(200);
     expect((await getPage(home.id)).block_content).toEqual(NEW_BLOCKS);
+  });
+
+  it.each(DENIED_WRITERS)('D-SEC-06: співавтор %s не змінює вміст сторінки', async (who) => {
+    const res = await saveContent(actor(who), home.id, { block_content: NEW_BLOCKS });
+    expect(res.status).toBe(403);
+    expect(res.body.message).toBe(FORBIDDEN_EDIT);
+    expect((await getPage(home.id)).block_content).toEqual(BLOCKS);
+  });
+
+  it('D-SEC-06: співавтор іншого сайту не змінює вміст цієї сторінки', async () => {
+    const otherOwner = await createUser({ plan: 'PLUS' });
+    const otherSite = await createSite(otherOwner);
+    const member = await createUser();
+    await addCollaborator(otherSite, member, 'editor', ['editor']);
+    const res = await saveContent(member, home.id, { block_content: NEW_BLOCKS });
+    expect(res.status).toBe(403);
+    expect((await getPage(home.id)).block_content).toEqual(BLOCKS);
   });
 
   // KNOWN-DEFECT D-BLK-05: block_content зберігається як є, без перевірки типу значення, переліку type і форми data.
@@ -265,11 +303,17 @@ describe('PUT /api/pages/:pageId/settings', () => {
     expect((await getPage(about.id)).slug).toBe('about');
   });
 
-  // KNOWN-DEFECT D-SEC-06
-  it.each(['viewer', 'editor'])('KNOWN-DEFECT D-SEC-06: співавтор %s без прав змінює адресу сторінки', async (who) => {
-    const res = await saveSettings(actor(who), about.id, SETTINGS);
+  it('D-SEC-06: редактор із секцією editor змінює адресу сторінки', async () => {
+    const res = await saveSettings(editor, about.id, SETTINGS);
     expect(res.status).toBe(200);
     expect((await getPage(about.id)).slug).toBe('contacts');
+  });
+
+  it.each(DENIED_WRITERS)('D-SEC-06: співавтор %s не змінює адресу сторінки', async (who) => {
+    const res = await saveSettings(actor(who), about.id, SETTINGS);
+    expect(res.status).toBe(403);
+    expect(res.body.message).toBe('Доступ заборонено.');
+    expect((await getPage(about.id)).slug).toBe('about');
   });
 });
 
@@ -303,11 +347,17 @@ describe('DELETE /api/pages/:pageId', () => {
     expect(await getPage(about.id)).toBeDefined();
   });
 
-  // KNOWN-DEFECT D-SEC-06
-  it.each(['viewer', 'editor'])('KNOWN-DEFECT D-SEC-06: співавтор %s без прав видаляє сторінку', async (who) => {
-    const res = await removePage(actor(who), about.id);
+  it('D-SEC-06: редактор із секцією editor видаляє сторінку', async () => {
+    const res = await removePage(editor, about.id);
     expect(res.status).toBe(200);
     expect(await getPage(about.id)).toBeUndefined();
+  });
+
+  it.each(DENIED_WRITERS)('D-SEC-06: співавтор %s не видаляє сторінку', async (who) => {
+    const res = await removePage(actor(who), about.id);
+    expect(res.status).toBe(403);
+    expect(res.body.message).toBe('Доступ заборонено.');
+    expect(await getPage(about.id)).toBeDefined();
   });
 });
 
@@ -329,10 +379,17 @@ describe('POST /api/pages/:pageId/set-home', () => {
     expect((await getPage(home.id)).is_homepage).toBe(1);
   });
 
-  // KNOWN-DEFECT D-SEC-06
-  it.each(['viewer', 'editor'])('KNOWN-DEFECT D-SEC-06: співавтор %s без прав змінює головну сторінку', async (who) => {
-    const res = await setHome(actor(who), about.id);
+  it('D-SEC-06: редактор із секцією editor змінює головну сторінку', async () => {
+    const res = await setHome(editor, about.id);
     expect(res.status).toBe(200);
     expect((await getPage(about.id)).is_homepage).toBe(1);
+  });
+
+  it.each(DENIED_WRITERS)('D-SEC-06: співавтор %s не змінює головну сторінку', async (who) => {
+    const res = await setHome(actor(who), about.id);
+    expect(res.status).toBe(403);
+    expect(res.body.message).toBe('Доступ заборонено.');
+    expect((await getPage(home.id)).is_homepage).toBe(1);
+    expect((await getPage(about.id)).is_homepage).toBe(0);
   });
 });

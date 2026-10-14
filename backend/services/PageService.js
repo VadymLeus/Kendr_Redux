@@ -1,6 +1,6 @@
 // backend/services/PageService.js
 const PageRepository = require('../repositories/PageRepository');
-const { requireSiteAccess } = require('./siteAccess');
+const { requireSiteAccess, read, write } = require('./siteAccess');
 const { ServiceError } = require('./ServiceError');
 
 const ACCESS_DENIED = 'Доступ заборонено.';
@@ -16,16 +16,17 @@ const translateDuplicate = (error) => {
 };
 
 class PageService {
-    static async getAccessible(pageId, userId, forbiddenMessage) {
-        const access = await PageRepository.findAccessible(pageId, userId);
-        if (!access) {
+    static async getAccessible(pageId, userId, forbiddenMessage, requirement) {
+        const page = await PageRepository.findSiteInfo(pageId);
+        if (!page) {
             throw new ServiceError(403, forbiddenMessage);
         }
-        return access;
+        await requireSiteAccess(page.site_id, userId, requirement, forbiddenMessage);
+        return page;
     }
 
     static async listForSite(siteId, userId) {
-        await requireSiteAccess(siteId, userId, ACCESS_DENIED);
+        await requireSiteAccess(siteId, userId, read(), ACCESS_DENIED);
         return PageRepository.findBySiteId(siteId);
     }
 
@@ -34,7 +35,7 @@ class PageService {
         if (!name || !slug) {
             throw new ServiceError(400, FIELDS_REQUIRED);
         }
-        await requireSiteAccess(siteId, userId, ACCESS_DENIED);
+        await requireSiteAccess(siteId, userId, write('editor'), ACCESS_DENIED);
         try {
             return await PageRepository.create({
                 site_id: siteId,
@@ -49,7 +50,7 @@ class PageService {
     }
 
     static async getById(pageId, userId) {
-        await PageService.getAccessible(pageId, userId, EDIT_DENIED);
+        await PageService.getAccessible(pageId, userId, EDIT_DENIED, read());
         const page = await PageRepository.findById(pageId);
         if (!page) {
             throw new ServiceError(404, 'Сторінку не знайдено.');
@@ -58,7 +59,7 @@ class PageService {
     }
 
     static async updateContent(pageId, userId, blockContent) {
-        await PageService.getAccessible(pageId, userId, EDIT_DENIED);
+        await PageService.getAccessible(pageId, userId, EDIT_DENIED, write('editor'));
         await PageRepository.updateContent(pageId, blockContent || []);
     }
 
@@ -67,7 +68,7 @@ class PageService {
         if (!name || !slug) {
             throw new ServiceError(400, FIELDS_REQUIRED);
         }
-        await PageService.getAccessible(pageId, userId, ACCESS_DENIED);
+        await PageService.getAccessible(pageId, userId, ACCESS_DENIED, write('editor'));
         try {
             await PageRepository.updateSettings(pageId, { name, slug, seo_title, seo_description, seo_keywords });
         } catch (error) {
@@ -76,7 +77,7 @@ class PageService {
     }
 
     static async remove(pageId, userId) {
-        const { is_homepage, site_id } = await PageService.getAccessible(pageId, userId, ACCESS_DENIED);
+        const { is_homepage, site_id } = await PageService.getAccessible(pageId, userId, ACCESS_DENIED, write('editor'));
         if (is_homepage) {
             throw new ServiceError(400, 'Неможливо видалити головну сторінку.');
         }
@@ -88,7 +89,7 @@ class PageService {
     }
 
     static async setHomepage(pageId, userId) {
-        const { site_id } = await PageService.getAccessible(pageId, userId, ACCESS_DENIED);
+        const { site_id } = await PageService.getAccessible(pageId, userId, ACCESS_DENIED, write('editor'));
         await PageRepository.setHomepage(site_id, pageId);
     }
 }

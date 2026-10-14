@@ -7,6 +7,20 @@ const { validateTitleText } = require('./siteValidation');
 const MASKED_KEY = '********';
 const LOCKED_STATUSES = ['suspended', 'probation'];
 
+const SECTION_FIELDS = {
+    editor: ['header_content', 'footer_content'],
+    theme: ['site_theme_mode', 'site_theme_accent', 'theme_settings'],
+    commerce: ['currency', 'liqpay_public_key', 'liqpay_private_key', 'is_online_payment_enabled', 'is_cod_enabled'],
+    settings: [
+        'title', 'status', 'tags', 'logo_url', 'dashboard_config', 'favicon_url', 'site_title_seo',
+        'cover_image', 'cover_layout', 'cover_logo_size', 'cover_logo_radius', 'cover_title_size',
+        'cookie_banner_enabled', 'cookie_banner_text', 'cookie_banner_size', 'cookie_banner_position', 'cookie_banner_blur'
+    ]
+};
+
+const requiredSections = (body) => Object.keys(SECTION_FIELDS)
+    .filter((section) => SECTION_FIELDS[section].some((field) => body[field] !== undefined));
+
 const safeParse = (data, fallback) => {
     if (!data) return fallback;
     if (typeof data === 'object') return data;
@@ -107,4 +121,4 @@ const buildSettingsUpdate = (site, body) => {
     };
 };
 
-module.exports = { buildSettingsUpdate, assertStatusChangeAllowed };
+module.exports = { buildSettingsUpdate, assertStatusChangeAllowed, requiredSections, SECTION_FIELDS };

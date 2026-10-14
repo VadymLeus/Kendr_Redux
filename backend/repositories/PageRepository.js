@@ -98,14 +98,8 @@ class PageRepository {
         return true;
     }
 
-    static async findAccessible(pageId, userId) {
-        const [rows] = await db.query(`
-            SELECT s.user_id, p.is_homepage, p.site_id 
-            FROM sites s 
-            JOIN pages p ON s.id = p.site_id 
-            LEFT JOIN site_collaborators sc ON s.id = sc.site_id
-            WHERE p.id = ? AND (s.user_id = ? OR sc.user_id = ?)
-        `, [pageId, userId, userId]);
+    static async findSiteInfo(pageId) {
+        const [rows] = await db.query('SELECT site_id, is_homepage FROM pages WHERE id = ?', [pageId]);
         return rows[0] || null;
     }
 
