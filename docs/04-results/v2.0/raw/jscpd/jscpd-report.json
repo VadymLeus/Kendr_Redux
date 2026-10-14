@@ -1,0 +1,2477 @@
+{
+  "duplicates": [
+    {
+      "firstFile": {
+        "end": 295,
+        "endLoc": {
+          "column": 70,
+          "line": 295,
+          "position": 13302
+        },
+        "name": "controllers\\adminController.js",
+        "start": 285,
+        "startLoc": {
+          "column": 20,
+          "line": 285,
+          "position": 12850
+        }
+      },
+      "format": "javascript",
+      "fragment": "exports.suspendSite = async (req, res, next) => {\n    try {\n        const { site_path } = req.params;\n        const { reason: customReason } = req.body;\n        const [sites] = await db.query(`\n            SELECT s.*, u.email, u.username, u.role as owner_role \n            FROM sites s \n            JOIN users u ON s.user_id = u.id \n            WHERE s.site_path = ?\n        `, [site_path]);\n        if (sites.length === 0) return res.status(404).json({ message: 'Сайт не знайдено' });",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 11,
+      "secondFile": {
+        "end": 399,
+        "endLoc": {
+          "column": 70,
+          "line": 399,
+          "position": 18481
+        },
+        "name": "controllers\\adminController.js",
+        "start": 388,
+        "startLoc": {
+          "column": 26,
+          "line": 388,
+          "position": 18019
+        }
+      },
+      "tokens": 71
+    },
+    {
+      "firstFile": {
+        "end": 351,
+        "endLoc": {
+          "column": 50,
+          "line": 351,
+          "position": 16183
+        },
+        "name": "controllers\\adminController.js",
+        "start": 339,
+        "startLoc": {
+          "column": 21,
+          "line": 339,
+          "position": 15609
+        }
+      },
+      "format": "javascript",
+      "fragment": "exports.setProbation = async (req, res, next) => {\n    try {\n        const { site_path } = req.params;\n        const [sites] = await db.query(`\n            SELECT s.*, u.role as owner_role \n            FROM sites s \n            JOIN users u ON s.user_id = u.id \n            WHERE s.site_path = ?\n        `, [site_path]);\n        if (sites.length === 0) return res.status(404).json({ message: 'Сайт не знайдено' });\n        const site = sites[0];\n        if (!checkHierarchyPermission(req.user.role, site.owner_role)) {\n            return res.status(403).json({ message: 'Недостатньо прав для взаємодії з сайтами адміністрації або модераторів.' });",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 13,
+      "secondFile": {
+        "end": 376,
+        "endLoc": {
+          "column": 50,
+          "line": 376,
+          "position": 17375
+        },
+        "name": "controllers\\adminController.js",
+        "start": 364,
+        "startLoc": {
+          "column": 20,
+          "line": 364,
+          "position": 16801
+        }
+      },
+      "tokens": 102
+    },
+    {
+      "firstFile": {
+        "end": 136,
+        "endLoc": {
+          "column": 2,
+          "line": 136,
+          "position": 7907
+        },
+        "name": "controllers\\authController.js",
+        "start": 123,
+        "startLoc": {
+          "column": 48,
+          "line": 123,
+          "position": 7371
+        }
+      },
+      "format": "javascript",
+      "fragment": "        const hasPassword = !!user.password_hash;\n        res.json({\n            token,\n            user: { \n                id: user.id, username: user.username, slug: user.slug, email: user.email, avatar_url: user.avatar_url,\n                role: user.role, plan: user.plan || 'FREE', platform_theme_mode: user.platform_theme_mode,\n                platform_theme_accent: user.platform_theme_accent, created_at: user.created_at, has_password: hasPassword,\n                status: user.status\n            }\n        });\n    } catch (error) {\n        next(error);\n    }\n};",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 14,
+      "secondFile": {
+        "end": 368,
+        "endLoc": {
+          "column": 2,
+          "line": 368,
+          "position": 19774
+        },
+        "name": "controllers\\authController.js",
+        "start": 355,
+        "startLoc": {
+          "column": 59,
+          "line": 355,
+          "position": 19238
+        }
+      },
+      "tokens": 100
+    },
+    {
+      "firstFile": {
+        "end": 138,
+        "endLoc": {
+          "column": 8,
+          "line": 138,
+          "position": 7919
+        },
+        "name": "controllers\\authController.js",
+        "start": 125,
+        "startLoc": {
+          "column": 17,
+          "line": 125,
+          "position": 7411
+        }
+      },
+      "format": "javascript",
+      "fragment": "            token,\n            user: { \n                id: user.id, username: user.username, slug: user.slug, email: user.email, avatar_url: user.avatar_url,\n                role: user.role, plan: user.plan || 'FREE', platform_theme_mode: user.platform_theme_mode,\n                platform_theme_accent: user.platform_theme_accent, created_at: user.created_at, has_password: hasPassword,\n                status: user.status\n            }\n        });\n    } catch (error) {\n        next(error);\n    }\n};\n\nexports.getMe = async (req, res, next) => {",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 14,
+      "secondFile": {
+        "end": 229,
+        "endLoc": {
+          "column": 8,
+          "line": 229,
+          "position": 13072
+        },
+        "name": "controllers\\authController.js",
+        "start": 216,
+        "startLoc": {
+          "column": 54,
+          "line": 216,
+          "position": 12564
+        }
+      },
+      "tokens": 95
+    },
+    {
+      "firstFile": {
+        "end": 279,
+        "endLoc": {
+          "column": 9,
+          "line": 279,
+          "position": 15496
+        },
+        "name": "controllers\\authController.js",
+        "start": 271,
+        "startLoc": {
+          "column": 28,
+          "line": 271,
+          "position": 14984
+        }
+      },
+      "format": "javascript",
+      "fragment": "        const { email, code } = req.body;\n        const [users] = await db.query('SELECT * FROM users WHERE email = ?', [email]);\n        const user = users[0];\n        if (!user || user.otp_code !== code || user.otp_purpose !== 'RESET_PASSWORD') {\n            return res.status(400).json({ message: 'Недійсний код підтвердження.' });\n        }\n        if (new Date() > new Date(user.otp_expires)) {\n            return res.status(400).json({ message: 'Термін дії коду минув.' });\n        }",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 9,
+      "secondFile": {
+        "end": 296,
+        "endLoc": {
+          "column": 9,
+          "line": 296,
+          "position": 16269
+        },
+        "name": "controllers\\authController.js",
+        "start": 288,
+        "startLoc": {
+          "column": 41,
+          "line": 288,
+          "position": 15757
+        }
+      },
+      "tokens": 101
+    },
+    {
+      "firstFile": {
+        "end": 209,
+        "endLoc": {
+          "column": 30,
+          "line": 209,
+          "position": 9614
+        },
+        "name": "controllers\\teamController.js",
+        "start": 200,
+        "startLoc": {
+          "column": 4,
+          "line": 200,
+          "position": 9019
+        }
+      },
+      "format": "javascript",
+      "fragment": "    try {\n        const { id: siteId } = req.params;\n        const { newOwnerEmail, password } = req.body;\n        const currentOwnerId = req.user.id;\n        const [sites] = await db.query('SELECT user_id FROM sites WHERE id = ?', [siteId]);\n        if (!sites.length || sites[0].user_id !== currentOwnerId) {\n            return res.status(403).json({ message: 'Тільки поточний власник може передати сайт.' });\n        }\n        const [newOwners] = await db.query('SELECT id FROM users WHERE email = ?', [newOwnerEmail]);\n        if (!newOwners.length) {",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 10,
+      "secondFile": {
+        "end": 244,
+        "endLoc": {
+          "column": 30,
+          "line": 244,
+          "position": 11506
+        },
+        "name": "controllers\\teamController.js",
+        "start": 235,
+        "startLoc": {
+          "column": 4,
+          "line": 235,
+          "position": 10911
+        }
+      },
+      "tokens": 109
+    },
+    {
+      "firstFile": {
+        "end": 55,
+        "endLoc": {
+          "column": 9,
+          "line": 55,
+          "position": 2319
+        },
+        "name": "controllers\\transactionController.js",
+        "start": 46,
+        "startLoc": {
+          "column": 29,
+          "line": 46,
+          "position": 1988
+        }
+      },
+      "format": "javascript",
+      "fragment": "exports.getAdminTransactions = async (req, res) => {\n    try {\n        const { page = 1, limit = 10, status, search, startDate, endDate } = req.query;\n        const offset = (page - 1) * limit;\n        const queryParams = [];\n        let baseQuery = `\n            FROM transactions t\n            JOIN users u ON t.user_id = u.id\n            WHERE 1=1\n        `;",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 10,
+      "secondFile": {
+        "end": 123,
+        "endLoc": {
+          "column": 9,
+          "line": 123,
+          "position": 5188
+        },
+        "name": "controllers\\transactionController.js",
+        "start": 113,
+        "startLoc": {
+          "column": 23,
+          "line": 113,
+          "position": 4818
+        }
+      },
+      "tokens": 54
+    },
+    {
+      "firstFile": {
+        "end": 43,
+        "endLoc": {
+          "column": 54,
+          "line": 43,
+          "position": 2243
+        },
+        "name": "controllers\\userTemplateController.js",
+        "start": 16,
+        "startLoc": {
+          "column": 138,
+          "line": 16,
+          "position": 896
+        }
+      },
+      "format": "javascript",
+      "fragment": "        const site = await requireSiteAccess(siteId, userId, OWNER, 'Сайт не знайдено або у вас немає прав.');\n        const siteDetails = await SiteRepository.findByPath(site.site_path);\n        if (!siteDetails) return res.status(404).json({ message: 'Деталі сайту не знайдено.' });\n        const pages = await PageRepository.findBySiteId(siteId);\n        const pagesWithContent = await Promise.all(pages.map(async (p) => {\n            const pageData = await PageRepository.findById(p.id);\n            if (!pageData) return null;\n            return {\n                title: pageData.name,\n                slug: pageData.slug,\n                blocks: pageData.block_content || [],\n                is_homepage: pageData.is_homepage,\n                seo_title: pageData.seo_title,\n                seo_description: pageData.seo_description\n            };\n        }));\n        const validPages = pagesWithContent.filter(p => p !== null);\n        const snapshot = {\n            theme_settings: {\n                ...(siteDetails.theme_settings || {}),\n                mode: siteDetails.site_theme_mode || 'light',\n                accent: siteDetails.site_theme_accent || 'blue'\n            },\n            header_content: siteDetails.header_content || [],\n            footer_content: siteDetails.footer_content || [],\n            pages: validPages\n        };\n        const jsonSnapshot = JSON.stringify(snapshot);",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 28,
+      "secondFile": {
+        "end": 151,
+        "endLoc": {
+          "column": 54,
+          "line": 151,
+          "position": 7157
+        },
+        "name": "controllers\\userTemplateController.js",
+        "start": 124,
+        "startLoc": {
+          "column": 142,
+          "line": 124,
+          "position": 5810
+        }
+      },
+      "tokens": 214
+    },
+    {
+      "firstFile": {
+        "end": 42,
+        "endLoc": {
+          "column": 2,
+          "line": 42,
+          "position": 1166
+        },
+        "name": "repositories\\ProductRepository.js",
+        "start": 30,
+        "startLoc": {
+          "column": 1,
+          "line": 30,
+          "position": 861
+        }
+      },
+      "format": "javascript",
+      "fragment": "};\n\nconst safeParseCategories = (catsData) => {\n    if (!catsData) return [];\n    if (typeof catsData === 'string') {\n        try {\n            return JSON.parse(catsData) || [];\n        } catch (e) {\n            return [];\n        }\n    }\n    return Array.isArray(catsData) ? catsData : [];\n};",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 13,
+      "secondFile": {
+        "end": 11,
+        "endLoc": {
+          "column": 2,
+          "line": 11,
+          "position": 443
+        },
+        "name": "repositories\\SiteRepository.js",
+        "start": 4,
+        "startLoc": {
+          "column": 49,
+          "line": 4,
+          "position": 184
+        }
+      },
+      "tokens": 66
+    },
+    {
+      "firstFile": {
+        "end": 107,
+        "endLoc": {
+          "column": 16,
+          "line": 107,
+          "position": 4216
+        },
+        "name": "repositories\\ProductRepository.js",
+        "start": 97,
+        "startLoc": {
+          "column": 19,
+          "line": 97,
+          "position": 3806
+        }
+      },
+      "format": "javascript",
+      "fragment": "        `, [siteId]);\n        return rows.map(product => {\n            product.image_gallery = safeParseGallery(product.image_gallery);\n            product.variants = safeParseVariants(product.variants);\n            product.categories = safeParseCategories(product.categories);\n            product.average_rating = parseFloat(product.average_rating) || 0;\n            return product;\n        });\n    }\n\n    static async create(productData) {",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 11,
+      "secondFile": {
+        "end": 200,
+        "endLoc": {
+          "column": 16,
+          "line": 200,
+          "position": 8751
+        },
+        "name": "repositories\\ProductRepository.js",
+        "start": 190,
+        "startLoc": {
+          "column": 51,
+          "line": 190,
+          "position": 8341
+        }
+      },
+      "tokens": 65
+    },
+    {
+      "firstFile": {
+        "end": 21,
+        "endLoc": {
+          "column": 5,
+          "line": 21,
+          "position": 1836
+        },
+        "name": "modules\\admin\\components\\BillingDetailsPanel.jsx",
+        "start": 8,
+        "startLoc": {
+          "column": 135,
+          "line": 8,
+          "position": 491
+        }
+      },
+      "format": "jsx",
+      "fragment": "import { Copy, ExternalLink, Calendar, CreditCard, DollarSign, Store, User, Hash, Package, CheckCircle, Clock, XCircle, Ban, RotateCcw } from 'lucide-react';\n\nconst STATUS_CONFIG = {\n    success: { bg: 'color-mix(in srgb, var(--platform-success), transparent 90%)', color: 'var(--platform-success)', label: 'Успішно', icon: CheckCircle },\n    completed: { bg: 'color-mix(in srgb, var(--platform-success), transparent 90%)', color: 'var(--platform-success)', label: 'Виконано', icon: CheckCircle },\n    paid: { bg: 'color-mix(in srgb, var(--platform-success), transparent 90%)', color: 'var(--platform-success)', label: 'Оплачено', icon: DollarSign },\n    shipped: { bg: 'color-mix(in srgb, var(--platform-accent), transparent 90%)', color: 'var(--platform-accent)', label: 'Відправлено', icon: Package },\n    pending: { bg: 'color-mix(in srgb, var(--platform-warning), transparent 90%)', color: 'var(--platform-warning)', label: 'В очікуванні', icon: Clock },\n    failed: { bg: 'color-mix(in srgb, var(--platform-danger), transparent 90%)', color: 'var(--platform-danger)', label: 'Помилка', icon: XCircle },\n    cancelled: { bg: 'color-mix(in srgb, var(--platform-danger), transparent 90%)', color: 'var(--platform-danger)', label: 'Скасовано', icon: Ban },\n    refunded: { bg: 'var(--platform-hover-bg)', color: 'var(--platform-text-secondary)', label: 'Повернення', icon: RotateCcw }\n};\n\nconst BillingDetailsPanel = ({ item, type, onClose }) => {",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 14,
+      "secondFile": {
+        "end": 27,
+        "endLoc": {
+          "column": 5,
+          "line": 27,
+          "position": 2382
+        },
+        "name": "modules\\admin\\pages\\AdminBillingPage.jsx",
+        "start": 14,
+        "startLoc": {
+          "column": 151,
+          "line": 14,
+          "position": 1037
+        }
+      },
+      "tokens": 170
+    },
+    {
+      "firstFile": {
+        "end": 299,
+        "endLoc": {
+          "column": 25,
+          "line": 299,
+          "position": 19807
+        },
+        "name": "modules\\admin\\components\\SiteDetailsPanel.jsx",
+        "start": 284,
+        "startLoc": {
+          "column": 86,
+          "line": 284,
+          "position": 18797
+        }
+      },
+      "format": "jsx",
+      "fragment": "                            onClick={() => canModify && actions.restore(site.site_path)} \n                            onMouseEnter={() => canModify && setIsRestoreHovered(true)}\n                            onMouseLeave={() => canModify && setIsRestoreHovered(false)}\n                            disabled={!canModify}\n                            style={{ \n                                width: '100%', \n                                display: 'flex', \n                                justifyContent: 'center', \n                                gap: '8px', \n                                background: 'transparent', \n                                color: isRestoreHovered && canModify ? 'var(--platform-success)' : 'var(--platform-text-primary)', \n                                border: `1px solid ${isRestoreHovered && canModify ? 'var(--platform-success)' : 'var(--platform-border-color)'}`,\n                                transition: 'all 0.2s ease-in-out',\n                                opacity: canModify ? 1 : 0.5\n                            }}\n                        >",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 16,
+      "secondFile": {
+        "end": 153,
+        "endLoc": {
+          "column": 21,
+          "line": 153,
+          "position": 11682
+        },
+        "name": "modules\\admin\\components\\UserDetailsPanel.jsx",
+        "start": 138,
+        "startLoc": {
+          "column": 69,
+          "line": 138,
+          "position": 10732
+        }
+      },
+      "tokens": 94
+    },
+    {
+      "firstFile": {
+        "end": 346,
+        "endLoc": {
+          "column": 41,
+          "line": 346,
+          "position": 22655
+        },
+        "name": "modules\\admin\\components\\SiteDetailsPanel.jsx",
+        "start": 330,
+        "startLoc": {
+          "column": 82,
+          "line": 330,
+          "position": 21664
+        }
+      },
+      "format": "jsx",
+      "fragment": "                        onClick={() => canModify && actions.suspend(site.site_path)} \n                        onMouseEnter={() => canModify && setIsSuspendHovered(true)}\n                        onMouseLeave={() => canModify && setIsSuspendHovered(false)}\n                        disabled={!canModify}\n                        style={{ \n                            width: '100%', \n                            display: 'flex', \n                            justifyContent: 'center', \n                            gap: '8px', \n                            background: 'transparent', \n                            color: isSuspendHovered && canModify ? 'var(--platform-danger)' : 'var(--platform-text-primary)', \n                            border: `1px solid ${isSuspendHovered && canModify ? 'var(--platform-danger)' : 'var(--platform-border-color)'}`,\n                            transition: 'all 0.2s ease-in-out',\n                            opacity: canModify ? 1 : 0.5\n                        }}\n                    >\n                        <Ban size={18} />",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 17,
+      "secondFile": {
+        "end": 132,
+        "endLoc": {
+          "column": 41,
+          "line": 132,
+          "position": 10472
+        },
+        "name": "modules\\admin\\components\\UserDetailsPanel.jsx",
+        "start": 116,
+        "startLoc": {
+          "column": 69,
+          "line": 116,
+          "position": 9481
+        }
+      },
+      "tokens": 104
+    },
+    {
+      "firstFile": {
+        "end": 150,
+        "endLoc": {
+          "column": 21,
+          "line": 150,
+          "position": 6822
+        },
+        "name": "modules\\admin\\pages\\AdminControlPage.jsx",
+        "start": 139,
+        "startLoc": {
+          "column": 28,
+          "line": 139,
+          "position": 6407
+        }
+      },
+      "format": "jsx",
+      "fragment": "    const AdminTimerPreview = ({ targetTime }) => {\n        const [timeLeft, setTimeLeft] = useState(null);\n        useEffect(() => {\n            if (!targetTime) return;\n            const update = () => {\n                const now = Date.now();\n                const diff = targetTime - now;\n                if (diff <= 0) {\n                    setTimeLeft(null);\n                    return;\n                }\n                const m = Math.floor((diff / 1000 / 60) % 60);",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 12,
+      "secondFile": {
+        "end": 25,
+        "endLoc": {
+          "column": 17,
+          "line": 25,
+          "position": 1067
+        },
+        "name": "shared\\ui\\layouts\\Layout.jsx",
+        "start": 14,
+        "startLoc": {
+          "column": 24,
+          "line": 14,
+          "position": 696
+        }
+      },
+      "tokens": 72
+    },
+    {
+      "firstFile": {
+        "end": 199,
+        "endLoc": {
+          "column": 30,
+          "line": 199,
+          "position": 15152
+        },
+        "name": "modules\\admin\\pages\\AdminTemplatesPage.jsx",
+        "start": 185,
+        "startLoc": {
+          "column": 24,
+          "line": 185,
+          "position": 14116
+        }
+      },
+      "format": "jsx",
+      "fragment": "                        : 'left-0'\n                }`}\n            >\n                <button \n                    onClick={() => setIsSidebarOpen(!isSidebarOpen)} \n                    title={isSidebarOpen ? \"Згорнути панель\" : \"Розгорнути панель\"} \n                    className={`group flex items-center justify-center w-7 h-28 bg-(--platform-card-bg) border border-(--platform-border-color) shadow-md cursor-pointer transition-all duration-200 focus:outline-none rounded-r-xl ${isSidebarOpen ? 'border-l-0' : ''} hover:border-(--platform-accent)`}\n                >\n                    <div className=\"transition-transform duration-200 group-hover:scale-110 text-(--platform-text-secondary) group-hover:text-(--platform-accent)\">\n                        {isSidebarOpen ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}\n                    </div>\n                </button>\n            </div>\n            <div className=\"flex-1 min-w-0 h-full relative bg-(--platform-bg) z-10\">\n                <SitePreviewer ",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 15,
+      "secondFile": {
+        "end": 376,
+        "endLoc": {
+          "column": 30,
+          "line": 376,
+          "position": 29247
+        },
+        "name": "modules\\dashboard\\pages\\CreateSitePage.jsx",
+        "start": 362,
+        "startLoc": {
+          "column": 24,
+          "line": 362,
+          "position": 28211
+        }
+      },
+      "tokens": 97
+    },
+    {
+      "firstFile": {
+        "end": 24,
+        "endLoc": {
+          "column": 5,
+          "line": 24,
+          "position": 1762
+        },
+        "name": "modules\\admin\\pages\\AdminTicketsReportsPage.jsx",
+        "start": 16,
+        "startLoc": {
+          "column": 215,
+          "line": 16,
+          "position": 1239
+        }
+      },
+      "format": "jsx",
+      "fragment": "import { MessageSquare, CheckCircle, Gavel, XCircle, RotateCcw, Clock, ExternalLink, Inbox, User, HelpCircle, Wrench, CreditCard, Handshake, Search, ShieldAlert, X, AlertTriangle, FileWarning, Ban, Copyright, Check } from 'lucide-react';\n\nconst CATEGORY_OPTIONS = [\n    { value: 'all', label: 'Всі', icon: Inbox }, { value: 'general', label: 'Загальні', icon: HelpCircle },\n    { value: 'technical', label: 'Технічні', icon: Wrench }, { value: 'billing', label: 'Оплата', icon: CreditCard },\n    { value: 'complaint', label: 'Скарга', icon: MessageSquare }, { value: 'partnership', label: 'Співпраця', icon: Handshake }, { value: 'appeal', label: 'Апеляція', icon: Gavel }\n];\n\nconst TICKET_COLORS = { ",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 9,
+      "secondFile": {
+        "end": 25,
+        "endLoc": {
+          "column": 5,
+          "line": 25,
+          "position": 1460
+        },
+        "name": "modules\\support\\MyTicketsPage.jsx",
+        "start": 13,
+        "startLoc": {
+          "column": 146,
+          "line": 13,
+          "position": 913
+        }
+      },
+      "tokens": 108
+    },
+    {
+      "firstFile": {
+        "end": 64,
+        "endLoc": {
+          "column": 9,
+          "line": 64,
+          "position": 4006
+        },
+        "name": "modules\\admin\\pages\\AdminTicketsReportsPage.jsx",
+        "start": 54,
+        "startLoc": {
+          "column": 70,
+          "line": 54,
+          "position": 3713
+        }
+      },
+      "format": "jsx",
+      "fragment": "        return params.get('tab') === 'reports' ? 'reports' : 'tickets';\n    });\n\n    useEffect(() => {\n        const params = new URLSearchParams(location.search);\n        if (params.get('tab') !== activeTab) {\n            navigate({ search: `?tab=${activeTab}` }, { replace: true });\n        }\n    }, [activeTab, navigate, location.search]);\n\n    const { confirm } = useConfirm();",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 11,
+      "secondFile": {
+        "end": 72,
+        "endLoc": {
+          "column": 9,
+          "line": 72,
+          "position": 4162
+        },
+        "name": "modules\\admin\\pages\\AdminUsersSitesPage.jsx",
+        "start": 64,
+        "startLoc": {
+          "column": 64,
+          "line": 64,
+          "position": 3873
+        }
+      },
+      "tokens": 65
+    },
+    {
+      "firstFile": {
+        "end": 115,
+        "endLoc": {
+          "column": 77,
+          "line": 115,
+          "position": 6842
+        },
+        "name": "modules\\admin\\pages\\AdminUsersSitesPage.jsx",
+        "start": 102,
+        "startLoc": {
+          "column": 131,
+          "line": 102,
+          "position": 6057
+        }
+      },
+      "format": "jsx",
+      "fragment": "    const handleUserSort = (key) => setUserSort(c => ({ key, direction: c.key === key && c.direction === 'desc' ? 'asc' : 'desc' }));\n    const handleDeleteUser = (userId) => {\n        confirm({ \n            title: 'Видалити акаунт?', \n            message: 'Ця дія незворотна. Всі дані будуть видалені. Введіть \"DELETE\" для підтвердження.', \n            requireInput: true,\n            expectedInput: 'DELETE',\n            confirmText: 'Видалити повністю', \n            danger: true,\n            onConfirm: async (inputValue) => { \n                if (inputValue !== 'DELETE') return toast.error('Невірне підтвердження.');\n                try { \n                    await apiClient.delete(`/admin/users/${userId}`); \n                    toast.success('Користувача видалено'); ",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 14,
+      "secondFile": {
+        "end": 128,
+        "endLoc": {
+          "column": 77,
+          "line": 128,
+          "position": 5675
+        },
+        "name": "modules\\profile\\pages\\ProfilePage.jsx",
+        "start": 114,
+        "startLoc": {
+          "column": 23,
+          "line": 114,
+          "position": 4888
+        }
+      },
+      "tokens": 78
+    },
+    {
+      "firstFile": {
+        "end": 135,
+        "endLoc": {
+          "column": 83,
+          "line": 135,
+          "position": 7958
+        },
+        "name": "modules\\admin\\pages\\AdminUsersSitesPage.jsx",
+        "start": 118,
+        "startLoc": {
+          "column": 78,
+          "line": 118,
+          "position": 7011
+        }
+      },
+      "format": "jsx",
+      "fragment": "                } catch(error) { toast.error(error.response?.data?.message || 'Помилка видалення'); } \n            } \n        });\n    };\n\n    const handleSuspendUser = (userId) => {\n        confirm({ \n            title: 'Заблокувати назавжди?', \n            message: 'Пошта залишиться в блеклісті, але сайти, медіафайли та персональні дані будуть незворотно стерті. Введіть \"SUSPEND\" для підтвердження.', \n            requireInput: true,\n            expectedInput: 'SUSPEND',\n            confirmText: 'Заблокувати', \n            danger: true,\n            onConfirm: async (inputValue) => { \n                if (inputValue !== 'SUSPEND') return toast.error('Невірне підтвердження.');\n                try { \n                    await suspendUser(userId); \n                    toast.success('Користувача заблоковано'); ",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 18,
+      "secondFile": {
+        "end": 148,
+        "endLoc": {
+          "column": 83,
+          "line": 148,
+          "position": 6749
+        },
+        "name": "modules\\profile\\pages\\ProfilePage.jsx",
+        "start": 131,
+        "startLoc": {
+          "column": 38,
+          "line": 131,
+          "position": 5802
+        }
+      },
+      "tokens": 82
+    },
+    {
+      "firstFile": {
+        "end": 155,
+        "endLoc": {
+          "column": 85,
+          "line": 155,
+          "position": 9098
+        },
+        "name": "modules\\admin\\pages\\AdminUsersSitesPage.jsx",
+        "start": 146,
+        "startLoc": {
+          "column": 279,
+          "line": 146,
+          "position": 8618
+        }
+      },
+      "format": "jsx",
+      "fragment": "            message: 'Користувач знову зможе користуватися платформою. Старі сайти не відновляться, але він зможе створити нові. Введіть \"RESTORE\" для підтвердження.', \n            type: 'success',\n            requireInput: true,\n            expectedInput: 'RESTORE',\n            confirmText: 'Розблокувати',\n            onConfirm: async (inputValue) => { \n                if (inputValue !== 'RESTORE') return toast.error('Невірне підтвердження.');\n                try { \n                    await restoreUser(userId); \n                    toast.success('Користувача розблоковано'); ",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 10,
+      "secondFile": {
+        "end": 168,
+        "endLoc": {
+          "column": 85,
+          "line": 168,
+          "position": 7826
+        },
+        "name": "modules\\profile\\pages\\ProfilePage.jsx",
+        "start": 159,
+        "startLoc": {
+          "column": 174,
+          "line": 159,
+          "position": 7346
+        }
+      },
+      "tokens": 54
+    },
+    {
+      "firstFile": {
+        "end": 492,
+        "endLoc": {
+          "column": 14,
+          "line": 492,
+          "position": 34202
+        },
+        "name": "modules\\admin\\pages\\AdminUsersSitesPage.jsx",
+        "start": 484,
+        "startLoc": {
+          "column": 44,
+          "line": 484,
+          "position": 33777
+        }
+      },
+      "format": "jsx",
+      "fragment": "                                            </AdminCell>\n                                        </AdminRow>\n                                    );\n                                })}\n                            </tbody>\n                        </AdminTable>\n                    ) : <div style={{ padding: '40px', textAlign: 'center', color: 'var(--platform-text-secondary)' }}>Режим сітки в розробці</div>}\n                </>\n            )}",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 9,
+      "secondFile": {
+        "end": 601,
+        "endLoc": {
+          "column": 14,
+          "line": 601,
+          "position": 44591
+        },
+        "name": "modules\\admin\\pages\\AdminUsersSitesPage.jsx",
+        "start": 593,
+        "startLoc": {
+          "column": 218,
+          "line": 593,
+          "position": 44166
+        }
+      },
+      "tokens": 58
+    },
+    {
+      "firstFile": {
+        "end": 36,
+        "endLoc": {
+          "column": 50,
+          "line": 36,
+          "position": 1596
+        },
+        "name": "modules\\auth\\AdminLoginPage.jsx",
+        "start": 26,
+        "startLoc": {
+          "column": 36,
+          "line": 26,
+          "position": 1276
+        }
+      },
+      "format": "jsx",
+      "fragment": "        turnstileRef.current?.reset();\n    };\n    \n    const handleError = (error, fallback) => {\n        const message = error.response?.data?.message || fallback;\n        toast.error(message, { toastId: message });\n    };\n    \n    const handleLogin = async (e) => {\n        e.preventDefault();\n        if (!turnstileToken) return toast.warning('Security clearance required.', { toastId: 'admin-captcha-warn' });",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 11,
+      "secondFile": {
+        "end": 121,
+        "endLoc": {
+          "column": 50,
+          "line": 121,
+          "position": 5973
+        },
+        "name": "modules\\auth\\AuthPage.jsx",
+        "start": 111,
+        "startLoc": {
+          "column": 62,
+          "line": 111,
+          "position": 5661
+        }
+      },
+      "tokens": 67
+    },
+    {
+      "firstFile": {
+        "end": 263,
+        "endLoc": {
+          "column": 35,
+          "line": 263,
+          "position": 13681
+        },
+        "name": "modules\\auth\\AuthPage.jsx",
+        "start": 255,
+        "startLoc": {
+          "column": 22,
+          "line": 255,
+          "position": 12873
+        }
+      },
+      "format": "jsx",
+      "fragment": "    if (view === 'otp') {\n        return (\n            <div className=\"min-h-[calc(100vh-140px)] w-full flex items-center justify-center p-4 sm:p-5 bg-(--platform-bg)\">\n                <Helmet><title>{getPageTitle()}</title></Helmet>\n                <div className=\"w-full max-w-105 bg-(--platform-card-bg) p-6 sm:p-8 md:p-10 rounded-2xl sm:rounded-3xl border border-(--platform-border-color) shadow-[0_10px_40px_rgba(0,0,0,0.08)] flex flex-col relative mx-auto\">\n                    <button onClick={() => setView('login')} className=\"absolute top-4 left-4 sm:top-6 sm:left-6 bg-transparent border-none cursor-pointer text-(--platform-text-secondary) hover:text-(--platform-text-primary) transition-colors\">\n                        <ArrowLeft size={24} />\n                    </button>\n                    <div className=\"mx-auto mb-4 w-12 h-12 flex items-center justify-center rounded-full bg-blue-100/20 text-(--platform-accent) mt-4 sm:mt-2\">",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 9,
+      "secondFile": {
+        "end": 296,
+        "endLoc": {
+          "column": 35,
+          "line": 296,
+          "position": 16329
+        },
+        "name": "modules\\auth\\AuthPage.jsx",
+        "start": 288,
+        "startLoc": {
+          "column": 29,
+          "line": 288,
+          "position": 15521
+        }
+      },
+      "tokens": 75
+    },
+    {
+      "firstFile": {
+        "end": 263,
+        "endLoc": {
+          "column": 21,
+          "line": 263,
+          "position": 13667
+        },
+        "name": "modules\\auth\\AuthPage.jsx",
+        "start": 255,
+        "startLoc": {
+          "column": 22,
+          "line": 255,
+          "position": 12873
+        }
+      },
+      "format": "jsx",
+      "fragment": "    if (view === 'otp') {\n        return (\n            <div className=\"min-h-[calc(100vh-140px)] w-full flex items-center justify-center p-4 sm:p-5 bg-(--platform-bg)\">\n                <Helmet><title>{getPageTitle()}</title></Helmet>\n                <div className=\"w-full max-w-105 bg-(--platform-card-bg) p-6 sm:p-8 md:p-10 rounded-2xl sm:rounded-3xl border border-(--platform-border-color) shadow-[0_10px_40px_rgba(0,0,0,0.08)] flex flex-col relative mx-auto\">\n                    <button onClick={() => setView('login')} className=\"absolute top-4 left-4 sm:top-6 sm:left-6 bg-transparent border-none cursor-pointer text-(--platform-text-secondary) hover:text-(--platform-text-primary) transition-colors\">\n                        <ArrowLeft size={24} />\n                    </button>\n                    <div className=\"mx-auto mb-4 w-12 h-12 flex items-center justify-center rounded-full bg-blue-100/20 text-(--platform-accent) mt-4 sm:mt-2\">",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 9,
+      "secondFile": {
+        "end": 361,
+        "endLoc": {
+          "column": 21,
+          "line": 361,
+          "position": 21166
+        },
+        "name": "modules\\auth\\AuthPage.jsx",
+        "start": 353,
+        "startLoc": {
+          "column": 25,
+          "line": 353,
+          "position": 20372
+        }
+      },
+      "tokens": 72
+    },
+    {
+      "firstFile": {
+        "end": 104,
+        "endLoc": {
+          "column": 21,
+          "line": 104,
+          "position": 5095
+        },
+        "name": "modules\\dashboard\\features\\commerce\\components\\CategoryManager.jsx",
+        "start": 94,
+        "startLoc": {
+          "column": 137,
+          "line": 94,
+          "position": 4482
+        }
+      },
+      "format": "jsx",
+      "fragment": "        <div className=\"flex flex-col h-full bg-(--platform-card-bg) border border-(--platform-border-color) rounded-2xl overflow-hidden\">\n            <div className=\"min-h-18 p-3 sm:px-5 border-b border-(--platform-border-color) flex justify-between items-center gap-3 flex-wrap bg-(--platform-bg) shrink-0\">\n                <div className=\"flex gap-2 flex-1 items-center flex-wrap\">\n                    <Input\n                        leftIcon={<Search size={16}/>}\n                        placeholder=\"Пошук...\"\n                        value={search}\n                        onChange={(e) => setSearch(e.target.value)}\n                        wrapperStyle={{margin: 0, flex: '1 1 180px'}}\n                    />\n                    <div className=\"flex gap-1 items-center\">",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 11,
+      "secondFile": {
+        "end": 208,
+        "endLoc": {
+          "column": 21,
+          "line": 208,
+          "position": 9956
+        },
+        "name": "modules\\dashboard\\features\\commerce\\components\\OrdersTab.jsx",
+        "start": 198,
+        "startLoc": {
+          "column": 137,
+          "line": 198,
+          "position": 9340
+        }
+      },
+      "tokens": 72
+    },
+    {
+      "firstFile": {
+        "end": 238,
+        "endLoc": {
+          "column": 52,
+          "line": 238,
+          "position": 14217
+        },
+        "name": "modules\\dashboard\\features\\commerce\\components\\CategoryManager.jsx",
+        "start": 226,
+        "startLoc": {
+          "column": 113,
+          "line": 226,
+          "position": 13576
+        }
+      },
+      "format": "jsx",
+      "fragment": "                    {formData.id ? <><Edit size={20} /> Редагування</> : 'Нова категорія'}\n                </h3>\n                {!isMobile && (\n                    <button \n                        type=\"button\" \n                        onClick={onClose} \n                        className=\"h-10 w-10 flex items-center justify-center shrink-0 rounded-lg border border-(--platform-border-color) bg-transparent text-(--platform-text-secondary) hover:border-(--platform-accent) hover:text-(--platform-accent) transition-all cursor-pointer\"\n                    >\n                        <X size={20}/>\n                    </button>\n                )}\n            </div>\n            <form onSubmit={handleSubmit} className=\"flex-1 flex flex-col overflow-hidden bg-(--platform-card-bg)\">",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 13,
+      "secondFile": {
+        "end": 501,
+        "endLoc": {
+          "column": 52,
+          "line": 501,
+          "position": 29631
+        },
+        "name": "modules\\dashboard\\features\\commerce\\components\\ProductManager.jsx",
+        "start": 489,
+        "startLoc": {
+          "column": 106,
+          "line": 489,
+          "position": 28990
+        }
+      },
+      "tokens": 58
+    },
+    {
+      "firstFile": {
+        "end": 41,
+        "endLoc": {
+          "column": 5,
+          "line": 41,
+          "position": 2150
+        },
+        "name": "modules\\dashboard\\features\\commerce\\components\\OrdersTab.jsx",
+        "start": 31,
+        "startLoc": {
+          "column": 7,
+          "line": 31,
+          "position": 1932
+        }
+      },
+      "format": "jsx",
+      "fragment": "    }));\n\nconst FILTER_STATUS_OPTIONS = [\n    { value: 'all', label: 'Всі статуси' },\n    ...Object.entries(STATUS_MAP).map(([key, val]) => ({\n        value: key,\n        label: val.label\n    }))\n];\n\nconst FILTER_TYPE_OPTIONS = [",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 11,
+      "secondFile": {
+        "end": 36,
+        "endLoc": {
+          "column": 5,
+          "line": 36,
+          "position": 1979
+        },
+        "name": "modules\\shop\\MyOrdersPage.jsx",
+        "start": 26,
+        "startLoc": {
+          "column": 1,
+          "line": 26,
+          "position": 1761
+        }
+      },
+      "tokens": 50
+    },
+    {
+      "firstFile": {
+        "end": 108,
+        "endLoc": {
+          "column": 9,
+          "line": 108,
+          "position": 4978
+        },
+        "name": "modules\\dashboard\\features\\commerce\\components\\OrdersTab.jsx",
+        "start": 96,
+        "startLoc": {
+          "column": 5,
+          "line": 96,
+          "position": 4495
+        }
+      },
+      "format": "jsx",
+      "fragment": "    };\n\n    const formatDate = (dateString) => {\n        const date = new Date(dateString);\n        const day = String(date.getDate()).padStart(2, '0');\n        const month = String(date.getMonth() + 1).padStart(2, '0');\n        const year = date.getFullYear();\n        const hours = String(date.getHours()).padStart(2, '0');\n        const minutes = String(date.getMinutes()).padStart(2, '0');\n        return `${day}.${month}.${year} о ${hours}:${minutes}`;\n    };\n\n    const clearFilters = () => {",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 13,
+      "secondFile": {
+        "end": 85,
+        "endLoc": {
+          "column": 9,
+          "line": 85,
+          "position": 4321
+        },
+        "name": "modules\\shop\\MyOrdersPage.jsx",
+        "start": 74,
+        "startLoc": {
+          "column": 63,
+          "line": 74,
+          "position": 3840
+        }
+      },
+      "tokens": 121
+    },
+    {
+      "firstFile": {
+        "end": 186,
+        "endLoc": {
+          "column": 37,
+          "line": 186,
+          "position": 8791
+        },
+        "name": "modules\\dashboard\\features\\commerce\\components\\OrdersTab.jsx",
+        "start": 164,
+        "startLoc": {
+          "column": 96,
+          "line": 164,
+          "position": 7837
+        }
+      },
+      "format": "jsx",
+      "fragment": "            result = result.filter(o => o.items && o.items.some(item => item.type !== 'digital'));\n        }\n        if (startDate) {\n            const start = new Date(`${startDate}T00:00:00`);\n            result = result.filter(o => new Date(o.created_at) >= start);\n        }\n        if (endDate) {\n            const end = new Date(`${endDate}T23:59:59`);\n            result = result.filter(o => new Date(o.created_at) <= end);\n        }\n        result.sort((a, b) => {\n            let comparison = 0;\n            if (sortBy === 'date') {\n                comparison = new Date(a.created_at) - new Date(b.created_at);\n            } else if (sortBy === 'amount') {\n                comparison = parseFloat(a.total_amount) - parseFloat(b.total_amount);\n            } else if (sortBy === 'id') {\n                comparison = a.id.toString().localeCompare(b.id.toString());\n            }\n            return sortOrder === 'asc' ? comparison : comparison * -1;\n        });\n        return result;\n    }, [orders, search, statusFilter, typeFilter, startDate, endDate, sortBy, sortOrder]);",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 23,
+      "secondFile": {
+        "end": 386,
+        "endLoc": {
+          "column": 37,
+          "line": 386,
+          "position": 26379
+        },
+        "name": "modules\\shop\\MyOrdersPage.jsx",
+        "start": 364,
+        "startLoc": {
+          "column": 65,
+          "line": 364,
+          "position": 25425
+        }
+      },
+      "tokens": 199
+    },
+    {
+      "firstFile": {
+        "end": 71,
+        "endLoc": {
+          "column": 6,
+          "line": 71,
+          "position": 4246
+        },
+        "name": "modules\\dashboard\\features\\settings\\GeneralSettingsTab.jsx",
+        "start": 62,
+        "startLoc": {
+          "column": 64,
+          "line": 62,
+          "position": 3785
+        }
+      },
+      "format": "jsx",
+      "fragment": "        if (src instanceof File) return URL.createObjectURL(src);\n        if (typeof src === 'string') {\n            if (src.startsWith('data:') || src.startsWith('blob:') || src.startsWith('http')) return src;\n            if (src.startsWith('/logos/')) return src;\n            if (src.includes('/src/') || src.includes('/assets/') || src.includes('@fs')) return src;\n            const cleanSrc = src.startsWith('/') ? src : `/${src}`;\n            return `${BASE_URL}${cleanSrc}`;\n        }\n        return '';\n    };",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 10,
+      "secondFile": {
+        "end": 236,
+        "endLoc": {
+          "column": 6,
+          "line": 236,
+          "position": 11711
+        },
+        "name": "shared\\ui\\complex\\SiteGridCard.jsx",
+        "start": 227,
+        "startLoc": {
+          "column": 27,
+          "line": 227,
+          "position": 11250
+        }
+      },
+      "tokens": 102
+    },
+    {
+      "firstFile": {
+        "end": 133,
+        "endLoc": {
+          "column": 8,
+          "line": 133,
+          "position": 7653
+        },
+        "name": "modules\\dashboard\\features\\settings\\GeneralSettingsTab.jsx",
+        "start": 125,
+        "startLoc": {
+          "column": 12,
+          "line": 125,
+          "position": 7125
+        }
+      },
+      "format": "jsx",
+      "fragment": "            try {\n                const res = await apiClient.get(`/sites/check-slug?slug=${currentSlug}`);\n                if (res.data.isAvailable) setSlugStatus('available');\n                else { setSlugStatus('taken'); setSlugError(res.data.message || 'Ця адреса вже зайнята'); }\n            } catch (err) { setSlugStatus('idle'); setSlugError('Помилка перевірки адреси'); }\n        };\n        const timer = setTimeout(checkSlug, 500);\n        return () => clearTimeout(timer);\n    }, [identityData.slug, siteData?.site_path]);",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 9,
+      "secondFile": {
+        "end": 105,
+        "endLoc": {
+          "column": 8,
+          "line": 105,
+          "position": 5703
+        },
+        "name": "modules\\dashboard\\pages\\CreateSitePage.jsx",
+        "start": 95,
+        "startLoc": {
+          "column": 12,
+          "line": 95,
+          "position": 5144
+        }
+      },
+      "tokens": 88
+    },
+    {
+      "firstFile": {
+        "end": 82,
+        "endLoc": {
+          "column": 45,
+          "line": 82,
+          "position": 4539
+        },
+        "name": "modules\\dashboard\\features\\settings\\components\\GeneralTemplatesSection.jsx",
+        "start": 74,
+        "startLoc": {
+          "column": 80,
+          "line": 74,
+          "position": 4235
+        }
+      },
+      "format": "jsx",
+      "fragment": "            return [{ id: 'blank', isBlank: true, name: 'Пустий сайт' }, ...manager.templates];\n        }\n        return manager.templates;\n    }, [manager.templates, manager.filters.templateSourceTab]);\n\n    const previewData = useMemo(() => {\n        if (manager.selectedTemplateId === 'blank') {\n            return { \n                pages: [{ slug: 'home', name: 'Головныа', blocks: [] }], ",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 9,
+      "secondFile": {
+        "end": 117,
+        "endLoc": {
+          "column": 45,
+          "line": 117,
+          "position": 6185
+        },
+        "name": "modules\\dashboard\\pages\\CreateSitePage.jsx",
+        "start": 109,
+        "startLoc": {
+          "column": 49,
+          "line": 109,
+          "position": 5881
+        }
+      },
+      "tokens": 59
+    },
+    {
+      "firstFile": {
+        "end": 214,
+        "endLoc": {
+          "column": 102,
+          "line": 214,
+          "position": 15304
+        },
+        "name": "modules\\dashboard\\features\\settings\\components\\GeneralTemplatesSection.jsx",
+        "start": 204,
+        "startLoc": {
+          "column": 44,
+          "line": 204,
+          "position": 14627
+        }
+      },
+      "format": "jsx",
+      "fragment": "                                            </div>\n                                        );\n                                    }\n                                    return (\n                                        <TemplateCard \n                                            key={tpl.id}\n                                            template={tpl}\n                                            isSelected={manager.selectedTemplateId === tpl.id}\n                                            onClick={() => manager.setSelectedTemplateId(tpl.id)}\n                                            getFullUrl={getFullUrl}\n                                            badge={<TemplateBadge template={tpl} user={user} isAdmin={isStaff} sourceTab={manager.filters.templateSourceTab} />}",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 11,
+      "secondFile": {
+        "end": 310,
+        "endLoc": {
+          "column": 106,
+          "line": 310,
+          "position": 23552
+        },
+        "name": "modules\\dashboard\\pages\\CreateSitePage.jsx",
+        "start": 300,
+        "startLoc": {
+          "column": 48,
+          "line": 300,
+          "position": 22835
+        }
+      },
+      "tokens": 72
+    },
+    {
+      "firstFile": {
+        "end": 25,
+        "endLoc": {
+          "column": 5,
+          "line": 25,
+          "position": 1185
+        },
+        "name": "modules\\dashboard\\pages\\MySitesPage.jsx",
+        "start": 13,
+        "startLoc": {
+          "column": 29,
+          "line": 13,
+          "position": 772
+        }
+      },
+      "format": "jsx",
+      "fragment": "import { Plus, Search, Globe } from 'lucide-react';\n\nconst ITEMS_PER_PAGE = 20;\nconst SORT_OPTIONS = [\n    { value: 'created_at:desc', label: 'Дата' },\n    { value: 'created_at:asc', label: 'Дата' },\n    { value: 'title:asc', label: 'Назва' },\n    { value: 'title:desc', label: 'Назва' },\n    { value: 'views:desc', label: 'Перегляди' },\n    { value: 'views:asc', label: 'Перегляди' }\n];\n\nconst MySitesPage = () => {",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 13,
+      "secondFile": {
+        "end": 25,
+        "endLoc": {
+          "column": 5,
+          "line": 25,
+          "position": 1185
+        },
+        "name": "modules\\renderer\\pages\\CatalogPage.jsx",
+        "start": 13,
+        "startLoc": {
+          "column": 23,
+          "line": 13,
+          "position": 772
+        }
+      },
+      "tokens": 75
+    },
+    {
+      "firstFile": {
+        "end": 39,
+        "endLoc": {
+          "column": 22,
+          "line": 39,
+          "position": 2285
+        },
+        "name": "modules\\dashboard\\pages\\SiteDashboardPage.jsx",
+        "start": 28,
+        "startLoc": {
+          "column": 36,
+          "line": 28,
+          "position": 1878
+        }
+      },
+      "format": "jsx",
+      "fragment": "import { Lock, Monitor, ShieldAlert } from 'lucide-react';\n\nconst DeviceIframe = ({ children, className, style }) => {\n    const [iframeRef, setIframeRef] = useState(null);\n    const [isLoaded, setIsLoaded] = useState(false);\n    useEffect(() => {\n        if (!iframeRef) return;\n        const doc = iframeRef.contentDocument;\n        if (!doc) return;\n        const writeDoc = () => {\n            doc.open();\n            doc.write('<!DOCTYPE html><html><head></head><body><div id=\"iframe-root\" style=\"height: 100%;\"></div></body></html>');",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 12,
+      "secondFile": {
+        "end": 22,
+        "endLoc": {
+          "column": 22,
+          "line": 22,
+          "position": 1116
+        },
+        "name": "shared\\ui\\complex\\SitePreviewer.jsx",
+        "start": 11,
+        "startLoc": {
+          "column": 49,
+          "line": 11,
+          "position": 709
+        }
+      },
+      "tokens": 86
+    },
+    {
+      "firstFile": {
+        "end": 52,
+        "endLoc": {
+          "column": 13,
+          "line": 52,
+          "position": 3350
+        },
+        "name": "modules\\dashboard\\pages\\SiteDashboardPage.jsx",
+        "start": 39,
+        "startLoc": {
+          "column": 128,
+          "line": 39,
+          "position": 2391
+        }
+      },
+      "format": "jsx",
+      "fragment": "            doc.write('<!DOCTYPE html><html><head></head><body><div id=\"iframe-root\" style=\"height: 100%;\"></div></body></html>');\n            doc.close();\n            const head = doc.head;\n            document.querySelectorAll('style, link[rel=\"stylesheet\"]').forEach(el => {\n                head.appendChild(el.cloneNode(true));\n            });\n            const baseStyle = doc.createElement('style');\n            baseStyle.innerHTML = `\n                html, body { height: 100%; margin: 0; padding: 0; overflow-x: hidden; background-color: transparent; -ms-overflow-style: none; scrollbar-width: none; }\n                * { box-sizing: border-box; -ms-overflow-style: none; scrollbar-width: none; }\n                ::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; background: transparent; }\n                *::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }\n                body { font-family: var(--site-font-main, inherit); color: var(--site-text-primary, inherit); }\n            `;",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 14,
+      "secondFile": {
+        "end": 34,
+        "endLoc": {
+          "column": 13,
+          "line": 34,
+          "position": 2008
+        },
+        "name": "shared\\ui\\complex\\SitePreviewer.jsx",
+        "start": 22,
+        "startLoc": {
+          "column": 167,
+          "line": 22,
+          "position": 1261
+        }
+      },
+      "tokens": 56
+    },
+    {
+      "firstFile": {
+        "end": 87,
+        "endLoc": {
+          "column": 5,
+          "line": 87,
+          "position": 4496
+        },
+        "name": "modules\\dashboard\\pages\\SiteDashboardPage.jsx",
+        "start": 52,
+        "startLoc": {
+          "column": 13,
+          "line": 52,
+          "position": 3350
+        }
+      },
+      "format": "jsx",
+      "fragment": "            `;\n            head.appendChild(baseStyle);\n            setIsLoaded(true);\n        };\n        const timer = setTimeout(writeDoc, 50);\n        const observer = new MutationObserver((mutations) => {\n            mutations.forEach((mutation) => {\n                mutation.addedNodes.forEach((node) => {\n                    if (node.tagName === 'STYLE' || (node.tagName === 'LINK' && node.rel === 'stylesheet')) {\n                        doc.head.appendChild(node.cloneNode(true));\n                    }\n                });\n            });\n        });\n        observer.observe(document.head, { childList: true });\n        return () => {\n            clearTimeout(timer);\n            observer.disconnect();\n        };\n    }, [iframeRef]);\n    return (\n        <iframe\n            ref={setIframeRef}\n            className={className}\n            style={style}\n            title=\"Mobile Preview\"\n        >\n            {isLoaded && iframeRef.contentDocument && createPortal(\n                children,\n                iframeRef.contentDocument.getElementById('iframe-root')\n            )}\n        </iframe>\n    );\n};\n\nconst useDragAutoScroll = (ref, isEnabled) => {",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 36,
+      "secondFile": {
+        "end": 71,
+        "endLoc": {
+          "column": 5,
+          "line": 71,
+          "position": 3158
+        },
+        "name": "shared\\ui\\complex\\SitePreviewer.jsx",
+        "start": 34,
+        "startLoc": {
+          "column": 13,
+          "line": 34,
+          "position": 2008
+        }
+      },
+      "tokens": 198
+    },
+    {
+      "firstFile": {
+        "end": 129,
+        "endLoc": {
+          "column": 8,
+          "line": 129,
+          "position": 6393
+        },
+        "name": "modules\\dashboard\\pages\\SiteDashboardPage.jsx",
+        "start": 85,
+        "startLoc": {
+          "column": 1,
+          "line": 85,
+          "position": 4486
+        }
+      },
+      "format": "jsx",
+      "fragment": "};\n\nconst useDragAutoScroll = (ref, isEnabled) => {\n    useEffect(() => {\n        const container = ref.current;\n        if (!container || !isEnabled) return;\n        let animationFrameId;\n        let currentSpeed = 0;\n        const animateScroll = () => {\n            if (currentSpeed !== 0) {\n                container.scrollTop += currentSpeed;\n            }\n            animationFrameId = requestAnimationFrame(animateScroll);\n        };\n        animationFrameId = requestAnimationFrame(animateScroll);\n        const onDragOver = (e) => {\n            const { clientY, clientX } = e;\n            const rect = container.getBoundingClientRect();\n            if (clientX < rect.left || clientX > rect.right) {\n                currentSpeed = 0;\n                return;\n            }\n            const topDist = clientY - rect.top;\n            const bottomDist = rect.bottom - clientY;\n            const threshold = 150; \n            const maxSpeed = 20;\n            if (topDist >= 0 && topDist < threshold) {\n                currentSpeed = -maxSpeed * (1 - topDist / threshold);\n            } else if (bottomDist >= 0 && bottomDist < threshold) {\n                currentSpeed = maxSpeed * (1 - bottomDist / threshold);\n            } else {\n                currentSpeed = 0;\n            }\n        };\n        const stopScrolling = () => { currentSpeed = 0; };\n        document.addEventListener('dragover', onDragOver, true);\n        document.addEventListener('dragend', stopScrolling, true);\n        document.addEventListener('drop', stopScrolling, true);\n        return () => {\n            cancelAnimationFrame(animationFrameId);\n            document.removeEventListener('dragover', onDragOver, true);\n            document.removeEventListener('dragend', stopScrolling, true);\n            document.removeEventListener('drop', stopScrolling, true);\n        };\n    }, [isEnabled]);",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 45,
+      "secondFile": {
+        "end": 56,
+        "endLoc": {
+          "column": 8,
+          "line": 56,
+          "position": 2576
+        },
+        "name": "modules\\editor\\core\\BlockEditor.jsx",
+        "start": 12,
+        "startLoc": {
+          "column": 67,
+          "line": 12,
+          "position": 669
+        }
+      },
+      "tokens": 308
+    },
+    {
+      "firstFile": {
+        "end": 319,
+        "endLoc": {
+          "column": 9,
+          "line": 319,
+          "position": 15333
+        },
+        "name": "modules\\dashboard\\pages\\SiteDashboardPage.jsx",
+        "start": 308,
+        "startLoc": {
+          "column": 5,
+          "line": 308,
+          "position": 15029
+        }
+      },
+      "format": "jsx",
+      "fragment": "    });\n    \n    const themeSettings = useMemo(() => {\n        if (!siteData) return {};\n        let ts = siteData.theme_settings;\n        if (typeof ts === 'string') {\n            try { ts = JSON.parse(ts); } catch (e) { ts = {}; }\n        }\n        return ts || {};\n    }, [siteData]);\n\n    const siteIsolationStyles = useMemo(() => {",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 12,
+      "secondFile": {
+        "end": 37,
+        "endLoc": {
+          "column": 9,
+          "line": 37,
+          "position": 1774
+        },
+        "name": "modules\\renderer\\pages\\SiteDisplayPage.jsx",
+        "start": 27,
+        "startLoc": {
+          "column": 20,
+          "line": 27,
+          "position": 1476
+        }
+      },
+      "tokens": 73
+    },
+    {
+      "firstFile": {
+        "end": 319,
+        "endLoc": {
+          "column": 31,
+          "line": 319,
+          "position": 15355
+        },
+        "name": "modules\\dashboard\\pages\\SiteDashboardPage.jsx",
+        "start": 308,
+        "startLoc": {
+          "column": 5,
+          "line": 308,
+          "position": 15029
+        }
+      },
+      "format": "jsx",
+      "fragment": "    });\n    \n    const themeSettings = useMemo(() => {\n        if (!siteData) return {};\n        let ts = siteData.theme_settings;\n        if (typeof ts === 'string') {\n            try { ts = JSON.parse(ts); } catch (e) { ts = {}; }\n        }\n        return ts || {};\n    }, [siteData]);\n\n    const siteIsolationStyles = useMemo(() => {",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 12,
+      "secondFile": {
+        "end": 103,
+        "endLoc": {
+          "column": 31,
+          "line": 103,
+          "position": 5608
+        },
+        "name": "modules\\shop\\ProductDetailPage.jsx",
+        "start": 94,
+        "startLoc": {
+          "column": 81,
+          "line": 94,
+          "position": 5290
+        }
+      },
+      "tokens": 75
+    },
+    {
+      "firstFile": {
+        "end": 343,
+        "endLoc": {
+          "column": 8,
+          "line": 343,
+          "position": 16683
+        },
+        "name": "modules\\dashboard\\pages\\SiteDashboardPage.jsx",
+        "start": 326,
+        "startLoc": {
+          "column": 85,
+          "line": 326,
+          "position": 15808
+        }
+      },
+      "format": "jsx",
+      "fragment": "        const siteAccent = resolveAccentColor(siteData.site_theme_accent || 'orange');\n        const styles = {\n            '--site-bg': siteBg,\n            '--site-text-primary': siteText,\n            '--site-text-secondary': isSiteDark ? '#a0aec0' : '#718096',\n            '--site-card-bg': siteCardBg,\n            '--site-border-color': siteBorder,\n            '--site-accent': siteAccent,\n            '--site-font-main': themeSettings.font_body || \"'Inter', sans-serif\",\n            '--site-font-headings': themeSettings.font_heading || themeSettings.font_body || \"'Inter', sans-serif\"\n        };\n        let hex = siteAccent.replace('#', '');\n        if (hex.length === 3) hex = hex.split('').map(x => x + x).join('');\n        if (hex.length === 6) {\n            styles['--site-accent-rgb'] = `${parseInt(hex.slice(0, 2), 16)}, ${parseInt(hex.slice(2, 4), 16)}, ${parseInt(hex.slice(4, 6), 16)}`;\n        }\n        return styles;\n    }, [siteData, themeSettings]);",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 18,
+      "secondFile": {
+        "end": 215,
+        "endLoc": {
+          "column": 8,
+          "line": 215,
+          "position": 9379
+        },
+        "name": "shared\\ui\\complex\\SitePreviewer.jsx",
+        "start": 198,
+        "startLoc": {
+          "column": 68,
+          "line": 198,
+          "position": 8504
+        }
+      },
+      "tokens": 162
+    },
+    {
+      "firstFile": {
+        "end": 339,
+        "endLoc": {
+          "column": 31,
+          "line": 339,
+          "position": 16491
+        },
+        "name": "modules\\dashboard\\pages\\SiteDashboardPage.jsx",
+        "start": 327,
+        "startLoc": {
+          "column": 21,
+          "line": 327,
+          "position": 15832
+        }
+      },
+      "format": "jsx",
+      "fragment": "        const styles = {\n            '--site-bg': siteBg,\n            '--site-text-primary': siteText,\n            '--site-text-secondary': isSiteDark ? '#a0aec0' : '#718096',\n            '--site-card-bg': siteCardBg,\n            '--site-border-color': siteBorder,\n            '--site-accent': siteAccent,\n            '--site-font-main': themeSettings.font_body || \"'Inter', sans-serif\",\n            '--site-font-headings': themeSettings.font_heading || themeSettings.font_body || \"'Inter', sans-serif\"\n        };\n        let hex = siteAccent.replace('#', '');\n        if (hex.length === 3) hex = hex.split('').map(x => x + x).join('');\n        if (hex.length === 6) {",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 13,
+      "secondFile": {
+        "end": 56,
+        "endLoc": {
+          "column": 27,
+          "line": 56,
+          "position": 2796
+        },
+        "name": "modules\\renderer\\pages\\SiteDisplayPage.jsx",
+        "start": 43,
+        "startLoc": {
+          "column": 30,
+          "line": 43,
+          "position": 2176
+        }
+      },
+      "tokens": 103
+    },
+    {
+      "firstFile": {
+        "end": 758,
+        "endLoc": {
+          "column": 50,
+          "line": 758,
+          "position": 38948
+        },
+        "name": "modules\\dashboard\\pages\\SiteDashboardPage.jsx",
+        "start": 745,
+        "startLoc": {
+          "column": 48,
+          "line": 745,
+          "position": 37888
+        }
+      },
+      "format": "jsx",
+      "fragment": "                                                <BlockEditor \n                                                    blocks={blocks} \n                                                    siteData={siteData}\n                                                    onAddBlock={handleAddBlock}\n                                                    onMoveBlock={handleMoveBlock}\n                                                    onDropBlock={handleDropBlock}\n                                                    onDeleteBlock={handleDeleteBlock}\n                                                    onSelectBlock={setSelectedBlockPath}\n                                                    selectedBlockPath={selectedBlockPath}\n                                                    collapsedBlocks={collapsedBlocks}\n                                                    onToggleCollapse={toggleBlockCollapse}\n                                                    onBlockSaved={handleBlockSaved}\n                                                    viewMode={viewMode}\n                                                />",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 14,
+      "secondFile": {
+        "end": 780,
+        "endLoc": {
+          "column": 42,
+          "line": 780,
+          "position": 40594
+        },
+        "name": "modules\\dashboard\\pages\\SiteDashboardPage.jsx",
+        "start": 767,
+        "startLoc": {
+          "column": 40,
+          "line": 767,
+          "position": 39638
+        }
+      },
+      "tokens": 64
+    },
+    {
+      "firstFile": {
+        "end": 17,
+        "endLoc": {
+          "column": 40,
+          "line": 17,
+          "position": 773
+        },
+        "name": "modules\\editor\\blocks\\Button\\ButtonBlock.jsx",
+        "start": 7,
+        "startLoc": {
+          "column": 58,
+          "line": 7,
+          "position": 466
+        }
+      },
+      "format": "jsx",
+      "fragment": "import { areBlockPropsEqual } from '../../core/blockProps';\n\nconst ButtonIcon = ({ name, size, flip }) => {\n    if (!name || name === 'none') return null;\n    const s = size === 'large' ? 20 : 18;\n    const style = {\n        transform: flip ? 'scaleX(-1)' : 'none',\n        flexShrink: 0\n    };\n    const icons = {\n        arrowRight: <ArrowRight size={s} style={style} />,",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 11,
+      "secondFile": {
+        "end": 263,
+        "endLoc": {
+          "column": 40,
+          "line": 263,
+          "position": 12746
+        },
+        "name": "modules\\editor\\blocks\\Form\\FormBlock.jsx",
+        "start": 256,
+        "startLoc": {
+          "column": 1,
+          "line": 256,
+          "position": 12461
+        }
+      },
+      "tokens": 68
+    },
+    {
+      "firstFile": {
+        "end": 71,
+        "endLoc": {
+          "column": 50,
+          "line": 71,
+          "position": 2817
+        },
+        "name": "modules\\editor\\blocks\\Catalog\\CatalogSettings.jsx",
+        "start": 63,
+        "startLoc": {
+          "column": 35,
+          "line": 63,
+          "position": 2462
+        }
+      },
+      "format": "jsx",
+      "fragment": "                        value={data.titleFontFamily}\n                        onChange={(val) => updateData({ titleFontFamily: val })}\n                        label=\"Шрифт заголовка\"\n                        siteFonts={currentSiteFonts}\n                    />\n                </div>\n            </div>\n            <div>\n                <SectionTitle icon={<Layers size={16} />}>Джерело товарів</SectionTitle>",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 9,
+      "secondFile": {
+        "end": 89,
+        "endLoc": {
+          "column": 50,
+          "line": 89,
+          "position": 3794
+        },
+        "name": "modules\\editor\\blocks\\ShowCase\\ShowCaseSettings.jsx",
+        "start": 81,
+        "startLoc": {
+          "column": 45,
+          "line": 81,
+          "position": 3439
+        }
+      },
+      "tokens": 54
+    },
+    {
+      "firstFile": {
+        "end": 124,
+        "endLoc": {
+          "column": 31,
+          "line": 124,
+          "position": 5696
+        },
+        "name": "modules\\editor\\blocks\\Catalog\\CatalogSettings.jsx",
+        "start": 114,
+        "startLoc": {
+          "column": 125,
+          "line": 114,
+          "position": 5206
+        }
+      },
+      "format": "jsx",
+      "fragment": "                <SectionTitle icon={<LayoutGrid size={16} />}>Налаштування відображення</SectionTitle>\n                <div className=\"mb-5\">\n                    <label style={commonStyles.label}>Кількість колонок</label>\n                    <ToggleGroup \n                        options={[\n                            { value: 2, label: '2' },\n                            { value: 3, label: '3' },\n                            { value: 4, label: '4' },\n                            { value: 5, label: '5' },\n                        ]}\n                        value={data.columns || 3}",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 11,
+      "secondFile": {
+        "end": 154,
+        "endLoc": {
+          "column": 31,
+          "line": 154,
+          "position": 7469
+        },
+        "name": "modules\\editor\\blocks\\ShowCase\\ShowCaseSettings.jsx",
+        "start": 144,
+        "startLoc": {
+          "column": 21,
+          "line": 144,
+          "position": 6979
+        }
+      },
+      "tokens": 76
+    },
+    {
+      "firstFile": {
+        "end": 100,
+        "endLoc": {
+          "column": 31,
+          "line": 100,
+          "position": 4703
+        },
+        "name": "modules\\editor\\blocks\\Footer\\FooterSettings.jsx",
+        "start": 92,
+        "startLoc": {
+          "column": 16,
+          "line": 92,
+          "position": 4072
+        }
+      },
+      "format": "jsx",
+      "fragment": "                <div className=\"mb-5\">\n                    <label style={commonStyles.label}>Тема</label>\n                    <ToggleGroup \n                        options={[\n                            { value: 'auto', label: <div className=\"flex gap-1.5 items-center\"><Monitor size={16}/> Авто</div> },\n                            { value: 'light', label: <div className=\"flex gap-1.5 items-center\"><Sun size={16}/> Світла</div> },\n                            { value: 'dark', label: <div className=\"flex gap-1.5 items-center\"><Moon size={16}/> Темна</div> },\n                        ]}\n                        value={currentThemeMode}",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 9,
+      "secondFile": {
+        "end": 42,
+        "endLoc": {
+          "column": 31,
+          "line": 42,
+          "position": 2614
+        },
+        "name": "modules\\editor\\blocks\\SocialIcons\\SocialIconsSettings.jsx",
+        "start": 34,
+        "startLoc": {
+          "column": 16,
+          "line": 34,
+          "position": 1983
+        }
+      },
+      "tokens": 121
+    },
+    {
+      "firstFile": {
+        "end": 54,
+        "endLoc": {
+          "column": 13,
+          "line": 54,
+          "position": 1987
+        },
+        "name": "modules\\editor\\blocks\\Hero\\HeroBlock.jsx",
+        "start": 46,
+        "startLoc": {
+          "column": 91,
+          "line": 46,
+          "position": 1684
+        }
+      },
+      "format": "jsx",
+      "fragment": "    const computedTextShadow = theme_mode === 'dark' ? '0 2px 8px rgba(0,0,0,0.6)' : 'none';\n    const fullImageUrl = bg_image \n        ? (bg_image.startsWith('http') ? bg_image : `${BASE_URL}${bg_image}`)\n        : null;\n    const fullVideoUrl = bg_video \n        ? (bg_video.startsWith('http') ? bg_video : `${BASE_URL}${bg_video}`)\n        : null;\n    useEffect(() => {\n        const video = videoRef.current;",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 9,
+      "secondFile": {
+        "end": 134,
+        "endLoc": {
+          "column": 10,
+          "line": 134,
+          "position": 5667
+        },
+        "name": "modules\\editor\\blocks\\Layout\\LayoutBlock.jsx",
+        "start": 126,
+        "startLoc": {
+          "column": 146,
+          "line": 126,
+          "position": 5367
+        }
+      },
+      "tokens": 55
+    },
+    {
+      "firstFile": {
+        "end": 94,
+        "endLoc": {
+          "column": 31,
+          "line": 94,
+          "position": 4130
+        },
+        "name": "modules\\editor\\blocks\\Hero\\HeroSettings.jsx",
+        "start": 86,
+        "startLoc": {
+          "column": 28,
+          "line": 86,
+          "position": 3793
+        }
+      },
+      "format": "jsx",
+      "fragment": "    const handleImageChange = (val) => {\n        let finalUrl = '';\n        if (val && val.target && typeof val.target.value === 'string') {\n            finalUrl = val.target.value;\n        } else if (typeof val === 'string') {\n            finalUrl = val;\n        }\n        const relativeUrl = finalUrl.replace(BASE_URL, '');\n        onChange({ ...safeData, bg_image: relativeUrl }, true);",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 9,
+      "secondFile": {
+        "end": 105,
+        "endLoc": {
+          "column": 31,
+          "line": 105,
+          "position": 4539
+        },
+        "name": "modules\\editor\\blocks\\Hero\\HeroSettings.jsx",
+        "start": 97,
+        "startLoc": {
+          "column": 28,
+          "line": 97,
+          "position": 4202
+        }
+      },
+      "tokens": 70
+    },
+    {
+      "firstFile": {
+        "end": 56,
+        "endLoc": {
+          "column": 9,
+          "line": 56,
+          "position": 2105
+        },
+        "name": "modules\\editor\\ui\\BlockLayerItem.jsx",
+        "start": 38,
+        "startLoc": {
+          "column": 57,
+          "line": 38,
+          "position": 1230
+        }
+      },
+      "format": "jsx",
+      "fragment": "    const showDropIndicator = dropPosition && !isDragging;\n    const handleDelete = async (e) => {\n        e.stopPropagation();\n        const msg = isGlobal \n            ? \"Видалити глобальний блок з цієї сторінки? (Він залишиться в базі і його можна буде додати знову).\"\n            : \"Ви впевнені, що хочете видалити цей блок? Цю дію не можна буде скасувати.\";\n        const isConfirmed = await confirm({\n            title: isGlobal ? \"Видалення глобального блоку\" : \"Видалення блоку\",\n            message: msg,\n            type: \"danger\",\n            confirmLabel: \"Видалити\"\n        });\n        if (isConfirmed) {\n            onDeleteBlock(path);\n            toast.info(\"Блок видалено\");\n        }\n    };\n\n    const handleSelectAndScroll = (e) => {",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 19,
+      "secondFile": {
+        "end": 105,
+        "endLoc": {
+          "column": 9,
+          "line": 105,
+          "position": 4201
+        },
+        "name": "modules\\editor\\ui\\EditableBlockWrapper.jsx",
+        "start": 86,
+        "startLoc": {
+          "column": 5,
+          "line": 86,
+          "position": 3324
+        }
+      },
+      "tokens": 75
+    },
+    {
+      "firstFile": {
+        "end": 294,
+        "endLoc": {
+          "column": 27,
+          "line": 294,
+          "position": 13073
+        },
+        "name": "modules\\editor\\ui\\tabs\\AddBlocksTab.jsx",
+        "start": 284,
+        "startLoc": {
+          "column": 29,
+          "line": 284,
+          "position": 12683
+        }
+      },
+      "format": "jsx",
+      "fragment": "                {globalBlocks.map(block => (\n                    <DraggableBlockItem\n                        key={block.type}\n                        name={block.name}\n                        icon={block.icon}\n                        blockType={block.type}\n                        onClickAdd={handleBlockClickToAdd}\n                    />\n                ))}\n            </Section>\n            <Section title=\"Макети\" icon={<PanelTop size={18} />}>",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 11,
+      "secondFile": {
+        "end": 319,
+        "endLoc": {
+          "column": 27,
+          "line": 319,
+          "position": 14206
+        },
+        "name": "modules\\editor\\ui\\tabs\\AddBlocksTab.jsx",
+        "start": 309,
+        "startLoc": {
+          "column": 28,
+          "line": 309,
+          "position": 13816
+        }
+      },
+      "tokens": 56
+    },
+    {
+      "firstFile": {
+        "end": 293,
+        "endLoc": {
+          "column": 22,
+          "line": 293,
+          "position": 13044
+        },
+        "name": "modules\\editor\\ui\\tabs\\AddBlocksTab.jsx",
+        "start": 284,
+        "startLoc": {
+          "column": 29,
+          "line": 284,
+          "position": 12683
+        }
+      },
+      "format": "jsx",
+      "fragment": "                {globalBlocks.map(block => (\n                    <DraggableBlockItem\n                        key={block.type}\n                        name={block.name}\n                        icon={block.icon}\n                        blockType={block.type}\n                        onClickAdd={handleBlockClickToAdd}\n                    />\n                ))}\n            </Section>",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 10,
+      "secondFile": {
+        "end": 329,
+        "endLoc": {
+          "column": 22,
+          "line": 329,
+          "position": 14647
+        },
+        "name": "modules\\editor\\ui\\tabs\\AddBlocksTab.jsx",
+        "start": 320,
+        "startLoc": {
+          "column": 32,
+          "line": 320,
+          "position": 14286
+        }
+      },
+      "tokens": 51
+    },
+    {
+      "firstFile": {
+        "end": 86,
+        "endLoc": {
+          "column": 37,
+          "line": 86,
+          "position": 3594
+        },
+        "name": "modules\\media\\components\\MediaPickerModal.jsx",
+        "start": 77,
+        "startLoc": {
+          "column": 5,
+          "line": 77,
+          "position": 3183
+        }
+      },
+      "format": "jsx",
+      "fragment": "    };\n\n    const handleUpload = async (eOrFiles) => {\n        const fileList = eOrFiles.target ? eOrFiles.target.files : eOrFiles;\n        if (!fileList || fileList.length === 0) return;\n        const toastId = toast.loading(\"Завантаження...\");\n        let successCount = 0;\n        let failedFiles = [];\n        for (let i = 0; i < fileList.length; i++) {\n            const file = fileList[i];",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 10,
+      "secondFile": {
+        "end": 148,
+        "endLoc": {
+          "column": 37,
+          "line": 148,
+          "position": 6186
+        },
+        "name": "modules\\media\\pages\\MediaLibraryPage.jsx",
+        "start": 140,
+        "startLoc": {
+          "column": 69,
+          "line": 140,
+          "position": 5777
+        }
+      },
+      "tokens": 84
+    },
+    {
+      "firstFile": {
+        "end": 109,
+        "endLoc": {
+          "column": 97,
+          "line": 109,
+          "position": 4674
+        },
+        "name": "modules\\media\\components\\MediaPickerModal.jsx",
+        "start": 100,
+        "startLoc": {
+          "column": 72,
+          "line": 100,
+          "position": 4259
+        }
+      },
+      "format": "jsx",
+      "fragment": "                console.error(\"Помилка завантаження:\", err);\n                failedFiles.push({ \n                    name: file.name, \n                    reason: err.response?.data?.message || \"Непередбачена помилка сервера\" \n                });\n            }\n        }\n        toast.dismiss(toastId);\n        if (successCount > 0) {\n            toast.success(`Успішно завантажено: ${successCount} файлів`);",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 10,
+      "secondFile": {
+        "end": 181,
+        "endLoc": {
+          "column": 97,
+          "line": 181,
+          "position": 7719
+        },
+        "name": "modules\\media\\pages\\MediaLibraryPage.jsx",
+        "start": 172,
+        "startLoc": {
+          "column": 89,
+          "line": 172,
+          "position": 7304
+        }
+      },
+      "tokens": 54
+    },
+    {
+      "firstFile": {
+        "end": 132,
+        "endLoc": {
+          "column": 9,
+          "line": 132,
+          "position": 5585
+        },
+        "name": "modules\\media\\components\\MediaPickerModal.jsx",
+        "start": 110,
+        "startLoc": {
+          "column": 28,
+          "line": 110,
+          "position": 4704
+        }
+      },
+      "format": "jsx",
+      "fragment": "            await fetchMedia(); \n        }\n        if (failedFiles.length > 0) {\n            const limit = 3; \n            const errorList = failedFiles.slice(0, limit)\n                .map(f => `• ${f.name} (${f.reason})`)\n                .join('\\n');\n            const moreCount = failedFiles.length - limit;\n            const finalMessage = moreCount > 0 \n                ? `Не завантажено ${failedFiles.length} файлів:\\n${errorList}\\n...та ще ${moreCount}`\n                : `Не завантажено:\\n${errorList}`;\n            toast.error(\n                <div style={{ whiteSpace: 'pre-wrap', fontSize: '0.85rem', lineHeight: '1.4' }}>\n                    {finalMessage}\n                </div>, \n                { autoClose: 7000 } \n            );\n        }\n        \n        if (fileInputRef.current) fileInputRef.current.value = '';\n    };\n\n    const handleFileClick = (file) => {",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 23,
+      "secondFile": {
+        "end": 203,
+        "endLoc": {
+          "column": 9,
+          "line": 203,
+          "position": 8615
+        },
+        "name": "modules\\media\\pages\\MediaLibraryPage.jsx",
+        "start": 182,
+        "startLoc": {
+          "column": 23,
+          "line": 182,
+          "position": 7744
+        }
+      },
+      "tokens": 139
+    },
+    {
+      "firstFile": {
+        "end": 43,
+        "endLoc": {
+          "column": 9,
+          "line": 43,
+          "position": 2155
+        },
+        "name": "modules\\renderer\\pages\\SiteDisplayPage.jsx",
+        "start": 35,
+        "startLoc": {
+          "column": 16,
+          "line": 35,
+          "position": 1758
+        }
+      },
+      "format": "jsx",
+      "fragment": "    }, [siteData]);\n\n    const isSiteDark = siteData?.site_theme_mode === 'dark';\n    const siteBg = isSiteDark ? '#1a202c' : '#f7fafc';\n    const siteText = isSiteDark ? '#f7fafc' : '#1a202c';\n    const siteCardBg = isSiteDark ? '#2d3748' : '#ffffff';\n    const siteBorder = isSiteDark ? '#4a5568' : '#e2e8f0';\n    const siteAccent = resolveAccentColor(siteData?.site_theme_accent || 'orange');\n    const siteIsolationStyles = { ",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 9,
+      "secondFile": {
+        "end": 95,
+        "endLoc": {
+          "column": 9,
+          "line": 95,
+          "position": 5303
+        },
+        "name": "modules\\shop\\ProductDetailPage.jsx",
+        "start": 88,
+        "startLoc": {
+          "column": 43,
+          "line": 88,
+          "position": 4908
+        }
+      },
+      "tokens": 61
+    },
+    {
+      "firstFile": {
+        "end": 58,
+        "endLoc": {
+          "column": 5,
+          "line": 58,
+          "position": 2959
+        },
+        "name": "modules\\renderer\\pages\\SiteDisplayPage.jsx",
+        "start": 42,
+        "startLoc": {
+          "column": 81,
+          "line": 42,
+          "position": 2142
+        }
+      },
+      "format": "jsx",
+      "fragment": "    const siteAccent = resolveAccentColor(siteData?.site_theme_accent || 'orange');\n    const siteIsolationStyles = { \n        '--site-bg': siteBg, \n        '--site-text-primary': siteText, \n        '--site-text-secondary': isSiteDark ? '#a0aec0' : '#718096', \n        '--site-card-bg': siteCardBg, \n        '--site-border-color': siteBorder, \n        '--site-accent': siteAccent, \n        '--site-font-main': themeSettings.font_body || \"'Inter', sans-serif\",\n        '--site-font-headings': themeSettings.font_heading || themeSettings.font_body || \"'Inter', sans-serif\"\n    };\n\n    let hex = siteAccent.replace('#', '');\n    if (hex.length === 3) hex = hex.split('').map(x => x + x).join('');\n    if (hex.length === 6) {\n        siteIsolationStyles['--site-accent-rgb'] = `${parseInt(hex.slice(0, 2), 16)}, ${parseInt(hex.slice(2, 4), 16)}, ${parseInt(hex.slice(4, 6), 16)}`;\n    }",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 17,
+      "secondFile": {
+        "end": 117,
+        "endLoc": {
+          "column": 5,
+          "line": 117,
+          "position": 6388
+        },
+        "name": "modules\\shop\\ProductDetailPage.jsx",
+        "start": 102,
+        "startLoc": {
+          "column": 17,
+          "line": 102,
+          "position": 5573
+        }
+      },
+      "tokens": 157
+    },
+    {
+      "firstFile": {
+        "end": 144,
+        "endLoc": {
+          "column": 22,
+          "line": 144,
+          "position": 6601
+        },
+        "name": "modules\\renderer\\pages\\SiteDisplayPage.jsx",
+        "start": 128,
+        "startLoc": {
+          "column": 5,
+          "line": 128,
+          "position": 6050
+        }
+      },
+      "format": "jsx",
+      "fragment": "    };\n\n    const footerStyle = {\n        flexShrink: 0, backgroundColor: 'var(--site-bg)',\n        borderTop: '1px solid var(--site-border-color)',\n        width: '100%', margin: 0, padding: 0, marginTop: '0'\n    };\n\n    const copyrightStyle = {\n        textAlign: 'center', padding: '1.5rem', fontSize: '0.8rem',\n        color: 'var(--site-text-secondary)', width: '100%', boxSizing: 'border-box',\n        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'\n    };\n\n    return (\n        <div\n            className=\"@container site-root relative site-theme-context site-theme-preview\" ",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 17,
+      "secondFile": {
+        "end": 373,
+        "endLoc": {
+          "column": 22,
+          "line": 373,
+          "position": 19487
+        },
+        "name": "modules\\shop\\ProductDetailPage.jsx",
+        "start": 360,
+        "startLoc": {
+          "column": 87,
+          "line": 360,
+          "position": 18941
+        }
+      },
+      "tokens": 85
+    },
+    {
+      "firstFile": {
+        "end": 170,
+        "endLoc": {
+          "column": 12,
+          "line": 170,
+          "position": 8310
+        },
+        "name": "modules\\renderer\\pages\\SiteDisplayPage.jsx",
+        "start": 156,
+        "startLoc": {
+          "column": 69,
+          "line": 156,
+          "position": 7499
+        }
+      },
+      "format": "jsx",
+      "fragment": "                <meta property=\"og:url\" content={window.location.href} />\n            </Helmet>\n            <style>\n                {`\n                .site-theme-preview { font-family: var(--site-font-main); }\n                .site-theme-preview * { box-sizing: border-box; }\n                .site-theme-preview .site-block { background: var(--site-bg); color: var(--site-text-primary); font-family: var(--site-font-main); }\n                .site-theme-preview .site-heading { font-family: var(--site-font-headings); color: var(--site-text-primary); }\n                `}\n            </style>\n            {!hasHeader && <SiteControls siteData={siteData} />}\n            {siteData && siteData.theme_settings && (\n                <FontLoader fontHeading={siteData.theme_settings.font_heading} fontBody={siteData.theme_settings.font_body} />\n            )}\n            <main ",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 15,
+      "secondFile": {
+        "end": 394,
+        "endLoc": {
+          "column": 12,
+          "line": 394,
+          "position": 20720
+        },
+        "name": "modules\\shop\\ProductDetailPage.jsx",
+        "start": 380,
+        "startLoc": {
+          "column": 67,
+          "line": 380,
+          "position": 19909
+        }
+      },
+      "tokens": 70
+    },
+    {
+      "firstFile": {
+        "end": 215,
+        "endLoc": {
+          "column": 102,
+          "line": 215,
+          "position": 11015
+        },
+        "name": "modules\\renderer\\pages\\SiteDisplayPage.jsx",
+        "start": 187,
+        "startLoc": {
+          "column": 19,
+          "line": 187,
+          "position": 9507
+        }
+      },
+      "format": "jsx",
+      "fragment": "            </main>\n            <footer style={footerStyle}>\n                <div style={copyrightStyle}>\n                    <span>Powered by Kendr</span>\n                    {!isOwner && (\n                        <>\n                            <span>•</span>\n                            <button\n                                onClick={() => setIsReportOpen(true)}\n                                style={{ background: 'transparent', border: 'none', color: 'inherit', textDecoration: 'none', cursor: 'pointer', fontSize: 'inherit', opacity: 0.8, padding: 0 }}\n                                onMouseEnter={(e) => e.target.style.color = 'var(--site-danger, #ef4444)'}\n                                onMouseLeave={(e) => e.target.style.color = 'inherit'}\n                                title=\"Report Abuse / Поскаржитись\"\n                            >\n                                Report\n                            </button>\n                        </>\n                    )}\n                </div>\n            </footer>\n            <CookieBanner \n                enabled={siteData?.cookie_banner_enabled} \n                text={siteData?.cookie_banner_text} \n                siteId={siteData?.id} \n                size={siteData?.cookie_banner_size}\n                position={siteData?.cookie_banner_position}\n                blur={siteData?.cookie_banner_blur}\n            />\n            <ReportModal isOpen={isReportOpen} onClose={() => setIsReportOpen(false)} siteId={siteData.id} />",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 29,
+      "secondFile": {
+        "end": 680,
+        "endLoc": {
+          "column": 102,
+          "line": 680,
+          "position": 45991
+        },
+        "name": "modules\\shop\\ProductDetailPage.jsx",
+        "start": 652,
+        "startLoc": {
+          "column": 14,
+          "line": 652,
+          "position": 44483
+        }
+      },
+      "tokens": 224
+    },
+    {
+      "firstFile": {
+        "end": 269,
+        "endLoc": {
+          "column": 9,
+          "line": 269,
+          "position": 14513
+        },
+        "name": "modules\\shop\\CartPage.jsx",
+        "start": 261,
+        "startLoc": {
+          "column": 82,
+          "line": 261,
+          "position": 14187
+        }
+      },
+      "format": "jsx",
+      "fragment": "            try { targetPath = gallery.startsWith('[') ? JSON.parse(gallery)[0] : gallery; } \n            catch (e) { targetPath = gallery; }\n        }\n        if (!targetPath) return 'https://placehold.co/120x120?text=No+Image';\n        if (targetPath.startsWith('http')) return targetPath;\n        return `${BASE_URL}${targetPath.startsWith('/') ? targetPath : `/${targetPath}`}`;\n    };\n\n    const renderCheckoutForm = () => {",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 9,
+      "secondFile": {
+        "end": 57,
+        "endLoc": {
+          "column": 5,
+          "line": 57,
+          "position": 2857
+        },
+        "name": "modules\\shop\\MyOrdersPage.jsx",
+        "start": 49,
+        "startLoc": {
+          "column": 30,
+          "line": 49,
+          "position": 2560
+        }
+      },
+      "tokens": 55
+    },
+    {
+      "firstFile": {
+        "end": 65,
+        "endLoc": {
+          "column": 33,
+          "line": 65,
+          "position": 3637
+        },
+        "name": "modules\\support\\NewTicketPage.jsx",
+        "start": 42,
+        "startLoc": {
+          "column": 30,
+          "line": 42,
+          "position": 2450
+        }
+      },
+      "format": "jsx",
+      "fragment": "    }, [isAppeal, appealSite]);\n\n    const handleFileSelect = (files) => {\n        if (attachments.length + files.length > FILE_LIMITS.TICKET_ATTACHMENT.MAX_FILES) {\n            toast.error(`Максимальна кількість файлів: ${FILE_LIMITS.TICKET_ATTACHMENT.MAX_FILES}`);\n            return;\n        }\n        const validFiles = Array.from(files).filter(file => {\n            if (!file.type.startsWith('image/')) {\n                toast.error(`Файл ${file.name} не є зображенням.`);\n                return false;\n            }\n            if (file.size > FILE_LIMITS.TICKET_ATTACHMENT.MAX_SIZE) {\n                const maxSizeMB = FILE_LIMITS.TICKET_ATTACHMENT.MAX_SIZE / (1024 * 1024);\n                toast.error(`Файл ${file.name} перевищує ліміт у ${maxSizeMB} МБ.`);\n                return false;\n            }\n            return true;\n        });\n        const newAttachments = validFiles.map(file => Object.assign(file, {\n            preview: URL.createObjectURL(file)\n        }));\n        setAttachments(prev => [...prev, ...newAttachments].slice(0, FILE_LIMITS.TICKET_ATTACHMENT.MAX_FILES));\n        if (fileInputRef.current) fileInputRef.current.value = '';",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 24,
+      "secondFile": {
+        "end": 162,
+        "endLoc": {
+          "column": 33,
+          "line": 162,
+          "position": 7825
+        },
+        "name": "modules\\support\\TicketDetailPage.jsx",
+        "start": 139,
+        "startLoc": {
+          "column": 5,
+          "line": 139,
+          "position": 6638
+        }
+      },
+      "tokens": 194
+    },
+    {
+      "firstFile": {
+        "end": 76,
+        "endLoc": {
+          "column": 9,
+          "line": 76,
+          "position": 3972
+        },
+        "name": "modules\\support\\NewTicketPage.jsx",
+        "start": 66,
+        "startLoc": {
+          "column": 4,
+          "line": 66,
+          "position": 3676
+        }
+      },
+      "format": "jsx",
+      "fragment": "    };\n\n    const removeAttachment = (indexToRemove) => {\n        setAttachments(prev => prev.filter((_, index) => index !== indexToRemove));\n    };\n\n    useEffect(() => {\n        return () => attachments.forEach(file => URL.revokeObjectURL(file.preview));\n    }, [attachments]);\n\n    const handleSubmit = async (e) => {",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 11,
+      "secondFile": {
+        "end": 175,
+        "endLoc": {
+          "column": 9,
+          "line": 175,
+          "position": 8186
+        },
+        "name": "modules\\support\\TicketDetailPage.jsx",
+        "start": 165,
+        "startLoc": {
+          "column": 4,
+          "line": 165,
+          "position": 7890
+        }
+      },
+      "tokens": 66
+    },
+    {
+      "firstFile": {
+        "end": 19,
+        "endLoc": {
+          "column": 5,
+          "line": 19,
+          "position": 723
+        },
+        "name": "shared\\ui\\complex\\SiteCoverDisplay.jsx",
+        "start": 10,
+        "startLoc": {
+          "column": 17,
+          "line": 10,
+          "position": 329
+        }
+      },
+      "format": "jsx",
+      "fragment": "const resolveUrl = (src) => {\n    if (!src) return null;\n    if (src.startsWith('http') || src.startsWith('data:') || src.startsWith('blob:')) return src;\n    if (src.startsWith('/logos/')) return src;\n    if (src.includes('/src/') || src.includes('/assets/') || src.includes('@fs')) return src;\n    const cleanSrc = src.startsWith('/') ? src : `/${src}`;\n    return `${BASE_URL}${cleanSrc}`;\n};\n\nconst SiteCoverDisplay = ({ site, style, className }) => {",
+      "isNew": false,
+      "kind": "exact",
+      "lines": 10,
+      "secondFile": {
+        "end": 33,
+        "endLoc": {
+          "column": 9,
+          "line": 33,
+          "position": 1194
+        },
+        "name": "shared\\ui\\elements\\Avatar.jsx",
+        "start": 25,
+        "startLoc": {
+          "column": 21,
+          "line": 25,
+          "position": 770
+        }
+      },
+      "tokens": 104
+    }
+  ],
+  "statistics": {
+    "detectionDate": "2026-10-14T17:07:26.666Z",
+    "formats": {
+      "javascript": {
+        "clones": 10,
+        "duplicatedLines": 133,
+        "duplicatedTokens": 977,
+        "lines": 10855,
+        "newClones": 0,
+        "newDuplicatedLines": 0,
+        "percentage": 1.2252418240442193,
+        "percentageTokens": 1.3324423108395613,
+        "sources": 129,
+        "tokens": 73324
+      },
+      "jsx": {
+        "clones": 54,
+        "duplicatedLines": 755,
+        "duplicatedTokens": 5136,
+        "lines": 33683,
+        "newClones": 0,
+        "newDuplicatedLines": 0,
+        "percentage": 2.2414868034319984,
+        "percentageTokens": 2.2292053681487527,
+        "sources": 169,
+        "tokens": 230396
+      }
+    },
+    "total": {
+      "clones": 64,
+      "duplicatedLines": 888,
+      "duplicatedTokens": 6113,
+      "lines": 44538,
+      "newClones": 0,
+      "newDuplicatedLines": 0,
+      "percentage": 1.9938030445911354,
+      "percentageTokens": 2.012709074147241,
+      "sources": 298,
+      "tokens": 303720
+    }
+  }
+}

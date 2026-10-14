@@ -1,0 +1,46 @@
+{
+  "endpoints": 141,
+  "route_files": 21,
+  "mounted": 141,
+  "unmounted": 0,
+  "access": {
+    "public": 32,
+    "token": 84,
+    "admin": 21,
+    "strict-admin": 4
+  },
+  "controllers": 20,
+  "controllers_with_sql": 10,
+  "sql_calls": 120,
+  "controllers_without_model": [
+    "deliveryController",
+    "mediaController",
+    "orderController",
+    "pageController",
+    "productController",
+    "reportController",
+    "siteController",
+    "teamController",
+    "transactionController",
+    "userTemplateController"
+  ],
+  "controllers_using_services": 13,
+  "layer_files": {
+    "controllers": 20,
+    "services": 18,
+    "repositories": 9,
+    "models": 9,
+    "middleware": 9,
+    "utils": 7,
+    "config": 8
+  },
+  "layer_sql_calls": {
+    "controllers": 120,
+    "services": 0,
+    "repositories": 100,
+    "models": 63,
+    "middleware": 6,
+    "utils": 1,
+    "config": 5
+  }
+}

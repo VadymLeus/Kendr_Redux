@@ -1,0 +1,351 @@
+
+[1m[46m RUN [49m[22m [36mv4.1.2 [39m[90mD:/Studying/Otrabotono/Y5S1/Course Work/Kendr_Redux/frontend[39m
+      [2mCoverage enabled with [22m[33mv8[39m
+
+ [32m✓[39m tests/unit/routeTargets.test.js [2m([22m[2m4 tests[22m[2m)[22m[32m 199[2mms[22m[39m
+ [32m✓[39m tests/unit/mediaUtils.test.js [2m([22m[2m18 tests[22m[2m)[22m[33m 316[2mms[22m[39m
+ [32m✓[39m tests/unit/importCycles.test.js [2m([22m[2m2 tests[22m[2m)[22m[33m 716[2mms[22m[39m
+     [33m[2m✓[22m[39m у src немає циклів імпорту (статичних і динамічних) [33m 342[2mms[22m[39m
+     [33m[2m✓[22m[39m граф містить модулі реєстру блоків і LayoutBlock [33m 371[2mms[22m[39m
+ [32m✓[39m tests/integration/BlockNesting.test.jsx [2m([22m[2m3 tests[22m[2m)[22m[33m 437[2mms[22m[39m
+     [33m[2m✓[22m[39m BlockRenderer показує блоки з усіх колонок, зокрема з вкладеного макета, у порядку розмітки [33m 409[2mms[22m[39m
+ [32m✓[39m tests/integration/PaymentMethodModal.test.jsx [2m([22m[2m8 tests[22m[2m)[22m[33m 915[2mms[22m[39m
+     [33m[2m✓[22m[39m показує заголовок і суму до сплати з символом валюти [33m 397[2mms[22m[39m
+ [32m✓[39m tests/integration/ProductCard.test.jsx [2m([22m[2m38 tests[22m[2m)[22m[33m 1445[2mms[22m[39m
+     [33m[2m✓[22m[39m посилання веде на сторінку товару всередині сайту [33m 315[2mms[22m[39m
+ [32m✓[39m tests/integration/InviteRedirect.test.jsx [2m([22m[2m6 tests[22m[2m)[22m[33m 1762[2mms[22m[39m
+     [33m[2m✓[22m[39m гість натискає «Увійти / Зареєструватися» і потрапляє на сторінку входу [33m 685[2mms[22m[39m
+     [33m[2m✓[22m[39m перемикання «вхід ↔ реєстрація» не губить адресу повернення [33m 507[2mms[22m[39m
+ [32m✓[39m tests/integration/CartContext.test.jsx [2m([22m[2m26 tests[22m[2m)[22m[32m 176[2mms[22m[39m
+ [32m✓[39m tests/integration/InputWithCounter.test.jsx [2m([22m[2m3 tests[22m[2m)[22m[32m 170[2mms[22m[39m
+ [32m✓[39m tests/integration/FooterBlock.test.jsx [2m([22m[2m8 tests[22m[2m)[22m[32m 232[2mms[22m[39m
+ [32m✓[39m tests/unit/blockRegistry.test.js [2m([22m[2m116 tests[22m[2m)[22m[32m 70[2mms[22m[39m
+ [32m✓[39m tests/integration/ProductDetailPage.test.jsx [2m([22m[2m29 tests[22m[2m)[22m[33m 4465[2mms[22m[39m
+     [33m[2m✓[22m[39m без знижки [33m 549[2mms[22m[39m
+     [33m[2m✓[22m[39m надбавка вибраного значення додається до ціни товару [33m 344[2mms[22m[39m
+     [33m[2m✓[22m[39m надбавки кількох варіантів складаються [33m 329[2mms[22m[39m
+ [32m✓[39m tests/unit/htmlGenerator.test.js [2m([22m[2m145 tests[22m[2m)[22m[32m 107[2mms[22m[39m
+ [32m✓[39m tests/unit/blockUtils.test.js [2m([22m[2m40 tests[22m[2m)[22m[32m 41[2mms[22m[39m
+ [32m✓[39m tests/integration/SettingsTab.test.jsx [2m([22m[2m33 tests[22m[2m)[22m[33m 7082[2mms[22m[39m
+     [33m[2m✓[22m[39m тип "hero" відкриває панель "hero" [33m 402[2mms[22m[39m
+     [33m[2m✓[22m[39m тип "text" відкриває панель "text" [33m 369[2mms[22m[39m
+     [33m[2m✓[22m[39m тип "image" відкриває панель "image" [33m 348[2mms[22m[39m
+     [33m[2m✓[22m[39m тип "button" відкриває панель "button" [33m 335[2mms[22m[39m
+     [33m[2m✓[22m[39m тип "showcase" відкриває панель "showcase" [33m 371[2mms[22m[39m
+     [33m[2m✓[22m[39m тип "layout" відкриває панель "layout" [33m 383[2mms[22m[39m
+     [33m[2m✓[22m[39m тип "catalog" відкриває панель "catalog" [33m 349[2mms[22m[39m
+     [33m[2m✓[22m[39m тип "features" відкриває панель "features" [33m 369[2mms[22m[39m
+     [33m[2m✓[22m[39m тип "form" відкриває панель "form" [33m 327[2mms[22m[39m
+     [33m[2m✓[22m[39m тип "video" відкриває панель "video" [33m 370[2mms[22m[39m
+     [33m[2m✓[22m[39m тип "map" відкриває панель "map" [33m 361[2mms[22m[39m
+     [33m[2m✓[22m[39m тип "accordion" відкриває панель "accordion" [33m 335[2mms[22m[39m
+     [33m[2m✓[22m[39m тип "social_icons" відкриває панель "social_icons" [33m 377[2mms[22m[39m
+     [33m[2m✓[22m[39m тип "global-header" відкриває панель "header" [33m 375[2mms[22m[39m
+     [33m[2m✓[22m[39m тип "global-footer" відкриває панель "footer" [33m 321[2mms[22m[39m
+     [33m[2m✓[22m[39m звичайний блок має вкладки «Контент» і «Вигляд» [33m 461[2mms[22m[39m
+ [32m✓[39m tests/integration/BlockRenderer.test.jsx [2m([22m[2m40 tests[22m[2m)[22m[33m 6281[2mms[22m[39m
+     [33m[2m✓[22m[39m тип "hero" рендериться компонентом "hero" [33m 354[2mms[22m[39m
+     [33m[2m✓[22m[39m тип "text" рендериться компонентом "text" [33m 339[2mms[22m[39m
+     [33m[2m✓[22m[39m тип "showcase" рендериться компонентом "showcase" [33m 320[2mms[22m[39m
+     [33m[2m✓[22m[39m тип "catalog" рендериться компонентом "catalog" [33m 333[2mms[22m[39m
+     [33m[2m✓[22m[39m тип "features" рендериться компонентом "features" [33m 341[2mms[22m[39m
+     [33m[2m✓[22m[39m тип "layout" рендериться компонентом "layout" [33m 325[2mms[22m[39m
+     [33m[2m✓[22m[39m тип "image" рендериться компонентом "image" [33m 337[2mms[22m[39m
+     [33m[2m✓[22m[39m тип "button" рендериться компонентом "button" [33m 337[2mms[22m[39m
+     [33m[2m✓[22m[39m тип "form" рендериться компонентом "form" [33m 329[2mms[22m[39m
+     [33m[2m✓[22m[39m тип "video" рендериться компонентом "video" [33m 388[2mms[22m[39m
+     [33m[2m✓[22m[39m тип "map" рендериться компонентом "map" [33m 335[2mms[22m[39m
+     [33m[2m✓[22m[39m тип "accordion" рендериться компонентом "accordion" [33m 346[2mms[22m[39m
+     [33m[2m✓[22m[39m тип "social_icons" рендериться компонентом "social_icons" [33m 376[2mms[22m[39m
+     [33m[2m✓[22m[39m тип "global-header" рендериться компонентом "header" [33m 345[2mms[22m[39m
+     [33m[2m✓[22m[39m тип "global-footer" рендериться компонентом "footer" [33m 327[2mms[22m[39m
+     [33m[2m✓[22m[39m відкривається і показує пункти меню першої шапки з посиланнями на сторінки сайту [33m 383[2mms[22m[39m
+ [32m✓[39m tests/unit/siteExporter.test.js [2m([22m[2m25 tests[22m[2m)[22m[32m 67[2mms[22m[39m
+ [32m✓[39m tests/unit/linkUtils.test.js [2m([22m[2m27 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m tests/unit/editorConfig.test.jsx [2m([22m[2m40 tests[22m[2m)[22m[32m 31[2mms[22m[39m
+ [32m✓[39m tests/unit/globalBlocks.test.js [2m([22m[2m30 tests[22m[2m)[22m[32m 29[2mms[22m[39m
+ [32m✓[39m tests/unit/siteUtils.test.js [2m([22m[2m24 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/exportHtml.test.js [2m([22m[2m58 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m tests/unit/exportDefaults.test.jsx [2m([22m[2m7 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m tests/unit/blockProps.test.js [2m([22m[2m11 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/validationUtils.test.js [2m([22m[2m11 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/unit/globalBlockTypes.test.js [2m([22m[2m19 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/blockTypesContract.test.js [2m([22m[2m4 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/integration/CartPage.test.jsx [2m([22m[2m29 tests[22m[2m)[22m[33m 10671[2mms[22m[39m
+     [33m[2m✓[22m[39m видалення позиції потребує підтвердження [33m 889[2mms[22m[39m
+     [33m[2m✓[22m[39m очищення всього кошика потребує підтвердження [33m 639[2mms[22m[39m
+     [33m[2m✓[22m[39m відмова в підтвердженні нічого не видаляє [33m 585[2mms[22m[39m
+     [33m[2m✓[22m[39m післяплата: до сервера йдуть лише id, кількість і параметри позиції; ціни й суми в запиті немає [33m 861[2mms[22m[39m
+     [33m[2m✓[22m[39m онлайн-оплата: відкриває вікно оплати із сумою, порахованою на клієнті, і очищає кошик сайту [33m 1002[2mms[22m[39m
+     [33m[2m✓[22m[39m помилка сервера показується повідомленням і нічого не очищає [33m 872[2mms[22m[39m
+       [33m[2m✓[22m[39m без телефону — повідомлення про обов'язкові поля [33m 611[2mms[22m[39m
+       [33m[2m✓[22m[39m телефон із літерами відхиляється [33m 805[2mms[22m[39m
+       [33m[2m✓[22m[39m кількість понад залишок блокує оформлення [33m 727[2mms[22m[39m
+       [33m[2m✓[22m[39m власник магазину не може оформити замовлення у власному магазині [33m 784[2mms[22m[39m
+     [33m[2m✓[22m[39m якщо недоступні обидва способи, оформлення вимкнено [33m 419[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m28 passed[39m[22m[90m (28)[39m
+[2m      Tests [22m [1m[32m804 passed[39m[22m[90m (804)[39m
+[2m   Start at [22m 20:08:19
+[2m   Duration [22m 18.18s[2m (transform 3.72s, setup 0ms, import 22.26s, tests 35.31s, environment 91.57s)[22m
+
+JSON report written to D:/Studying/Otrabotono/Y5S1/Course Work/Kendr_Redux/docs/04-results/v2.0/raw/tests-frontend.json
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |      13 |    13.61 |    11.5 |    13.1 |                   
+ app               |       0 |        0 |       0 |       0 |                   
+  App.jsx          |       0 |        0 |       0 |       0 | 43-56             
+  main.jsx         |       0 |      100 |     100 |       0 | 16                
+ app/guards        |       0 |        0 |       0 |       0 |                   
+  ...ctedRoute.jsx |       0 |        0 |       0 |       0 | 6-55              
+ app/providers     |   26.05 |     19.2 |   33.33 |   25.22 |                   
+  AuthContext.jsx  |    2.66 |        0 |       0 |    2.73 | 7-110             
+  CartContext.jsx  |     100 |      100 |     100 |     100 |                   
+  ...rmContext.jsx |       0 |        0 |       0 |       0 | 5-47              
+  ...esContext.jsx |       0 |        0 |       0 |       0 | 6-43              
+  ThemeContext.jsx |       0 |        0 |       0 |       0 | 6-85              
+ app/router        |       0 |        0 |       0 |       0 |                   
+  routesConfig.js  |       0 |        0 |       0 |       0 | 2-51              
+ ...min/components |       0 |        0 |       0 |       0 |                   
+  ...nLogsPage.jsx |       0 |        0 |       0 |       0 | 13-200            
+  ...ageLayout.jsx |       0 |        0 |       0 |       0 | 6-46              
+  ...omponents.jsx |       0 |        0 |       0 |       0 | 7-111             
+  ...ailsPanel.jsx |       0 |        0 |       0 |       0 | 6-7               
+  ...ailsPanel.jsx |       0 |        0 |       0 |       0 | 10-133            
+  ...ailsPanel.jsx |       0 |        0 |       0 |       0 | 10-332            
+  ...ailsPanel.jsx |       0 |        0 |       0 |       0 | 9-140             
+ ...es/admin/pages |       0 |        0 |       0 |       0 |                   
+  ...llingPage.jsx |       0 |        0 |       0 |       0 | 16-391            
+  ...ntrolPage.jsx |       0 |        0 |       0 |       0 | 9-383             
+  ...boardPage.jsx |       0 |        0 |       0 |       0 | 13-426            
+  ...latesPage.jsx |       0 |        0 |       0 |       0 | 16-189            
+  ...portsPage.jsx |       0 |        0 |       0 |       0 | 18-402            
+  ...SitesPage.jsx |       0 |        0 |       0 |       0 | 20-603            
+ modules/auth      |   24.24 |    26.92 |    23.8 |   25.27 |                   
+  ...LoginPage.jsx |       0 |        0 |       0 |       0 | 13-134            
+  AuthPage.jsx     |   35.64 |     34.5 |   35.71 |   38.12 | ...93,354-369,488 
+  ...ccessPage.jsx |       0 |        0 |       0 |       0 | 9-51              
+  ...countPage.jsx |       0 |        0 |       0 |       0 | 9-37              
+ ...ard/components |       0 |        0 |       0 |       0 |                   
+  ...ardHeader.jsx |       0 |        0 |       0 |       0 | 7-195             
+  ...ckerModal.jsx |       0 |        0 |       0 |       0 | 10-531            
+  ...lateModal.jsx |       0 |        0 |       0 |       0 | 12-251            
+ ...tures/commerce |       0 |        0 |       0 |       0 |                   
+  CommerceTab.jsx  |       0 |        0 |       0 |       0 | 13-65             
+ ...rce/components |       0 |        0 |       0 |       0 |                   
+  ...ryManager.jsx |       0 |        0 |       0 |       0 | 16-429            
+  ...ttingsTab.jsx |       0 |        0 |       0 |       0 | 9-177             
+  OrdersTab.jsx    |       0 |        0 |       0 |       0 | 13-352            
+  ...ctManager.jsx |       0 |        0 |       0 |       0 | 19-795            
+  ReviewsTab.jsx   |       0 |        0 |       0 |       0 | 14-367            
+ ...tures/overview |       0 |        0 |       0 |       0 |                   
+  OverviewTab.jsx  |       0 |        0 |       0 |       0 | 8-42              
+ ...iew/components |       0 |        0 |       0 |       0 |                   
+  AnalyticsTab.jsx |       0 |        0 |       0 |       0 | 8-115             
+  ...ssionsTab.jsx |       0 |        0 |       0 |       0 | 13-314            
+ ...tures/settings |       0 |        0 |       0 |       0 |                   
+  ...ttingsTab.jsx |       0 |        0 |       0 |       0 | 20-206            
+  ...agerModal.jsx |       0 |        0 |       0 |       0 | 11-357            
+  ...ttingsTab.jsx |       0 |        0 |       0 |       0 | 8-106             
+ ...ngs/components |       0 |        0 |       0 |       0 |                   
+  ...tySection.jsx |       0 |        0 |       0 |       0 | 14-254            
+  ...esSection.jsx |       0 |        0 |       0 |       0 | 20-258            
+  ...lsSection.jsx |       0 |        0 |       0 |       0 | 7-172             
+  ...gsSection.jsx |       0 |        0 |       0 |       0 | 11-445            
+ ...ashboard/pages |       0 |        0 |       0 |       0 |                   
+  ...eSitePage.jsx |       0 |        0 |       0 |       0 | 26-366            
+  MySitesPage.jsx  |       0 |        0 |       0 |       0 | 15-206            
+  ...boardPage.jsx |       0 |        0 |       0 |       0 | 30-829            
+ ...ocks/Accordion |       0 |        0 |       0 |       0 |                   
+  ...dionBlock.jsx |       0 |        0 |       0 |       0 | 8-69              
+  ...rdionItem.jsx |       0 |        0 |       0 |       0 | 5-73              
+  ...nSettings.jsx |       0 |        0 |       0 |       0 | 12-147            
+ .../blocks/Button |       0 |        0 |       0 |       0 |                   
+  ButtonBlock.jsx  |       0 |        0 |       0 |       0 | 9-131             
+  ...nSettings.jsx |       0 |        0 |       0 |       0 | 8-24              
+ ...blocks/Catalog |       0 |        0 |       0 |       0 |                   
+  CatalogBlock.jsx |       0 |        0 |       0 |       0 | 9-399             
+  ...gSettings.jsx |       0 |        0 |       0 |       0 | 11-135            
+ ...locks/Features |       0 |        0 |       0 |       0 |                   
+  ...uresBlock.jsx |       0 |        0 |       0 |       0 | 7-110             
+  ...sSettings.jsx |       0 |        0 |       0 |       0 | 12-299            
+ .../blocks/Footer |   27.71 |    35.13 |   13.51 |   29.87 |                   
+  FooterBlock.jsx  |   82.14 |    67.24 |   71.42 |      92 | 118,135           
+  ...rSettings.jsx |       0 |        0 |       0 |       0 | 14-227            
+ ...or/blocks/Form |       0 |        0 |       0 |       0 |                   
+  FormBlock.jsx    |       0 |        0 |       0 |       0 | 9-271             
+  FormSettings.jsx |       0 |        0 |       0 |       0 | 9-92              
+ .../blocks/Header |       0 |        0 |       0 |       0 |                   
+  HeaderBlock.jsx  |       0 |        0 |       0 |       0 | 11-210            
+  ...rSettings.jsx |       0 |        0 |       0 |       0 | 15-222            
+ ...or/blocks/Hero |       0 |        0 |       0 |       0 |                   
+  HeroBlock.jsx    |       0 |        0 |       0 |       0 | 8-101             
+  HeroSettings.jsx |       0 |        0 |       0 |       0 | 13-257            
+ ...r/blocks/Image |       0 |        0 |       0 |       0 |                   
+  ImageBlock.jsx   |       0 |        0 |       0 |       0 | 13-199            
+  ...eSettings.jsx |       0 |        0 |       0 |       0 | 11-199            
+ .../blocks/Layout |   26.08 |    28.22 |   21.42 |    31.3 |                   
+  LayoutBlock.jsx  |   46.15 |    41.81 |   54.54 |   56.25 | ...54,135,241-247 
+  ...tSettings.jsx |       0 |        0 |       0 |       0 | 10-208            
+ ...tor/blocks/Map |       0 |        0 |       0 |       0 |                   
+  MapBlock.jsx     |       0 |        0 |       0 |       0 | 5-76              
+  MapSettings.jsx  |       0 |        0 |       0 |       0 | 7-32              
+ ...locks/ShowCase |       0 |        0 |       0 |       0 |                   
+  ...CaseBlock.jsx |       0 |        0 |       0 |       0 | 9-179             
+  ...eSettings.jsx |       0 |        0 |       0 |       0 | 13-155            
+ ...ks/SocialIcons |       0 |        0 |       0 |       0 |                   
+  ...consBlock.jsx |       0 |        0 |       0 |       0 | 6-114             
+  ...sSettings.jsx |       0 |        0 |       0 |       0 | 7-55              
+ ...or/blocks/Text |       0 |        0 |       0 |       0 |                   
+  TextBlock.jsx    |       0 |        0 |       0 |       0 | 6-62              
+  TextSettings.jsx |       0 |        0 |       0 |       0 | 8-131             
+ ...r/blocks/Video |       0 |        0 |       0 |       0 |                   
+  VideoBlock.jsx   |       0 |        0 |       0 |       0 | 7-134             
+  ...oSettings.jsx |       0 |        0 |       0 |       0 | 10-117            
+ ...es/editor/core |   65.34 |    69.98 |   84.17 |    64.7 |                   
+  BlockEditor.jsx  |       0 |        0 |       0 |       0 | 14-181            
+  ...kRenderer.jsx |   93.33 |    86.44 |   77.77 |    93.1 | 131,150           
+  ...Components.js |     100 |      100 |     100 |     100 |                   
+  blockId.js       |     100 |      100 |     100 |     100 |                   
+  blockProps.js    |     100 |      100 |     100 |     100 |                   
+  blockRegistry.js |     100 |    97.71 |     100 |     100 | 94,213,221,273    
+  blockUtils.js    |   98.93 |    92.64 |     100 |     100 | 41,82,89,106,115  
+  editorConfig.jsx |     100 |      100 |     100 |     100 |                   
+  ...BlockTypes.js |     100 |      100 |     100 |     100 |                   
+  globalBlocks.js  |     100 |    97.95 |     100 |     100 | 49                
+  useBlockDrop.js  |       0 |        0 |       0 |       0 | 5-103             
+ modules/editor/ui |    0.98 |        0 |       0 |    1.09 |                   
+  ...LayerItem.jsx |       0 |        0 |       0 |       0 | 10-99             
+  ContextMenu.jsx  |       0 |        0 |       0 |       0 | 5-81              
+  ...BlockItem.jsx |      25 |        0 |       0 |   28.57 | 8-36              
+  ...ckWrapper.jsx |       0 |        0 |       0 |       0 | 15-250            
+  ...orSidebar.jsx |       0 |        0 |       0 |       0 | 9-100             
+ .../ui/components |   40.58 |    40.55 |   18.51 |   41.71 |                   
+  ...ntControl.jsx |       0 |        0 |       0 |       0 | 6-50              
+  ButtonEditor.jsx |       0 |        0 |       0 |       0 | 11-184            
+  FontSelector.jsx |       0 |        0 |       0 |       0 | 8-70              
+  ...ayControl.jsx |       0 |        0 |       0 |       0 | 6-106             
+  ProductCard.jsx  |   84.14 |    85.29 |    62.5 |   87.17 | 49,77-80,85-90    
+ .../configuration |       0 |        0 |       0 |       0 |                   
+  ...nSettings.jsx |       0 |        0 |       0 |       0 | 8-93              
+  SettingsUI.jsx   |       0 |        0 |       0 |       0 | 4-91              
+  ...ngControl.jsx |       0 |        0 |       0 |       0 | 6-90              
+ ...itor/ui/modals |       0 |        0 |       0 |       0 |                   
+  ...lockModal.jsx |       0 |        0 |       0 |       0 | 11-123            
+ ...editor/ui/tabs |   11.11 |    25.28 |   11.62 |   11.88 |                   
+  AddBlocksTab.jsx |       0 |        0 |       0 |       0 | 11-321            
+  ...ttingsTab.jsx |       0 |        0 |       0 |       0 | 10-52             
+  LayersTab.jsx    |       0 |        0 |       0 |       0 | 6-49              
+  SettingsTab.jsx  |     100 |      100 |     100 |     100 |                   
+ ...dia/components |       0 |        0 |       0 |       0 |                   
+  ...aGridItem.jsx |       0 |        0 |       0 |       0 | 6-57              
+  ...Inspector.jsx |       0 |        0 |       0 |       0 | 10-252            
+  ...ckerModal.jsx |       0 |        0 |       0 |       0 | 14-396            
+ ...es/media/pages |       0 |        0 |       0 |       0 |                   
+  ...braryPage.jsx |       0 |        0 |       0 |       0 | 19-480            
+ .../profile/pages |       0 |        0 |       0 |       0 |                   
+  ProfilePage.jsx  |       0 |        0 |       0 |       0 | 18-421            
+  SettingsPage.jsx |       0 |        0 |       0 |       0 | 11-45             
+ ...s/profile/tabs |       0 |        0 |       0 |       0 |                   
+  ...aranceTab.jsx |       0 |      100 |       0 |       0 | 8-10              
+  ...eneralTab.jsx |       0 |        0 |       0 |       0 | 15-366            
+  ...PublicTab.jsx |       0 |        0 |       0 |       0 | 10-78             
+  ...curityTab.jsx |       0 |        0 |       0 |       0 | 13-107            
+ ...rer/components |       0 |        0 |       0 |       0 |                   
+  ...onWrapper.jsx |       0 |        0 |       0 |       0 | 5-43              
+  CookieBanner.jsx |       0 |        0 |       0 |       0 | 4-159             
+  FontLoader.jsx   |       0 |        0 |       0 |       0 | 6-49              
+  FontPicker.jsx   |       0 |        0 |       0 |       0 | 12-535            
+  SiteControls.jsx |       0 |        0 |       0 |       0 | 11-118            
+ ...renderer/pages |       0 |        0 |       0 |       0 |                   
+  CatalogPage.jsx  |       0 |        0 |       0 |       0 | 15-146            
+  ...splayPage.jsx |       0 |        0 |       0 |       0 | 21-215            
+ modules/shop      |   53.44 |    55.92 |   43.79 |   54.71 |                   
+  CartPage.jsx     |   80.27 |    81.16 |   81.13 |   80.76 | ...87,509-532,589 
+  MyOrdersPage.jsx |       0 |        0 |       0 |       0 | 15-508            
+  ...etailPage.jsx |   62.53 |    61.28 |   36.92 |   67.93 | ...05-442,545-680 
+ modules/support   |       0 |        0 |       0 |       0 |                   
+  AppealPage.jsx   |       0 |        0 |       0 |       0 | 10-98             
+  ...cketsPage.jsx |       0 |        0 |       0 |       0 | 15-258            
+  ...icketPage.jsx |       0 |        0 |       0 |       0 | 13-253            
+  SupportPage.jsx  |       0 |      100 |       0 |       0 | 8-48              
+  ...etailPage.jsx |       0 |        0 |       0 |       0 | 18-486            
+ pages             |   28.42 |    18.75 |      25 |   29.34 |                   
+  HomePage.jsx     |       0 |      100 |       0 |       0 | 7-8               
+  InvitePage.jsx   |   76.47 |    66.66 |   57.14 |   81.25 | 35-39,49,89-101   
+  ...nancePage.jsx |    7.69 |        0 |       0 |    7.69 | 7-99              
+  NotFoundPage.jsx |       0 |      100 |       0 |       0 | 7-39              
+  RulesPage.jsx    |       0 |      100 |       0 |       0 | 6-12              
+  UpgradePage.jsx  |       0 |        0 |       0 |       0 | 10-109            
+ shared/api        |       0 |        0 |       0 |       0 |                   
+  api.js           |       0 |        0 |       0 |       0 | 6-88              
+ shared/config     |     100 |      100 |     100 |     100 |                   
+  index.js         |     100 |      100 |     100 |     100 |                   
+  limits.js        |     100 |      100 |     100 |     100 |                   
+ shared/hooks      |    4.53 |     2.95 |    7.01 |    4.69 |                   
+  useAutoSave.js   |       0 |        0 |       0 |       0 | 7-53              
+  ...lockFonts.jsx |       0 |        0 |       0 |       0 | 5-96              
+  useConfirm.js    |       0 |        0 |       0 |       0 | 5-10              
+  ...firmDialog.js |       0 |        0 |       0 |       0 | 4-32              
+  useCooldown.js   |   63.63 |    41.66 |   57.14 |   68.42 | 7-8,15,19,25-26   
+  useDataList.js   |       0 |        0 |       0 |       0 | 6-40              
+  useHistory.js    |       0 |        0 |       0 |       0 | 4-39              
+  ...rollToHash.js |       0 |        0 |       0 |       0 | 5-17              
+  ...ateManager.js |       0 |        0 |       0 |       0 | 6-146             
+ shared/ui/complex |    1.93 |     1.29 |    1.73 |    1.91 |                   
+  ...rSelector.jsx |       0 |        0 |       0 |       0 | 6-98              
+  CategoryTabs.jsx |       0 |        0 |       0 |       0 | 5-11              
+  ConfirmModal.jsx |     2.5 |        0 |       0 |    2.94 | 21-153            
+  ...opWrapper.jsx |       0 |        0 |       0 |       0 | 4-46              
+  EmptyState.jsx   |       0 |        0 |       0 |       0 | 5-11              
+  ...pperModal.jsx |       0 |        0 |       0 |       0 | 14-201            
+  ...adTrigger.jsx |       0 |        0 |       0 |       0 | 7-62              
+  ...thCounter.jsx |     100 |       25 |     100 |     100 | 11                
+  LoadingState.jsx |       0 |        0 |       0 |       0 | 5-16              
+  ...nceScreen.jsx |       0 |        0 |       0 |       0 | 5-65              
+  ...lePreview.jsx |       0 |        0 |       0 |       0 | 6-64              
+  ...aMapModal.jsx |       0 |        0 |       0 |       0 | 14-212            
+  OtpInput.jsx     |       0 |        0 |       0 |       0 | 4-66              
+  ...ngthMeter.jsx |       0 |        0 |       0 |       0 | 6-47              
+  ...thodModal.jsx |     100 |      100 |     100 |     100 |                   
+  ReportModal.jsx  |       0 |        0 |       0 |       0 | 10-104            
+  ...erDisplay.jsx |     7.5 |        0 |       0 |    8.57 | 11-16,20-76       
+  SiteFilters.jsx  |       0 |        0 |       0 |       0 | 7-153             
+  SiteGridCard.jsx |       0 |        0 |       0 |       0 | 14-441            
+  ...Previewer.jsx |       0 |        0 |       0 |       0 | 13-329            
+  ...lateBadge.jsx |       0 |        0 |       0 |       0 | 5-29              
+  TemplateCard.jsx |       0 |        0 |       0 |       0 | 6-66              
+  ...teFilters.jsx |       0 |        0 |       0 |       0 | 8-58              
+  ...eSelector.jsx |       0 |        0 |       0 |       0 | 6-44              
+  ...ediaInput.jsx |       0 |        0 |       0 |       0 | 10-224            
+ ...ed/ui/elements |   25.25 |    26.64 |      15 |   25.74 |                   
+  Avatar.jsx       |       0 |        0 |       0 |       0 | 5-54              
+  Button.jsx       |     100 |    76.92 |     100 |     100 | 28-29,41          
+  CustomSelect.jsx |    1.29 |        0 |       0 |    1.47 | 11-174            
+  ...ngePicker.jsx |       0 |        0 |       0 |       0 | 5-50              
+  Input.jsx        |      82 |    74.44 |    62.5 |   85.36 | 40-45,64,128      
+  RangeSlider.jsx  |       0 |        0 |       0 |       0 | 4-32              
+  Switch.jsx       |   16.66 |        0 |       0 |      20 | 12-17             
+  index.js         |       0 |        0 |       0 |       0 |                   
+ shared/ui/layouts |       0 |        0 |       0 |       0 |                   
+  Footer.jsx       |       0 |      100 |       0 |       0 | 4-6               
+  Layout.jsx       |       0 |        0 |       0 |       0 | 14-210            
+  ...rmSidebar.jsx |       0 |        0 |       0 |       0 | 9-46              
+  ...iewLayout.jsx |       0 |        0 |       0 |       0 | 5-44              
+  TitleManager.jsx |       0 |        0 |       0 |       0 | 7-29              
+  UserMenu.jsx     |       0 |        0 |       0 |       0 | 10-68             
+ shared/utils      |   65.96 |    73.88 |   66.66 |   64.96 |                   
+  canvasUtils.js   |       0 |        0 |       0 |       0 | 2-69              
+  exportHtml.js    |     100 |      100 |     100 |     100 |                   
+  exportToCsv.js   |       0 |        0 |       0 |       0 | 2-39              
+  htmlGenerator.js |     100 |      100 |     100 |     100 |                   
+  linkUtils.js     |     100 |      100 |     100 |     100 |                   
+  mediaUtils.js    |      28 |       25 |      25 |      25 | 15-26,39-40,44-77 
+  siteExporter.js  |   96.18 |       92 |     100 |   99.12 | 25                
+  siteUtils.js     |     100 |      100 |     100 |     100 |                   
+  templateUtils.js |       0 |        0 |       0 |       0 | 4-48              
+  themeUtils.js    |   25.92 |     8.33 |      50 |      25 | 19-29,33-43       
+  ...ationUtils.js |   86.36 |    84.37 |     100 |   88.88 | 59,72-73,77       
+-------------------|---------|----------|---------|---------|-------------------
