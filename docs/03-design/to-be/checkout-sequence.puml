@@ -1,6 +1,7 @@
 @startuml checkout-sequence
 ' Kendr (to be): оформлення замовлення й оплата. Рішення: ADR-003 (шари), ADR-004 (ціна, залишки, доступ), ADR-006 (платежі).
 ' Парна діаграма до as-built/checkout-sequence.puml
+' Назви методів узгоджено з кодом після реалізації v1.0 і v2.0 (див. розділ «Відхилення реалізації» у README)
 title Оформлення замовлення та оплата — цільова схема (to-be)\nЗелені примітки: v1.0 (структура, поведінка та сама). Жовті: v2.0 (виправлення дефектів, поведінка змінюється)
 
 skinparam defaultFontName DejaVu Sans
@@ -14,46 +15,58 @@ skinparam noteBorderColor #8a8a8a
 actor "Покупець" as U
 participant "CartPage.jsx" as FE
 participant "orderRoutes\n+ verifyToken" as R
-participant "OrderController" as C
+participant "orderController" as C
 participant "OrderService" as S
 participant "PricingService" as P
-participant "Repositories\n(Site · Product · Order)" as RP
+participant "Repositories\n(Order · Product ·\nTransaction)" as RP
 database "MySQL" as DB
+participant "LiqPayService" as LQS
 participant "PaymentService" as PAY
 participant "LiqPay" as LP
 
 == 1. Створення замовлення: POST /api/orders/checkout ==
 U -> FE : «Оформити»
 FE -> R : { siteId, items[{id, quantity, options}],\ncustomerData, paymentMethod }
-R -> C : checkout(req)
-C -> S : createOrder(userId, dto)
+R -> C : processCheckout(req)
+C -> S : checkout(userId, dto)
 note right of C #D7EFD9
   v1.0: контролер лише розбирає запит і формує відповідь,
   SQL і транзакція переходять у сервіс і репозиторії (D-ARC-01)
 end note
-S -> RP : withTransaction( … )
+S -> S : items — непорожній масив, quantity — ціле ≥ 1,\nid товару — додатне ціле
+note right of S #FFE9A8
+  v2.0 (D-BIZ-09): вхідні дані перевіряються до відкриття транзакції
+end note
+S -> RP : OrderRepository.transaction( placeOrder )
 RP -> DB : BEGIN
-S -> RP : site: ключі LiqPay, прапорці оплати
+S -> RP : сайт: ключі LiqPay, прапорці оплати
 S -> S : не власник і не співавтор; спосіб оплати дозволено;\nне більше 5 неоплачених замовлень
 note right of S #D7EFD9
   v1.0: перевірки ті самі, що в v0, перенесені з контролера
 end note
-S -> RP : products WHERE id IN (…) AND site_id = ? AND is_available = 1
+S -> RP : ProductRepository.findForCheckout(id, siteId)\nпо одному товару в порядку зростання id
 note right of RP #FFE9A8
-  v2.0 (D-BIZ-02): SELECT … FOR UPDATE —
-  рядки блокуються до кінця транзакції
+  v2.0 (D-BIZ-02): SELECT … FOR UPDATE — рядки блокуються
+  до кінця транзакції; залишок перевіряється за сумарною
+  кількістю товару в усіх позиціях
 end note
+S -> P : unitPrice(product, options) для кожної позиції
 S -> P : calculateOrderTotal(items)
 note right of P #D7EFD9
-  v1.0: та сама формула, що в v0 (ціна × кількість), але в одному місці
+  v1.0: calculateOrderTotal — та сама формула, що в v0
+  (ціна × кількість), але в одному місці
 end note
 note right of P #FFE9A8
-  v2.0 (D-BIZ-01, ADR-004): єдина формула ефективної ціни
-  (знижки й надбавки варіантів). Сума з клієнта ігнорується,
-  клієнт показує ціну з API, а не рахує сам
+  v2.0 (D-BIZ-01, ADR-004): unitPrice — єдине правило ціни:
+  каталожна ціна + надбавки вибраних варіантів, знижка — найбільша
+  серед вибраних значень, інакше знижка товару, інакше найбільша
+  знижка категорій; результат округлюється до цілої одиниці.
+  Ціна й опції з клієнта на суму не впливають, невідомий варіант — 400.
+  Клієнт показує ціну за тим самим правилом (final_price в API
+  не запроваджено)
 end note
-P --> S : позиції із цінами, total
-S -> S : залишок ≥ кількості; адреса для фізичних товарів;\nцифрові товари не за післяплатою
+P --> S : ціни позицій, total
+S -> S : адреса для фізичних товарів;\nцифрові товари не за післяплатою
 S -> RP : INSERT orders ('pending') + order_items (знімок ціни)
 note right of RP #FFE9A8
   v2.0 (D-BIZ-02, ADR-004): для післяплати залишок списується
@@ -61,13 +74,12 @@ note right of RP #FFE9A8
   платежу, як у v0
 end note
 RP -> DB : COMMIT
-S --> C : order
-alt оплата онлайн
-  S -> PAY : createLiqPayCheckout(order, site)
-  PAY --> S : data, signature
-  note right of PAY #FFE9A8
-    v2.0 (D-CFG-01): sandbox вмикається змінною
-    середовища, а не зашитий у коді
+alt оплата онлайн і в магазину задано ключі LiqPay
+  S -> LQS : createPayment(orderId, total, publicKey, privateKey)
+  LQS --> S : data, signature
+  note right of LQS #FFE9A8
+    v2.0 (D-CFG-01): параметр sandbox додається лише за
+    LIQPAY_SANDBOX=1, а не зашитий у коді
   end note
   C --> FE : 200 { orderId, liqpayData, liqpaySignature }
   FE -> LP : форма LiqPay checkout
@@ -78,63 +90,79 @@ end
 == 2. Підтвердження оплати LiqPay: POST /api/orders/liqpay-callback ==
 LP -> R : { data, signature }
 R -> C : liqpayCallback(req)
-C -> S : confirmLiqPayPayment(data, signature)
-S -> PAY : verifyCallback(data, signature, site.privateKey)
+C -> S : handleLiqPayCallback({ data, signature })
+S -> PAY : verifySignature(data, signature, site.privateKey)
 note right of PAY #FFE9A8
-  v2.0 (D-SEC-07): підпис порівнюється через timingSafeEqual;
-  amount, currency і order_id звіряються із замовленням;
-  статус sandbox приймається лише при ввімкненому прапорці
+  v2.0 (D-SEC-07): підпис порівнюється через timingSafeEqual
 end note
-alt перевірка не пройшла
-  PAY --> S : помилка
-  S --> LP : 400 / 403
-else успіх
-  S -> RP : withTransaction( markPaid(orderId) )
+alt підпис невірний
+  S --> LP : 403
+else підпис вірний
+  S -> S : статус успішний (sandbox лише за LIQPAY_SANDBOX=1),\nзамовлення pending і не післяплата — інакше callback ігнорується
+  S -> PAY : assertPaymentMatches(payload, { amount })
+  note right of PAY #FFE9A8
+    v2.0 (D-SEC-07, D-CFG-01): amount і currency звіряються
+    із замовленням (orders.total_amount); розбіжність — 400
+  end note
+  S -> RP : OrderRepository.transaction( settleIfPending + списання залишку )
   note right of RP #D7EFD9
-    v1.0: перехід pending → paid / completed лише з pending
-    і списання залишку — так само, як у v0, у транзакції
+    v1.0: перехід pending → paid / completed і списання залишку —
+    так само, як у v0, але в транзакції
   end note
   note right of RP #FFE9A8
-    v2.0 (ADR-006): статус, залишок і запис у transactions —
-    в одній транзакції; повторний callback нічого не змінює
-    і не списує залишок вдруге
+    v2.0 (ADR-006): UPDATE … WHERE status = 'pending' і списання
+    залишку в одній транзакції; повторний callback нічого не змінює,
+    залишок не списується вдруге, лист цифрового товару надсилається
+    після завершення транзакції
   end note
   S --> LP : 200 OK
 end
 
 == 3. Оплата Google Pay: POST /api/orders/:orderId/pay/gpay ==
-FE -> R : { paymentData }
-R -> C : payWithGooglePay(req)
-C -> S : payWithGooglePay(userId, orderId, paymentData)
-S -> RP : замовлення належить користувачу, статус pending
-S -> PAY : verifyGooglePay(paymentData, order.total_amount)
-note right of PAY #FFE9A8
-  v2.0 (D-SEC-02, ADR-006): статус змінюється лише на підставі
-  даних платіжного шлюзу (підписаний callback або серверний
-  запит статусу). Поки верифікацію не реалізовано,
-  ендпоінт вимкнено прапорцем (пропозиція, у ADR не описано)
+note over FE, R #FFE9A8
+  v2.0 (ADR-006): кнопку Google Pay із CartPage прибрано,
+  інтерфейс цього маршруту не викликає
 end note
-S -> RP : withTransaction( markPaid(orderId) )
-S --> C : 200 { success: true }
+FE -> R : { paymentData }
+R -> C : processGooglePay(req)
+C -> S : payWithGooglePay(orderId, userId, paymentData)
+S -> RP : замовлення належить користувачу, не оплачене,\nонлайн-оплата, статус pending (D-BIZ-08)
+S -> PAY : verifyGooglePay(paymentData, { amount, currency, reference })
+note right of PAY #FFE9A8
+  v2.0 (D-SEC-02, ADR-006): статус змінюється лише після
+  перевірки, яку пройшов платіж. Зараз verifyGooglePay завжди
+  відмовляє, тож замовлення, залишки й транзакції не змінюються
+end note
+PAY --> S : ServiceError 501
+S --> C : 501
+note over S, RP #FFE9A8
+  Коли з'явиться справжня верифікація (токен надсилається шлюзу,
+  звіряються сума, валюта й номер замовлення), зміниться лише
+  verifyGooglePay: далі виконується та сама транзакція
+  settleIfPending + списання залишку + запис у transactions
+end note
 note over PAY, LP
-  Ті самі перевірки застосовуються до оплати тарифу
-  (transactionController, D-SEC-01)
+  Ті самі правила діють для оплати тарифу:
+  SubscriptionService (startUpgrade, upgradeWithGooglePay,
+  handleLiqPayCallback), D-SEC-01, D-SEC-07
 end note
 
 == 4. Керування замовленнями власником сайту ==
 FE -> R : GET /api/orders/site/:siteId\nPUT /api/orders/:id/status { status }
-R -> R : requireSiteAccess('orders')
-note right of R #FFE9A8
-  v2.0 (D-SEC-03): доступ мають власник сайту
-  та співавтор із правом на замовлення.
-  Решті — 403
-end note
 R -> C : getSiteOrders / updateOrderStatus
-C -> S : changeStatus(orderId, newStatus)
+C -> S : listForSite / updateStatus(orderId, userId, status)
+S -> S : requireSiteAccess(siteId, userId, read('commerce') / write('commerce'))
 note right of S #FFE9A8
-  v2.0 (D-SEC-03): статус перевіряється за білим списком,
-  довільні значення відхиляються
+  v2.0 (D-SEC-03, D-SEC-06): список бачить власник і співавтор будь-якої
+  ролі із секцією commerce, статус змінює власник і editor із секцією
+  commerce; решті — 403
 end note
-S -> RP : UPDATE orders SET status
+S -> S : статус — із білого списку; онлайн-замовлення в pending\nне можна позначити оплаченим вручну
+note right of S #FFE9A8
+  v2.0 (D-SEC-03, D-BIZ-08): довільні значення відхиляються (400);
+  скасоване замовлення змінити не можна; при скасуванні
+  замовлення, що утримувало залишок, залишок повертається
+end note
+S -> RP : OrderRepository.transaction( findForUpdate, updateStatus,\nповернення залишку )
 S --> C : 200
 @enduml

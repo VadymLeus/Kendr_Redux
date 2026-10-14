@@ -1,6 +1,7 @@
 @startuml backend-layers
+' Назви модулів і числа узгоджено з кодом після реалізації v1.0 і v2.0 (див. розділ «Відхилення реалізації» у README)
 ' Kendr (to be): шарова архітектура backend. Рішення: ADR-003 (шари, withTransaction), ADR-004 (політики), ADR-005 (app для тестів), ADR-006 (платежі).
-title Backend Kendr — цільова архітектура (to-be)\nroutes → controllers → services → repositories → БД; у v1.0 шари вводяться для зрізу order, site, page, product (66 із 196 SQL-викликів)
+title Backend Kendr — цільова архітектура (to-be)\nroutes → controllers → services → repositories → БД; v1.0: зріз order, site, page, product (66 із 196 SQL-викликів);\nv2.0: політики, платежі й валідація в сервісах, до сервісів звертаються 13 контролерів із 20
 
 skinparam defaultFontName DejaVu Sans
 skinparam defaultFontSize 12
@@ -22,29 +23,31 @@ package "app.js / server.js" as app #F5F5F5 {
 }
 
 package "routes + middleware" as rt #EAF2FB {
-  [routes: 22 файли, 142 ендпоінти\nверифікація токена, ролі, капча, завантаження файлів] as routes
-  [requireSiteAccess(permission) — v1.0: наявні перевірки, логіка та сама\nv2.0: власник або співавтор із потрібним правом\n(D-SEC-03, D-SEC-06; ADR-004)] as rsa #D7EFD9
+  [routes: 21 файл, 141 ендпоінт\nверифікація токена, ролі, капча, завантаження файлів] as routes
 }
 
 package "controllers — тонкий шар: розібрати запит → викликати сервіс → сформувати відповідь" as ctrl #FFFFFF {
   [order · site · page · product\nбез SQL і без імпорту config/db] as c_slice #D7EFD9
-  [решта 17 контролерів\nadmin, team, transaction, media, auth, user, support, …] as c_rest #EEEEEE
+  [решта 16 контролерів; SQL у десяти:\nadmin 43, team 30, auth 13, media 10, user 6,\ntransaction 6, userTemplate 5, support 4, report 2, form 1\n(у v2.0 частина вже викликає сервіси: політики, платежі, права)] as c_rest #EEEEEE
 }
 
 package "services — бізнес-правила і транзакції" as svc #FFFFFF {
   [OrderService · SiteService ·\nPageService · ProductService] as s_slice #D7EFD9
-  [PricingService — єдиний розрахунок ціни\nv1.0: поточна формула; v2.0: єдина формула (D-BIZ-01)] as s_price #D7EFD9
-  [PaymentService — перевірка платежів LiqPay / Google Pay\n(модуль шару сервісів, не окремий сервіс)\nD-SEC-01, 02, 07; ADR-006] as s_pay #FFE9A8
-  [PlanPolicy.getLimits(plan) — v1.0: обгортка над PLAN_LIMITS\nv2.0: ліміти застосовано при створенні сайту,\nтовару й категорії (D-BIZ-03; ADR-004)] as s_pol #D7EFD9
+  [PricingService — єдиний розрахунок ціни\nv1.0: calculateOrderTotal за поточною формулою\nv2.0: unitPrice — єдине правило ціни (D-BIZ-01)] as s_price #D7EFD9
+  [PaymentService — перевірка платежів LiqPay;\nverifyGooglePay завжди відмовляє (501)\nSubscriptionService — оплата тарифу\n(модулі шару сервісів, не окремі сервіси)\nD-SEC-01, 02, 07, D-CFG-01; ADR-006] as s_pay #FFE9A8
+  [PlanPolicy — v1.0: getLimits(plan), обгортка над PLAN_LIMITS\nv2.0: assertWithinLimit при створенні сайту,\nтовару й категорії (D-BIZ-03; ADR-004)] as s_pol #D7EFD9
+  [siteAccess.requireSiteAccess(siteId, userId, вимога)\nвимоги OWNER · read · write за роллю співавтора і секціями;\nодин запит findWithCollaborator; функція шару сервісів,\nне middleware (D-SEC-03, 06, 15, 16; ADR-004)] as s_acc #FFE9A8
+  [AuthPolicy (isStaff, canReceiveOtp) · утиліта signAccessToken\nтокен завжди з token_version (D-SEC-04, 10, 21, 22; ADR-004)] as s_auth #FFE9A8
+  [productValidation · productVisibility · blockContentValidation ·\nsiteValidation — валідація й видимість полів\n(D-BIZ-10, 11; D-SEC-14; D-BLK-05; D-BIZ-05)] as s_val #FFE9A8
 }
 
 package "repositories — увесь SQL зрізу" as repo #FFFFFF {
-  [OrderRepository · SiteRepository ·\nPageRepository · ProductRepository] as r_slice #D7EFD9
-  [моделі User, Category, Media, … (без змін)] as r_models #EEEEEE
+  [OrderRepository · SiteRepository · PageRepository · ProductRepository ·\nCollaboratorRepository · GlobalSettingsRepository · TemplateRepository ·\nTransactionRepository · UserRepository (9 файлів, 100 SQL-викликів)] as r_slice #D7EFD9
+  [9 моделей: User, Category, FormSubmission, Media, … (63 SQL-виклики)] as r_models #EEEEEE
 }
 
 package "інфраструктура" as infra #F5F5F5 {
-  [config/db.js: пул mysql2 і\nwithTransaction(fn) — єдине місце\nBEGIN / COMMIT / ROLLBACK] as db #D7EFD9
+  [config/db.js: пул mysql2 і pool.withTransaction(fn)\n(реалізація в config/transaction.js) —\nєдине місце BEGIN / COMMIT / ROLLBACK у зрізі] as db #D7EFD9
   [наявні утиліти й клієнти зовнішніх сервісів:\nutils/emailService.js, config/cloudinary.js, … — без змін] as adapters #EEEEEE
 }
 
@@ -53,19 +56,23 @@ cloud "LiqPay · Cloudinary · Resend" as ext
 
 client --> appjs : HTTPS /api/*
 appjs --> routes
-routes --> rsa
 routes --> c_slice
 routes --> c_rest
 c_slice --> s_slice
 s_slice --> s_price
 s_slice --> s_pay
 s_slice --> s_pol
+s_slice --> s_acc
+s_slice --> s_val
 s_slice --> r_slice
 s_pay ..> ext : запити до LiqPay
 r_slice --> db
 db --> mysql
 adapters ..> ext
-c_rest -[#C62828,dashed]-> db : прямий SQL — 130 викликів\n(поза зрізом, Перспективи)
+c_rest -[#C62828,dashed]-> db : прямий SQL — 120 викликів\n(поза зрізом, Перспективи)
+c_rest ..> s_acc : requireSiteAccess\n(форми, команда, шаблони)
+c_rest ..> s_auth : політики автентифікації
+c_rest ..> s_pay : оплата тарифу
 c_rest --> r_models
 r_models --> db
 
