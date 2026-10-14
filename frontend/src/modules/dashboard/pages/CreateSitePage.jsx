@@ -16,6 +16,7 @@ import TemplateFilters from '../../../shared/ui/complex/TemplateFilters';
 import TemplateBadge from '../../../shared/ui/complex/TemplateBadge';
 import { AuthContext } from '../../../app/providers/AuthContext';
 import { BASE_URL } from '../../../shared/config';
+import { TEXT_LIMITS } from '../../../shared/config/limits';
 import { validateSiteSlug, validateSiteTitle } from '../../../shared/utils/validationUtils';
 import { useTemplateManager } from '../../../shared/hooks/useTemplateManager';
 import { getTemplatePreviewData } from '../../../shared/utils/templateUtils';
@@ -242,7 +243,7 @@ const CreateSitePage = () => {
                                 )}
                                 <div className="p-4 md:p-5 bg-(--platform-card-bg) rounded-2xl border border-(--platform-border-color) shadow-sm space-y-4">
                                     <div><Input label="Назва сайту" value={formData.title} onChange={handleTitleChange} placeholder="Мій Сайт" autoFocus disabled={isLimitReached} error={titleError} wrapperStyle={{ marginBottom: titleError ? 0 : '0.5rem' }}/></div>
-                                    <div><Input label="Веб-адреса" value={formData.slug} onChange={handleSlugChange} placeholder="my-cool-shop" rightIcon={slugStatus === 'checking' ? <Loader size={16} className="animate-spin" /> : slugStatus === 'available' ? <Check size={18} className="text-emerald-500" /> : (slugStatus === 'taken' || slugStatus === 'invalid') ? <AlertCircle size={18} className="text-red-500" /> : <Globe size={16} />} error={slugError} helperText={`kendr.site/${formData.slug || '...'}`} disabled={isLimitReached} wrapperStyle={{ marginBottom: slugError ? 0 : '0.5rem' }}/></div>
+                                    <div><Input label="Веб-адреса" value={formData.slug} onChange={handleSlugChange} maxLength={TEXT_LIMITS.SITE_SLUG} placeholder="my-cool-shop" rightIcon={slugStatus === 'checking' ? <Loader size={16} className="animate-spin" /> : slugStatus === 'available' ? <Check size={18} className="text-emerald-500" /> : (slugStatus === 'taken' || slugStatus === 'invalid') ? <AlertCircle size={18} className="text-red-500" /> : <Globe size={16} />} error={slugError} helperText={`kendr.site/${formData.slug || '...'}`} disabled={isLimitReached} wrapperStyle={{ marginBottom: slugError ? 0 : '0.5rem' }}/></div>
                                 </div>
                                 <div className={`p-4 md:p-5 bg-(--platform-card-bg) rounded-2xl border border-(--platform-border-color) shadow-sm ${isLimitReached ? 'opacity-60 pointer-events-none' : ''}`}>
                                     <label className="mb-3 font-semibold text-(--platform-text-primary) text-sm flex items-center gap-2"><Sparkles size={18} className="text-(--platform-accent)" /> Логотип</label>

@@ -4,12 +4,16 @@ const RESERVED_SLUGS = [
     'billing', 'orders', 'dashboard', 'sites', 'media', 'settings', 
     'auth', 'user', 'users', 'system', 'root', 'static', 'assets', 'create'
 ];
+const SLUG_MIN_LENGTH = 3;
+const SLUG_MAX_LENGTH = 30;
 const BAD_SEQUENCES = ['12345', 'qwerty', 'asdfgh', 'zxcvbn', 'password', '123123', 'qweqwe', 'йцукен'];
 
 const validateSlug = (slug) => {
     if (!slug || typeof slug !== 'string') return 'URL сайту обов\'язковий';
     const trimmedSlug = slug.toLowerCase().trim();
-    if (trimmedSlug.length < 3 || trimmedSlug.length > 40) return 'URL сайту має бути від 3 до 40 символів';
+    if (trimmedSlug.length < SLUG_MIN_LENGTH || trimmedSlug.length > SLUG_MAX_LENGTH) {
+        return `URL сайту має бути від ${SLUG_MIN_LENGTH} до ${SLUG_MAX_LENGTH} символів`;
+    }
     if (!/^[a-z0-9-]+$/.test(trimmedSlug)) return 'URL може містити лише малі латинські літери, цифри та дефіс';
     if (trimmedSlug.startsWith('-') || trimmedSlug.endsWith('-')) return 'URL не може починатися або закінчуватися дефісом';
     if (trimmedSlug.includes('--')) return 'URL не може містити два дефіси підряд';
@@ -34,4 +38,4 @@ const validateSiteCreation = (title, slug) => {
     return validateSlug(slug);
 };
 
-module.exports = { validateSlug, validateTitleText, validateSiteCreation };
+module.exports = { validateSlug, validateTitleText, validateSiteCreation, SLUG_MIN_LENGTH, SLUG_MAX_LENGTH };

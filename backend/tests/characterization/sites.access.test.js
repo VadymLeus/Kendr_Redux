@@ -417,7 +417,7 @@ describe('PUT /api/sites/:site_path/rename', () => {
   it('некоректна адреса — 400', async () => {
     const res = await rename(owner, 'ab');
     expect(res.status).toBe(400);
-    expect(res.body.message).toBe('URL сайту має бути від 3 до 40 символів');
+    expect(res.body.message).toBe('URL сайту має бути від 3 до 30 символів');
   });
 
   it('зайнята адреса — 409', async () => {

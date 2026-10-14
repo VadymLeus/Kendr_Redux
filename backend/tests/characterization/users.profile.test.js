@@ -1,6 +1,6 @@
 // Профіль користувача (/api/users): публічний профіль, редагування, зміна пароля, аватар.
 // Фіксує D-BIZ-04 (зміна пароля без перевірки складності), D-BIZ-13 (немає валідації), виправлення D-BIZ-15 (slug не змінюється при збереженні),
-// виправлення D-SEC-19 і D-ARC-12 (avatar-url і видалення файлів аватарів), виправлення D-SEC-21 (зміна пароля відкликає сесії), D-CON-05.
+// виправлення D-SEC-19 і D-ARC-12 (avatar-url і видалення файлів аватарів), виправлення D-SEC-21 (зміна пароля відкликає сесії), виправлення D-CON-05 (попередження віддаються з причиною).
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
@@ -127,17 +127,23 @@ describe('GET /api/users/:username (публічний профіль)', () => {
     expect(Number(res.body.totalViews)).toBe(15);
   });
 
-  // KNOWN-DEFECT D-CON-05: список попереджень публічний, але Warning.findForUser вибирає лише id, site_id і created_at.
-  // Причина (reason_note), яку очікує сторінка профілю, ніколи не надходить.
-  it('KNOWN-DEFECT D-CON-05: попередження видно всім, але без причини', async () => {
+  // D-CON-05 виправлено: попередження віддаються разом із причиною (reason_note), яку показує сторінка профілю.
+  it('попередження видно всім разом із причиною', async () => {
     const site = await createSite(owner);
     await createWarning(owner, site, 'Порушення правил');
     await createWarning(owner, null, 'Спам');
     const res = await getProfile('olena');
     expect(res.body.warning_count).toBe(2);
     expect(res.body.warnings).toHaveLength(2);
-    expect(Object.keys(res.body.warnings[0]).sort()).toEqual(['created_at', 'id', 'site_id']);
-    expect(JSON.stringify(res.body.warnings)).not.toMatch(/Порушення|Спам|reason_note/);
+    expect(Object.keys(res.body.warnings[0]).sort()).toEqual(['created_at', 'id', 'reason_note', 'site_id']);
+    expect(res.body.warnings.map((warning) => warning.reason_note)).toEqual(['Порушення правил', 'Спам']);
+  });
+
+  it('попередження без причини віддається з reason_note = null', async () => {
+    await createWarning(owner, null, null);
+    const res = await getProfile('olena');
+    expect(res.body.warnings).toHaveLength(1);
+    expect(res.body.warnings[0].reason_note).toBeNull();
   });
 
   it('GET /api/users/default-avatars віддає перелік шляхів до стандартних аватарів (маршрут стоїть перед /:username)', async () => {

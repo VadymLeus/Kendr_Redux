@@ -1,5 +1,5 @@
 // Створення сайту (createSite) і перевірка адреси (checkSlug): валідація, шаблони, транзакція, ліміти тарифу.
-// Фіксує D-BIZ-03 (ліміт сайтів), D-BIZ-05 (довжина адреси), D-SEC-17 (рівень доступу шаблона),
+// Фіксує D-BIZ-03 (ліміт сайтів), D-BIZ-05 (довжина адреси, виправлено), D-SEC-17 (рівень доступу шаблона),
 // D-ARC-10 (код відповіді визначається за текстом помилки).
 import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
@@ -85,8 +85,9 @@ describe('POST /api/sites/create: валідація', () => {
     ['назва із 61 символу', { title: 'a'.repeat(61), sitePath: 'valid-path' }, 'Назва сайту має бути від 2 до 60 символів'],
     ['назва з <', { title: 'Магазин <b>', sitePath: 'valid-path' }, 'Назва сайту містить недопустимі символи (<, >)'],
     ['порожня адреса', { title: 'Магазин' }, "URL сайту обов'язковий"],
-    ['адреса з двох символів', { title: 'Магазин', sitePath: 'ab' }, 'URL сайту має бути від 3 до 40 символів'],
-    ['адреса з 41 символу', { title: 'Магазин', sitePath: 'abcdefghij'.repeat(4) + 'k' }, 'URL сайту має бути від 3 до 40 символів'],
+    ['адреса з двох символів', { title: 'Магазин', sitePath: 'ab' }, 'URL сайту має бути від 3 до 30 символів'],
+    ['адреса з 31 символу', { title: 'Магазин', sitePath: 'abcdefghij'.repeat(3) + 'k' }, 'URL сайту має бути від 3 до 30 символів'],
+    ['адреса з 40 символів', { title: 'Магазин', sitePath: 'abcdefghij'.repeat(4) }, 'URL сайту має бути від 3 до 30 символів'],
     ['кирилиця в адресі', { title: 'Магазин', sitePath: 'магазин' }, 'URL може містити лише малі латинські літери, цифри та дефіс'],
     ['пробіл усередині адреси', { title: 'Магазин', sitePath: 'my shop' }, 'URL може містити лише малі латинські літери, цифри та дефіс'],
     ['адреса починається з дефіса', { title: 'Магазин', sitePath: '-shop' }, 'URL не може починатися або закінчуватися дефісом'],
@@ -107,11 +108,14 @@ describe('POST /api/sites/create: валідація', () => {
     expect(await countRows('sites')).toBe(0);
   });
 
-  // KNOWN-DEFECT D-BIZ-05: поле вводу обмежує адресу 30 символами, сервер приймає до 40.
-  it('KNOWN-DEFECT D-BIZ-05: сервер приймає адресу із 40 символів (поле вводу обмежене 30)', async () => {
-    const res = await create(user, { title: 'Магазин', sitePath: 'abcdefghij'.repeat(4), isBlank: true });
-    expect(res.status).toBe(201);
-    expect(res.body.site.site_path).toHaveLength(40);
+  // D-BIZ-05 виправлено: сервер приймає ту саму довжину адреси, що й поле вводу, — до 30 символів.
+  it('адреса з 30 символів — 201, з 31 — 400', async () => {
+    const accepted = await create(user, { title: 'Магазин', sitePath: 'abcdefghij'.repeat(3), isBlank: true });
+    expect(accepted.status).toBe(201);
+    expect(accepted.body.site.site_path).toHaveLength(30);
+    const refused = await create(user, { title: 'Інший', sitePath: 'abcdefghij'.repeat(3) + 'k', isBlank: true });
+    expect(refused.status).toBe(400);
+    expect(await countRows('sites')).toBe(1);
   });
 
   it('зайнята адреса — 400, нічого не створюється', async () => {

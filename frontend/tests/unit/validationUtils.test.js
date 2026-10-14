@@ -34,6 +34,16 @@ describe('validationUtils', () => {
             expect(result.isValid).toBe(false);
             expect(result.error).toContain('Мінімум 3 символи');
         });
+        it('межа довжини збігається з полем вводу й сервером: 30 символів (D-BIZ-05)', () => {
+            expect(validateSiteSlug('abcdefghij'.repeat(3)).isValid).toBe(true);
+            const tooLong = validateSiteSlug('abcdefghij'.repeat(3) + 'k');
+            expect(tooLong.isValid).toBe(false);
+            expect(tooLong.status).toBe('invalid');
+            expect(tooLong.error).toBe('Максимум 30 символів');
+        });
+        it('адреса з 40 символів, яку раніше пропускала клієнтська перевірка, тепер відхиляється', () => {
+            expect(validateSiteSlug('ab'.repeat(20)).isValid).toBe(false);
+        });
         it('відхиляє зарезервовані імена', () => {
             const result = validateSiteSlug('admin');
             expect(result.isValid).toBe(false);

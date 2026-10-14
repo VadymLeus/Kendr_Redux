@@ -1,6 +1,7 @@
 // backend/middleware/verifyToken.js
-const jwt = require('jsonwebtoken');
 const db = require('../config/db');
+const { verifyAccessToken } = require('../utils/authTokens');
+const { isMissingSecretError } = require('../config/jwtSecret');
 const RESTORE_FLOW = [
     { method: 'GET', path: '/api/auth/me' },
     { method: 'POST', path: '/api/users/me/restore' }
@@ -16,7 +17,7 @@ const verifyToken = async (req, res, next) => {
             return res.status(401).json({ message: 'Відмовлено у доступі. Токен не надано.' });
         }
         const token = authHeader.split(' ')[1];
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret_key');
+        const decoded = verifyAccessToken(token);
         const [users] = await db.query('SELECT token_version, status FROM users WHERE id = ?', [decoded.id]);
         const user = users[0];
         if (!user) {
@@ -39,6 +40,9 @@ const verifyToken = async (req, res, next) => {
         req.user = decoded;
         next();
     } catch (error) {
+        if (isMissingSecretError(error)) {
+            return next(error);
+        }
         if (error.name === 'TokenExpiredError') {
             return res.status(401).json({ message: 'Час дії сесії минув. Будь ласка, увійдіть знову.' });
         }

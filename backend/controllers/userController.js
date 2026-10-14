@@ -5,7 +5,6 @@ const Warning = require('../models/Warning');
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
 const path = require('path');
-const jwt = require('jsonwebtoken');
 const { deleteFile } = require('../utils/fileUtils');
 const { signAccessToken } = require('../utils/authTokens');
 const { isAllowedAvatarUrl } = require('../utils/avatarUrl');
@@ -222,8 +221,10 @@ exports.deleteAccount = async (req, res, next) => {
             return res.status(400).json({ message: 'Невірне підтвердження.' });
         }
         const userId = req.user.id;
-        await User.softDeleteUser(userId);
-        await SiteRepository.setAllUserSitesToDraft(userId);
+        await db.withTransaction(async (connection) => {
+            await User.softDeleteUser(userId, connection);
+            await SiteRepository.setAllUserSitesToDraft(userId, connection);
+        });
         res.json({ message: 'Акаунт заплановано на видалення. Ви можете відновити його протягом 14 днів.' });
     } catch (error) {
         next(error);
@@ -238,12 +239,7 @@ exports.restoreAccount = async (req, res, next) => {
             return res.status(400).json({ message: 'Акаунт не потребує відновлення або не знайдено.' });
         }
         await User.restoreFromSoftDelete(userId);
-        const token = jwt.sign({ 
-            id: user.id, 
-            role: user.role, 
-            plan: user.plan || 'FREE',
-            token_version: user.token_version
-        }, process.env.JWT_SECRET, { expiresIn: '24h' });
+        const token = signAccessToken(user);
         const stats = await getUserStats(userId, user.plan, user.role);
         res.json({ 
             message: 'Акаунт успішно відновлено!',

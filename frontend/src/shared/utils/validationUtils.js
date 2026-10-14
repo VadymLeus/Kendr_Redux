@@ -1,4 +1,6 @@
 // frontend/src/shared/utils/validationUtils.js
+import { TEXT_LIMITS } from '../config/limits';
+
 export const PASSWORD_REQUIREMENTS = {
     minLength: 8,
     hasNumber: /\d/,
@@ -48,7 +50,7 @@ export const RESERVED_SLUGS = [
 export const validateSiteSlug = (slug) => {
     if (!slug) return { isValid: false, status: 'idle', error: null };
     if (slug.length < 3) return { isValid: false, status: 'invalid', error: 'Мінімум 3 символи' };
-    if (slug.length > 40) return { isValid: false, status: 'invalid', error: 'Максимум 40 символів' };
+    if (slug.length > TEXT_LIMITS.SITE_SLUG) return { isValid: false, status: 'invalid', error: `Максимум ${TEXT_LIMITS.SITE_SLUG} символів` };
     if (slug.startsWith('-') || slug.endsWith('-')) return { isValid: false, status: 'invalid', error: 'Не може починатися або закінчуватися дефісом' };
     if (slug.includes('--')) return { isValid: false, status: 'invalid', error: 'Не може містити два дефіси підряд' };
     if (RESERVED_SLUGS.includes(slug)) return { isValid: false, status: 'invalid', error: "Це ім'я зарезервовано системою. Будь ласка, оберіть інше." };

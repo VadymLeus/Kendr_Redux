@@ -19,7 +19,7 @@ class Warning {
     }
 
     static async findForUser(userId) {
-        const [rows] = await db.query('SELECT id, site_id, created_at FROM user_warnings WHERE user_id = ? ORDER BY created_at ASC', [userId]);
+        const [rows] = await db.query('SELECT id, site_id, reason_note, created_at FROM user_warnings WHERE user_id = ? ORDER BY created_at ASC', [userId]);
         return rows;
     }
 }

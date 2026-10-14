@@ -1,5 +1,6 @@
 // backend/models/SupportTicket.js
 const db = require('../config/db');
+const AuthPolicy = require('../services/AuthPolicy');
 
 class SupportTicket {
     static async create(userId, subject, body, type = 'general', attachments = null) {
@@ -68,7 +69,7 @@ class SupportTicket {
         );
         const [userRows] = await db.query('SELECT role FROM users WHERE id = ?', [userId]);
         const userRole = userRows[0]?.role;
-        const newStatus = userRole === 'admin' ? 'answered' : 'open';
+        const newStatus = AuthPolicy.isStaff({ role: userRole }) ? 'answered' : 'open';
         await db.query(
             'UPDATE support_tickets SET status = ?, closed_by = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?', 
             [newStatus, ticketId]

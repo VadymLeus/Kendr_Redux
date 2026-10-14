@@ -14,6 +14,8 @@ import { toast } from 'react-toastify';
 import { Helmet } from 'react-helmet-async';
 import { Send, Loader, User, Shield, Lock, ArrowLeft, CheckCircle, Clock, XCircle, Paperclip, X, RotateCcw, ArrowDown } from 'lucide-react';
 
+const STAFF_ROLES = ['admin', 'moderator'];
+
 const API_URL = 'http://localhost:5000'; 
 const TicketDetailPage = () => {
     const { ticketId } = useParams();
@@ -98,7 +100,7 @@ const TicketDetailPage = () => {
 
     const isSpamBlocked = useMemo(() => {
         if (!ticket || !user) return false;
-        if (user.role === 'admin') return false;
+        if (STAFF_ROLES.includes(user.role)) return false;
         const replies = ticket.replies || [];
         if (replies.length < 2) return false;
         const lastTwo = replies.slice(-2);
@@ -109,7 +111,7 @@ const TicketDetailPage = () => {
         if (!ticket) return true;
         return ticket.status === 'closed' || isSpamBlocked;
     }, [ticket, isSpamBlocked]);
-    const isCurrentUserAdmin = user?.role === 'admin';
+    const isCurrentUserAdmin = STAFF_ROLES.includes(user?.role);
     const closedByText = ticket?.closed_by === 'admin'
         ? (isCurrentUserAdmin ? 'Ви (Адміністратор) закрили це звернення.' : 'Це звернення було закрите адміністратором.')
         : (isCurrentUserAdmin ? 'Користувач закрив це звернення.' : 'Ви закрили це звернення.');
@@ -348,7 +350,7 @@ const TicketDetailPage = () => {
                     </div>
                     {allMessages.map((msg, index) => {
                         const isMe = msg.user_id === user?.id; 
-                        const isAdmin = msg.role === 'admin';
+                        const isAdmin = STAFF_ROLES.includes(msg.role);
                         const avatarSrc = getAttachmentUrl(msg.avatar_url);
                         let msgAttachments = [];
                         try {

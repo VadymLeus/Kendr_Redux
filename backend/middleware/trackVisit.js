@@ -1,7 +1,7 @@
 // backend/middleware/trackVisit.js
 const crypto = require('crypto');
 const db = require('../config/db');
-const jwt = require('jsonwebtoken');
+const { verifyAccessToken } = require('../utils/authTokens');
 
 const trackVisit = async (req, res, next) => {
     try {
@@ -17,7 +17,7 @@ const trackVisit = async (req, res, next) => {
             const token = authHeader.split(' ')[1];
             try {
                 if (token) {
-                    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                    const decoded = verifyAccessToken(token);
                     if (decoded.id === site.user_id) {
                         return next(); 
                     }

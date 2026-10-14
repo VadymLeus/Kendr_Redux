@@ -1,5 +1,6 @@
 // backend/middleware/verifyTokenOptional.js
-const jwt = require('jsonwebtoken');
+const { verifyAccessToken } = require('../utils/authTokens');
+const { isMissingSecretError } = require('../config/jwtSecret');
 
 function verifyTokenOptional(req, res, next) {
     const authHeader = req.headers['authorization'];
@@ -10,14 +11,15 @@ function verifyTokenOptional(req, res, next) {
         return next();
     }
 
-    jwt.verify(token, process.env.JWT_SECRET || 'secret_key', (err, user) => {
-        if (err) {
-            req.user = null;
-        } else {
-            req.user = user;
+    try {
+        req.user = verifyAccessToken(token);
+    } catch (error) {
+        if (isMissingSecretError(error)) {
+            return next(error);
         }
-        next();
-    });
+        req.user = null;
+    }
+    next();
 }
 
 module.exports = verifyTokenOptional;

@@ -428,6 +428,15 @@ class SiteRepository {
     const [rows] = await db.query('SELECT is_pinned FROM sites WHERE id = ?', [siteId]);
     return rows[0] ? !!rows[0].is_pinned : false;
   }
+  // Видалення акаунта (D-BIZ-06): сайти власника ховаються. Сайти під модерацією (suspended, probation)
+  // не чіпаємо: власник не може змінювати їхній стан, а перехід у private дозволив би обійти блокування.
+  static async setAllUserSitesToDraft(userId, connection) {
+      const [result] = await executor(connection).query(
+          "UPDATE sites SET status = 'private' WHERE user_id = ? AND status NOT IN ('suspended', 'probation')",
+          [userId]
+      );
+      return result;
+  }
   static async setAllUserSitesToMaintenance(userId) {
       const [result] = await db.query("UPDATE sites SET status = 'maintenance' WHERE user_id = ?", [userId]);
       return result;

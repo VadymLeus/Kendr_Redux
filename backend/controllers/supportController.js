@@ -1,6 +1,7 @@
 // backend/controllers/supportController.js
 const SupportTicket = require('../models/SupportTicket');
 const User = require('../models/User');
+const AuthPolicy = require('../services/AuthPolicy');
 const db = require('../config/db'); 
 
 exports.createTicket = async (req, res, next) => {
@@ -94,8 +95,8 @@ exports.getTicketById = async (req, res, next) => {
         const ticket = await SupportTicket.findById(ticketId);
         if (!ticket) return res.status(404).json({ message: 'Звернення не знайдено.' });
         const isOwner = ticket.user_id === currentUserId;
-        const isAdmin = currentUser.role === 'admin';
-        if (!isOwner && !isAdmin) return res.status(403).json({ message: 'Доступ заборонено.' });
+        const isStaff = AuthPolicy.isStaff(currentUser);
+        if (!isOwner && !isStaff) return res.status(403).json({ message: 'Доступ заборонено.' });
         const replies = await SupportTicket.getReplies(ticketId);
         res.json({ ...ticket, replies });
     } catch (error) {
@@ -116,10 +117,11 @@ exports.addReply = async (req, res, next) => {
         if (!ticket) return res.status(404).json({ message: 'Звернення не знайдено.' });
         const currentUser = await User.findById(currentUserId);
         if (!currentUser) return res.status(401).json({ message: 'Користувач не знайдений.' });
-        if (ticket.user_id !== currentUserId && currentUser.role !== 'admin') {
+        const isStaff = AuthPolicy.isStaff(currentUser);
+        if (ticket.user_id !== currentUserId && !isStaff) {
             return res.status(403).json({ message: 'Ви не можете відповідати тут.' });
         }
-        if (currentUser.role !== 'admin') {
+        if (!isStaff) {
             const lastReplies = await SupportTicket.getLastReplies(ticketId, 2);
             if (lastReplies.length >= 2) {
                 const isSpamming = lastReplies.every(reply => reply.user_id === currentUserId);
@@ -159,17 +161,17 @@ exports.updateTicketStatus = async (req, res, next) => {
         const ticket = await SupportTicket.findById(ticketId);
         if (!ticket) return res.status(404).json({ message: 'Звернення не знайдено.' });
         const currentUser = await User.findById(currentUserId);
-        const isAdmin = currentUser.role === 'admin';
+        const isStaff = AuthPolicy.isStaff(currentUser);
         const isOwner = ticket.user_id === currentUserId;
-        if (!isAdmin && !isOwner) {
+        if (!isStaff && !isOwner) {
             return res.status(403).json({ message: 'Доступ заборонено.' });
         }
-        if (!isAdmin && status !== 'closed') {
+        if (!isStaff && status !== 'closed') {
             return res.status(403).json({ message: 'Користувач може лише закривати звернення.' });
         }
         let closedBy = null;
         if (status === 'closed') {
-            closedBy = isAdmin ? 'admin' : 'user';
+            closedBy = isStaff ? 'admin' : 'user';
         }
         await SupportTicket.updateStatus(ticketId, status, closedBy);
         res.json({ message: `Статус оновлено.` });

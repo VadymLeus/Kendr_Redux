@@ -96,13 +96,13 @@ const AdminTicketsReportsPage = () => {
         closeTicket: async (id) => {
             const isConfirmed = await confirm({ title: 'Закрити?', message: `Тікет #${id} в архів.`, type: 'warning', confirmText: 'Закрити' });
             if (isConfirmed) {
-                handleAction(() => apiClient.put(`/support/admin/${id}/status`, { status: 'closed' }), 'Закрито', ticketsData.refresh);
+                handleAction(() => apiClient.put(`/support/${id}/status`, { status: 'closed' }), 'Закрито', ticketsData.refresh);
             }
         },
         restoreTicket: async (id) => {
             const isConfirmed = await confirm({ title: 'Відновити?', message: `Тікет #${id} активний.`, type: 'info', confirmText: 'Відновити' });
             if (isConfirmed) {
-                handleAction(() => apiClient.put(`/support/admin/${id}/status`, { status: 'open' }), 'Відновлено', ticketsData.refresh);
+                handleAction(() => apiClient.put(`/support/${id}/status`, { status: 'open' }), 'Відновлено', ticketsData.refresh);
             }
         }
     };

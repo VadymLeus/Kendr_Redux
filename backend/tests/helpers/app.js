@@ -10,6 +10,7 @@ export const app = require('../../app');
 export const appPool = require('../../config/db');
 export const emailService = require('../../utils/emailService');
 export const paymentService = require('../../services/PaymentService');
+export const SiteRepository = require('../../repositories/SiteRepository');
 export const { ServiceError } = require('../../services/ServiceError');
 export const { clearSettingsCache } = require('../../middleware/platformGuards');
 

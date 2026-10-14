@@ -1,5 +1,5 @@
 // Перевірка токена (middleware verifyToken) і життєвий цикл JWT.
-// Фіксує D-SEC-09 (запасний секрет 'secret_key') і виправлення D-SEC-10 (кожен токен несе token_version і відкликається).
+// Фіксує виправлення D-SEC-09 (запасного секрету 'secret_key' немає) і D-SEC-10 (кожен токен несе token_version і відкликається).
 // Як «пробу» використовується GET /api/auth/me: він лише повертає профіль і не має побічних ефектів.
 import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
@@ -111,41 +111,66 @@ describe('verifyTokenOptional (глобально на всі маршрути)'
   });
 });
 
-// KNOWN-DEFECT D-SEC-09: запасний секрет у коді. Якщо JWT_SECRET не задано в середовищі, токени підписує й приймає 'secret_key'.
-describe('D-SEC-09: запасний секрет JWT', () => {
+// D-SEC-09 виправлено: запасного секрету 'secret_key' більше немає. Без JWT_SECRET сервер не запускається (server.js),
+// а якщо змінну прибрати вже в роботі, токени не видаються й не приймаються: відповідь 500 замість мовчазного переходу на відомий секрет.
+describe('D-SEC-09: запасного секрету JWT немає', () => {
   const forge = (payload) => jwt.sign(payload, 'secret_key', { expiresIn: '1h' });
+  const validPayload = () => ({ id: user.id, role: 'user', plan: 'FREE', token_version: 0 });
 
   it('контроль: коли JWT_SECRET задано, токен, підписаний запасним секретом, відхиляється', async () => {
-    const res = await probe(forge({ id: user.id, role: 'user', plan: 'FREE', token_version: 0 }));
+    const res = await probe(forge(validPayload()));
     expect(res.status).toBe(401);
   });
 
-  it("KNOWN-DEFECT D-SEC-09: без JWT_SECRET підроблений токен із секретом 'secret_key' приймається", async () => {
-    const res = await withoutJwtSecret(() => probe(forge({ id: user.id, role: 'user', plan: 'FREE', token_version: 0 })));
-    expect(res.status).toBe(200);
-    expect(res.body.id).toBe(user.id);
+  it("без JWT_SECRET підроблений токен із секретом 'secret_key' не приймається: 500, профіль не віддається", async () => {
+    const res = await quietly(() => withoutJwtSecret(() => probe(forge(validPayload()))));
+    expect(res.status).toBe(500);
+    expect(res.body.message).toMatch(/JWT_SECRET/);
+    expect(res.body.id).toBeUndefined();
   });
 
-  it("KNOWN-DEFECT D-SEC-09: без JWT_SECRET вхід видає токен, підписаний 'secret_key'", async () => {
-    const res = await withoutJwtSecret(() =>
-      fromIp(request(app).post('/api/auth/login')).send({ loginInput: 'olena', password: PASSWORD })
+  it('без JWT_SECRET не приймається й токен, підписаний справжнім секретом', async () => {
+    const real = sign(validPayload());
+    const res = await quietly(() => withoutJwtSecret(() => probe(real)));
+    expect(res.status).toBe(500);
+  });
+
+  it('без JWT_SECRET запит без токена, як і раніше, — 401', async () => {
+    const res = await withoutJwtSecret(() => request(app).get('/api/auth/me'));
+    expect(res.status).toBe(401);
+  });
+
+  it('без JWT_SECRET вхід не видає токен: 500, у відповіді немає token', async () => {
+    const res = await quietly(() =>
+      withoutJwtSecret(() => fromIp(request(app).post('/api/auth/login')).send({ loginInput: 'olena', password: PASSWORD }))
     );
-    expect(res.status).toBe(200);
-    expect(jwt.verify(res.body.token, 'secret_key')).toMatchObject({ id: user.id });
+    expect(res.status).toBe(500);
+    expect(res.body.token).toBeUndefined();
+    expect(res.body.message).toMatch(/JWT_SECRET/);
   });
 
-  it('KNOWN-DEFECT D-SEC-09: відновлення акаунта запасного секрету не має: 500, але акаунт уже відновлено', async () => {
+  it('без JWT_SECRET відновлення акаунта не виконується: 500, акаунт лишається видаленим', async () => {
     await patchUser(user, { status: 'deleted', deleted_at: new Date(Date.now() - 3 * DAY) });
     const res = await quietly(() =>
       withoutJwtSecret(() =>
         request(app)
           .post('/api/users/me/restore')
-          .set('Authorization', `Bearer ${forge({ id: user.id, role: 'user', plan: 'FREE', token_version: 0 })}`)
+          .set('Authorization', `Bearer ${forge(validPayload())}`)
       )
     );
     expect(res.status).toBe(500);
-    expect(res.body.message).toMatch(/secretOrPrivateKey/);
-    expect((await getUser(user.id)).status).toBe('active');
+    expect((await getUser(user.id)).status).toBe('deleted');
+  });
+
+  it('JWT_SECRET з самих пробілів вважається незаданим', async () => {
+    const saved = process.env.JWT_SECRET;
+    process.env.JWT_SECRET = '   ';
+    try {
+      const res = await quietly(() => probe(forge(validPayload())));
+      expect(res.status).toBe(500);
+    } finally {
+      process.env.JWT_SECRET = saved;
+    }
   });
 });
 

@@ -138,8 +138,8 @@ class User {
         return result;
     }
 
-    static async softDeleteUser(userId) {
-        const [result] = await db.query(`UPDATE users SET status = 'deleted', deleted_at = NOW() WHERE id = ?`, [userId]);
+    static async softDeleteUser(userId, connection) {
+        const [result] = await (connection || db).query(`UPDATE users SET status = 'deleted', deleted_at = NOW() WHERE id = ?`, [userId]);
         return result;
     }
 

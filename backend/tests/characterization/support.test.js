@@ -1,6 +1,6 @@
 // Підтримка (/api/support): звернення, відповіді, статуси, апеляції щодо сайтів.
-// Фіксує D-CON-01 (маршрут адмін-панелі не існує, модератор бачить список, але не може працювати зі зверненнями) і виправлення
-// D-SEC-24 (апеляцію подає лише власник заблокованого сайту). Завантаження вкладень (Cloudinary) не охоплене.
+// Фіксує виправлення D-CON-01 (модератор працює зі зверненнями так само, як адміністратор; адмін-панель викликає
+// існуючий маршрут PUT /support/:id/status) і D-SEC-24 (апеляцію подає лише власник заблокованого сайту). Завантаження вкладень (Cloudinary) не охоплене.
 import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import { app } from '../helpers/app.js';
@@ -167,6 +167,7 @@ describe('GET /api/support/:ticketId', () => {
   it.each([
     ['власник', () => owner],
     ['адміністратор', () => admin],
+    ['модератор', () => moderator],
   ])('%s відкриває звернення з відповідями у хронологічному порядку', async (_label, viewer) => {
     const res = await getTicketApi(ticket.id, viewer());
     expect(res.status).toBe(200);
@@ -207,6 +208,14 @@ describe('POST /api/support/:ticketId/reply', () => {
   it('відповідь адміністратора переводить звернення в answered', async () => {
     const res = await reply(ticket.id, admin, { body: 'Ми розібралися' });
     expect(res.status).toBe(201);
+    expect((await getTicket(ticket.id)).status).toBe('answered');
+  });
+
+  it('відповідь модератора, як і адміністратора, переводить звернення в answered', async () => {
+    const res = await reply(ticket.id, moderator, { body: 'Модератор допоможе' });
+    expect(res.status).toBe(201);
+    expect(res.body).toEqual({ message: 'Відповідь додано.' });
+    expect((await getTicketReplies(ticket.id)).map((item) => item.user_id)).toEqual([moderator.id]);
     expect((await getTicket(ticket.id)).status).toBe('answered');
   });
 
@@ -251,10 +260,13 @@ describe('POST /api/support/:ticketId/reply', () => {
     expect(allowed.status).toBe(201);
   });
 
-  it('обмеження «двох поспіль» не діє на адміністратора', async () => {
-    await addTicketReply(ticket, admin, { minutesAgo: 30 });
-    await addTicketReply(ticket, admin, { minutesAgo: 20 });
-    const res = await reply(ticket.id, admin, { body: 'Ще одна' });
+  it.each([
+    ['адміністратора', () => admin],
+    ['модератора', () => moderator],
+  ])('обмеження «двох поспіль» не діє на %s', async (_label, staff) => {
+    await addTicketReply(ticket, staff(), { minutesAgo: 30 });
+    await addTicketReply(ticket, staff(), { minutesAgo: 20 });
+    const res = await reply(ticket.id, staff(), { body: 'Ще одна' });
     expect(res.status).toBe(201);
   });
 });
@@ -330,41 +342,46 @@ describe('PUT /api/support/:ticketId/status', () => {
   });
 });
 
-// KNOWN-DEFECT D-CON-01: адмін-панель викликає PUT /support/admin/:id/status, а на сервері є лише PUT /support/:ticketId/status.
-// Окрім того, сервер вважає адміністратором лише роль admin, тож модератор бачить список звернень, але не може ні відкрити їх,
-// ні відповісти, ні змінити статус.
-describe('D-CON-01: адмін-панель і модератор', () => {
+// D-CON-01 виправлено: модератор бачить, відкриває звернення, відповідає й змінює статус так само, як адміністратор
+// (за дипломом, табл. 2.1, він обробляє звернення). Адмін-панель викликає PUT /support/:id/status (виправлення на frontend).
+describe('D-CON-01: модератор працює зі зверненнями', () => {
   let ticket;
   beforeEach(async () => {
     ticket = await createTicket(owner, { status: 'open', minutesAgo: 60 });
   });
 
-  it.each([
-    ['closed'],
-    ['open'],
-  ])('KNOWN-DEFECT D-CON-01: PUT /api/support/admin/:id/status (виклик адмін-панелі, status=%s) — 404, статус не змінюється', async (status) => {
-    const res = await as(request(app).put(`/api/support/admin/${ticket.id}/status`), admin).send({ status });
-    expect(res.status).toBe(404);
-    expect((await getTicket(ticket.id)).status).toBe('open');
-  });
-
-  it('KNOWN-DEFECT D-CON-01: модератор бачить список звернень, але не може відкрити звернення, відповісти й змінити статус', async () => {
+  it('модератор бачить список, відкриває звернення, відповідає й закриває його', async () => {
     const list = await adminList(moderator);
     expect(list.status).toBe(200);
     expect(list.body.map((item) => item.id)).toContain(ticket.id);
 
     const opened = await getTicketApi(ticket.id, moderator);
-    expect(opened.status).toBe(403);
-    expect(opened.body).toEqual({ message: 'Доступ заборонено.' });
+    expect(opened.status).toBe(200);
+    expect(opened.body).toMatchObject({ id: ticket.id, user_id: owner.id });
 
     const replied = await reply(ticket.id, moderator, { body: 'Відповідь модератора' });
-    expect(replied.status).toBe(403);
-    expect(replied.body).toEqual({ message: 'Ви не можете відповідати тут.' });
+    expect(replied.status).toBe(201);
+    expect((await getTicket(ticket.id)).status).toBe('answered');
 
     const closed = await setStatus(ticket.id, moderator, 'closed');
-    expect(closed.status).toBe(403);
-    expect(closed.body).toEqual({ message: 'Доступ заборонено.' });
+    expect(closed.status).toBe(200);
+    expect(await getTicket(ticket.id)).toMatchObject({ status: 'closed', closed_by: 'admin' });
+  });
 
+  it.each([
+    ['closed', 'admin'],
+    ['open', null],
+    ['answered', null],
+  ])('модератор встановлює статус %s (closed_by = %s)', async (status, closedBy) => {
+    const res = await setStatus(ticket.id, moderator, status);
+    expect(res.status).toBe(200);
+    expect(await getTicket(ticket.id)).toMatchObject({ status, closed_by: closedBy });
+  });
+
+  it('звичайний користувач, як і раніше, не бачить чужих звернень і не змінює їхній статус', async () => {
+    expect((await getTicketApi(ticket.id, other)).status).toBe(403);
+    expect((await reply(ticket.id, other, { body: 'Привіт' })).status).toBe(403);
+    expect((await setStatus(ticket.id, other, 'closed')).status).toBe(403);
     expect(await getTicketReplies(ticket.id)).toHaveLength(0);
     expect((await getTicket(ticket.id)).status).toBe('open');
   });

@@ -27,6 +27,7 @@ const reportRoutes = require('./routes/reportRoutes');
 const deliveryRoutes = require('./routes/deliveryRoutes');
 const transactionRoutes = require('./routes/transactionRoutes');
 const teamRoutes = require('./routes/teamRoutes');
+const { buildAllowedOrigins } = require('./config/corsOrigins');
 const errorHandler = require('./middleware/errorHandler');
 const verifyToken = require('./middleware/verifyToken');
 const passport = require('./config/passport');
@@ -37,14 +38,8 @@ app.set('trust proxy', 1);
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
-const allowedOrigins = [
-    'http://localhost:5173',
-    'https://kendr.vercel.app',
-    'https://kendr-backend.onrender.com',
-    process.env.CLIENT_URL
-].filter(Boolean);
 app.use(cors({
-    origin: allowedOrigins,
+    origin: buildAllowedOrigins(),
     credentials: true
 }));
 app.use(express.json({ limit: '50mb' }));

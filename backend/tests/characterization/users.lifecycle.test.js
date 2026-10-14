@@ -1,10 +1,10 @@
 // Видалення й відновлення акаунта (DELETE /api/users/me, POST /api/users/me/restore) та поведінка видаленого акаунта.
-// Фіксує D-BIZ-06 (видалення акаунта падає з 500 після зміни стану), виправлення D-SEC-10 (токен відновлення несе token_version),
+// Фіксує виправлення D-BIZ-06 (видалення акаунта ховає сайти в одній транзакції), виправлення D-SEC-10 (токен відновлення несе token_version),
 // виправлення D-SEC-23 (обмеження для видаленого акаунта не залежить від рядка запиту), D-BIZ-14 (відкладене видалення лише при вході).
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
-import { app } from '../helpers/app.js';
+import { app, SiteRepository } from '../helpers/app.js';
 import { useTestDatabase } from '../helpers/suite.js';
 import { authHeader, tokenFor } from '../helpers/auth.js';
 import { quietly } from '../helpers/outbound.js';
@@ -42,19 +42,48 @@ describe('DELETE /api/users/me', () => {
     expect(await getUser(user.id)).toMatchObject({ status: 'active', deleted_at: null });
   });
 
-  // KNOWN-DEFECT D-BIZ-06: після softDeleteUser викликається Site.setAllUserSitesToDraft, якого немає в коді.
-  // Користувач бачить помилку 500, але акаунт уже позначено видаленим, а його сайти лишились опублікованими.
-  it('KNOWN-DEFECT D-BIZ-06: видалення акаунта — 500, акаунт позначено видаленим, сайти не переведено в чернетки', async () => {
-    const site = await createSite(user, { status: 'published' });
-    const res = await quietly(() =>
-      request(app).delete('/api/users/me').set(authHeader(user)).send({ confirmation: 'DELETE' })
-    );
-    expect(res.status).toBe(500);
-    expect(res.body.message).toMatch(/setAllUserSitesToDraft/);
+  // D-BIZ-06 виправлено: акаунт позначається видаленим, а сайти власника ховаються в одній транзакції.
+  it('видалення акаунта позначає його видаленим і переводить сайти власника в приховані', async () => {
+    const published = await createSite(user, { status: 'published' });
+    const maintenance = await createSite(user, { status: 'maintenance' });
+    const hidden = await createSite(user, { status: 'private' });
+    const res = await request(app).delete('/api/users/me').set(authHeader(user)).send({ confirmation: 'DELETE' });
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ message: 'Акаунт заплановано на видалення. Ви можете відновити його протягом 14 днів.' });
 
     const row = await getUser(user.id);
     expect(row.status).toBe('deleted');
     expect(row.deleted_at).toBeInstanceOf(Date);
+    expect((await getSite(published.id)).status).toBe('private');
+    expect((await getSite(maintenance.id)).status).toBe('private');
+    expect((await getSite(hidden.id)).status).toBe('private');
+  });
+
+  it('сайти під модерацією (suspended, probation) і сайти інших власників не змінюються', async () => {
+    const suspended = await createSite(user, { status: 'suspended' });
+    const probation = await createSite(user, { status: 'probation' });
+    const stranger = await createUser();
+    const strangers = await createSite(stranger, { status: 'published' });
+    const res = await request(app).delete('/api/users/me').set(authHeader(user)).send({ confirmation: 'DELETE' });
+    expect(res.status).toBe(200);
+    expect((await getSite(suspended.id)).status).toBe('suspended');
+    expect((await getSite(probation.id)).status).toBe('probation');
+    expect((await getSite(strangers.id)).status).toBe('published');
+    expect((await getUser(stranger.id)).status).toBe('active');
+  });
+
+  it('збій під час приховування сайтів скасовує видалення: акаунт лишається активним', async () => {
+    const site = await createSite(user, { status: 'published' });
+    const spy = vi.spyOn(SiteRepository, 'setAllUserSitesToDraft').mockRejectedValueOnce(new Error('збій бази'));
+    try {
+      const res = await quietly(() =>
+        request(app).delete('/api/users/me').set(authHeader(user)).send({ confirmation: 'DELETE' })
+      );
+      expect(res.status).toBe(500);
+    } finally {
+      spy.mockRestore();
+    }
+    expect(await getUser(user.id)).toMatchObject({ status: 'active', deleted_at: null });
     expect((await getSite(site.id)).status).toBe('published');
   });
 });

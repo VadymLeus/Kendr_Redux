@@ -3,19 +3,26 @@ import { describe, it, expect } from 'vitest';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const { validateSlug, validateTitleText, validateSiteCreation } = require('../../services/siteValidation');
+const {
+  validateSlug, validateTitleText, validateSiteCreation, SLUG_MIN_LENGTH, SLUG_MAX_LENGTH,
+} = require('../../services/siteValidation');
 
 describe('validateSlug', () => {
   it.each([undefined, null, '', 42, {}])('%j → «URL сайту обов\'язковий»', (value) => {
     expect(validateSlug(value)).toBe('URL сайту обов\'язковий');
   });
 
-  it.each(['ab', 'a'.repeat(41)])('довжина поза межами 3–40 (%s)', (slug) => {
-    expect(validateSlug(slug)).toBe('URL сайту має бути від 3 до 40 символів');
+  it('межі довжини збігаються з полем вводу: 3–30 (D-BIZ-05)', () => {
+    expect(SLUG_MIN_LENGTH).toBe(3);
+    expect(SLUG_MAX_LENGTH).toBe(30);
   });
 
-  it('рівно 40 символів — дозволено (KNOWN-DEFECT D-BIZ-05: поле вводу обмежує 30)', () => {
-    expect(validateSlug('ab'.repeat(20))).toBeNull();
+  it.each(['ab', 'a'.repeat(31), 'ab'.repeat(20)])('довжина поза межами 3–30 (%s)', (slug) => {
+    expect(validateSlug(slug)).toBe('URL сайту має бути від 3 до 30 символів');
+  });
+
+  it.each([3, 30])('довжина на межі (%i символів) — дозволено', (length) => {
+    expect(validateSlug('ab'.repeat(length).slice(0, length))).toBeNull();
   });
 
   it.each(['my_shop', 'my shop', 'мій-сайт', 'shop!'])('недопустимі символи (%s)', (slug) => {
