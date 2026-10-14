@@ -1,7 +1,7 @@
 // Вхід через Google (config/passport.js і authController.googleCallback).
 // Справжній обмін кодом із Google потребує зовнішнього сервісу, тому функція перевірки стратегії passport
 // викликається напряму (passport._strategy('google')._verify), а googleCallback — із підставним req/res.
-// Фіксує D-SEC-22 (прив'язка Google до чужого непідтвердженого акаунта за збігом email) і D-SEC-10 (токен без token_version).
+// Фіксує виправлення D-SEC-22 (Google не прив'язується до непідтвердженого акаунта за збігом email) і D-SEC-10 (токен першого входу несе token_version).
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
@@ -117,24 +117,33 @@ describe('стратегія Google: пошук і створення акаун
     expect(user).toBeNull();
   });
 
-  // KNOWN-DEFECT D-SEC-22: збіг email — єдина умова прив'язки. Локальний акаунт, створений зловмисником до жертви з її поштою
-  // (непідтверджений, із паролем зловмисника), після входу жертви через Google стає підтвердженим, а пароль зловмисника лишається чинним.
-  it('KNOWN-DEFECT D-SEC-22: непідтверджений акаунт із чужим паролем стає підтвердженим, пароль зловмисника зберігається', async () => {
+  // D-SEC-22 виправлено: збіг email прив'язує Google лише до акаунта, чию пошту вже підтверджено.
+  it('D-SEC-22: непідтверджений акаунт із чужим паролем не прив\'язується й не стає підтвердженим', async () => {
     const squatter = await createUser({ username: 'squatter', email: 'olena@gmail.test', password: 'Attacker-pass1' });
     await patchUser(squatter, { is_verified: 0 });
-    const before = await fromIp(request(app).post('/api/auth/login')).send({ loginInput: 'olena@gmail.test', password: 'Attacker-pass1' });
-    expect(before.status).toBe(403);
-    expect(before.body.isNotVerified).toBe(true);
 
-    const { user } = await verify(PROFILE);
-    expect(user.id).toBe(squatter.id);
+    const { error, user } = await verify(PROFILE);
+    expect(error).toBeNull();
+    expect(user).toBe(false);
     const row = await getUser(squatter.id);
-    expect(row).toMatchObject({ google_id: 'google-1', is_verified: 1 });
+    expect(row).toMatchObject({ google_id: null, is_verified: 0 });
     expect(bcrypt.compareSync('Attacker-pass1', row.password_hash)).toBe(true);
+    expect(await countRows('users')).toBe(1);
 
     const after = await fromIp(request(app).post('/api/auth/login')).send({ loginInput: 'olena@gmail.test', password: 'Attacker-pass1' });
-    expect(after.status).toBe(200);
-    expect(after.body.user.id).toBe(squatter.id);
+    expect(after.status).toBe(403);
+    expect(after.body.isNotVerified).toBe(true);
+  });
+
+  it('D-SEC-22: після підтвердження пошти власником Google прив\'язується до акаунта', async () => {
+    const local = await createUser({ username: 'olena', email: 'olena@gmail.test', password: 'Strong-pass1' });
+    await patchUser(local, { is_verified: 0 });
+    expect((await verify(PROFILE)).user).toBe(false);
+
+    await patchUser(local, { is_verified: 1 });
+    const { user } = await verify(PROFILE);
+    expect(user).toMatchObject({ id: local.id, google_id: 'google-1' });
+    expect((await getUser(local.id)).google_id).toBe('google-1');
   });
 });
 
@@ -185,12 +194,12 @@ describe('googleCallback: переспрямування після входу',
     expect(await getUserByEmail('olena@test.local')).toBeUndefined();
   });
 
-  // KNOWN-DEFECT D-SEC-10: об'єкт нового користувача зі стратегії не містить token_version, тож токен першого входу його не має.
-  it('KNOWN-DEFECT D-SEC-10: токен першого входу через Google (новий акаунт) не має token_version', async () => {
+  it('D-SEC-10: токен першого входу через Google (новий акаунт) несе token_version', async () => {
     const { user: created } = await verify(PROFILE);
     const location = await callback(created);
     const payload = jwt.verify(tokenOf(location), process.env.JWT_SECRET);
-    expect(payload).toMatchObject({ id: created.id, role: 'user', plan: 'FREE' });
-    expect(payload).not.toHaveProperty('token_version');
+    expect(payload).toMatchObject({ id: created.id, role: 'user', plan: 'FREE', token_version: 0 });
+    const me = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${tokenOf(location)}`);
+    expect(me.status).toBe(200);
   });
 });

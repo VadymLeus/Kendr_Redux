@@ -2,7 +2,8 @@
 const User = require('../models/User');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+const { signAccessToken } = require('../utils/authTokens');
+const AuthPolicy = require('../services/AuthPolicy');
 const { sendOtpEmail } = require('../utils/emailService');
 const { deleteFile } = require('../utils/fileUtils');
 const db = require('../config/db');
@@ -96,11 +97,7 @@ exports.login = async (req, res, next) => {
                 const isMatch = await bcrypt.compare(password, user.password_hash);
                 if (!isMatch) return res.status(401).json({ message: 'Невірний логін або пароль.' });
                 
-                const token = jwt.sign(
-                    { id: user.id, role: 'RESTORE_ONLY', plan: user.plan || 'FREE', token_version: user.token_version }, 
-                    process.env.JWT_SECRET || 'secret_key', 
-                    { expiresIn: '1h' }
-                );
+                const token = signAccessToken(user, { role: 'RESTORE_ONLY', expiresIn: '1h' });
                 return res.json({ 
                     require_restore: true, 
                     message: 'Акаунт в процесі видалення. Відновити?', 
@@ -118,11 +115,7 @@ exports.login = async (req, res, next) => {
         const isMatch = await bcrypt.compare(password, user.password_hash);
         if (!isMatch) return res.status(401).json({ message: 'Невірний логін або пароль.' });
         await User.updateLastLogin(user.id);
-        const token = jwt.sign(
-            { id: user.id, role: user.role, plan: user.plan || 'FREE', token_version: user.token_version }, 
-            process.env.JWT_SECRET || 'secret_key', 
-            { expiresIn: '24h' }
-        );
+        const token = signAccessToken(user);
         const hasPassword = !!user.password_hash;
         res.json({
             token,
@@ -202,7 +195,7 @@ exports.verify2FA = async (req, res, next) => {
         if (!email || !code) return res.status(400).json({ message: 'Email та код обов\'язкові.' });
         const [users] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
         const user = users[0];
-        if (!user || user.otp_code !== code || user.otp_purpose !== '2FA') {
+        if (!user || user.otp_code !== code || user.otp_purpose !== '2FA' || !AuthPolicy.canCompleteStaffLogin(user)) {
             return res.status(401).json({ message: 'Невірний код підтвердження.' });
         }
         if (new Date() > new Date(user.otp_expires)) {
@@ -211,11 +204,7 @@ exports.verify2FA = async (req, res, next) => {
         }
         await db.query('UPDATE users SET otp_code = NULL, otp_expires = NULL, otp_purpose = NULL WHERE id = ?', [user.id]);
         await User.updateLastLogin(user.id);
-        const token = jwt.sign(
-            { id: user.id, role: user.role, plan: user.plan || 'FREE', token_version: user.token_version }, 
-            process.env.JWT_SECRET || 'secret_key', 
-            { expiresIn: '24h' }
-        );
+        const token = signAccessToken(user);
         const hasPassword = !!user.password_hash;
         res.json({
             message: 'Вхід в панель успішний',
@@ -236,13 +225,16 @@ exports.verify2FA = async (req, res, next) => {
 exports.resendOtp = async (req, res, next) => {
     try {
         const { email, purpose } = req.body;
-        const [users] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
-        const user = users[0];
-        if (!user) return res.status(404).json({ message: 'Користувача не знайдено.' });
-        const otpCode = generateOTP();
-        const expires = new Date(Date.now() + 15 * 60 * 1000);
-        await db.query('UPDATE users SET otp_code = ?, otp_expires = ?, otp_purpose = ? WHERE id = ?', [otpCode, expires, purpose, user.id]);
-        await sendOtpEmail(email, otpCode, purpose);
+        if (!AuthPolicy.isResendPurpose(purpose)) {
+            return res.status(400).json({ message: 'Невірне призначення коду.' });
+        }
+        const user = typeof email === 'string' ? await User.findByEmail(email) : null;
+        if (AuthPolicy.canReceiveOtp(user, purpose)) {
+            const otpCode = generateOTP();
+            const expires = new Date(Date.now() + 15 * 60 * 1000);
+            await db.query('UPDATE users SET otp_code = ?, otp_expires = ?, otp_purpose = ? WHERE id = ?', [otpCode, expires, purpose, user.id]);
+            await sendOtpEmail(email, otpCode, purpose);
+        }
         res.json({ message: 'Код успішно відправлено повторно!' });
     } catch (error) {
         next(error);
@@ -254,7 +246,7 @@ exports.forgotPassword = async (req, res, next) => {
         const { email } = req.body;
         const user = await User.findByEmail(email);
         const genericMessage = 'Якщо цей email зареєстровано в системі, ми відправили на нього інструкції.';
-        if (!user || user.status === 'suspended' || ['admin', 'moderator'].includes(user.role)) {
+        if (!AuthPolicy.canReceiveOtp(user, 'RESET_PASSWORD')) {
              return res.json({ message: genericMessage }); 
         }
         const otpCode = generateOTP();
@@ -339,20 +331,12 @@ exports.googleCallback = async (req, res) => {
             await User.deleteById(req.user.id);
             return res.redirect(`${clientUrl}/login?error=auth_failed`); 
         } else {
-            const token = jwt.sign(
-                { id: req.user.id, role: 'RESTORE_ONLY', plan: req.user.plan || 'FREE', token_version: req.user.token_version }, 
-                process.env.JWT_SECRET || 'secret_key', 
-                { expiresIn: '1h' }
-            );
+            const token = signAccessToken(req.user, { role: 'RESTORE_ONLY', expiresIn: '1h' });
             return res.redirect(`${clientUrl}/auth/success?token=${token}`);
         }
     }
     await User.updateLastLogin(req.user.id);
-    const token = jwt.sign(
-        { id: req.user.id, role: req.user.role, plan: req.user.plan || 'FREE', token_version: req.user.token_version }, 
-        process.env.JWT_SECRET || 'secret_key', 
-        { expiresIn: '24h' }
-    );
+    const token = signAccessToken(req.user);
     res.redirect(`${clientUrl}/auth/success?token=${token}`);
 };
 
@@ -363,13 +347,7 @@ exports.refreshToken = async (req, res, next) => {
         if (user.status === 'suspended' || user.status === 'deleted') {
             return res.status(403).json({ message: 'Ваш акаунт заблоковано або видалено.' });
         }
-
-        const token = jwt.sign(
-            { id: user.id, role: user.role, plan: user.plan || 'FREE', token_version: user.token_version }, 
-            process.env.JWT_SECRET || 'secret_key', 
-            { expiresIn: '24h' }
-        );
-        
+        const token = signAccessToken(user);
         const hasPassword = await User.hasPassword(user.id);
         res.json({
             token,

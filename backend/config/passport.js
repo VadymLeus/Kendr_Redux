@@ -31,13 +31,14 @@ passport.use(new GoogleStrategy({
         const [userByEmail] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
         if (userByEmail.length > 0) {
             const user = userByEmail[0];
-            if (user.status !== 'suspended') {
-                await db.query(
-                    'UPDATE users SET google_id = ?, is_verified = 1 WHERE id = ?', 
-                    [profile.id, user.id]
-                );
+            if (user.status === 'suspended') {
+                return done(null, { ...user, google_id: profile.id });
             }
-            return done(null, { ...user, google_id: profile.id, is_verified: 1 });
+            if (!user.is_verified) {
+                return done(null, false);
+            }
+            await db.query('UPDATE users SET google_id = ? WHERE id = ?', [profile.id, user.id]);
+            return done(null, { ...user, google_id: profile.id });
         }
         const baseUsername = profile.displayName.trim().replace(/\s+/g, ' ');
         let uniqueUsername = baseUsername;
@@ -57,7 +58,8 @@ passport.use(new GoogleStrategy({
             slug: slug,
             email: email,
             role: 'user',
-            avatar_url: avatar_url
+            avatar_url: avatar_url,
+            token_version: 0
         };
         return done(null, newUser);
     } catch (err) {

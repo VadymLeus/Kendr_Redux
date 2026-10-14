@@ -1,5 +1,5 @@
 // Захист маршрутів автентифікації: обмежувачі частоти (express-rate-limit) і перевірка Cloudflare Turnstile.
-// Фіксує D-SEC-20 (ліміт діє на IP, а не на акаунт) і D-SEC-25 (Turnstile вимикається за іменем хоста із запиту).
+// Фіксує D-SEC-20 (ліміт діє на IP, а не на акаунт). D-SEC-25 виправлено: Turnstile вимикає змінна середовища, а не ім'я хоста.
 // Лічильники обмежувачів живуть у пам'яті процесу й ключуються за req.ip; кожен тест бере власну адресу (helpers/client.js).
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import request from 'supertest';
@@ -90,8 +90,8 @@ describe('обмежувачі частоти', () => {
   });
 
   it('resend-otp: 10 запитів за 15 хвилин, одинадцятий — 429', async () => {
-    const responses = await burst(freshIp(), repeat(11, ['resend-otp', { email: 'nobody@test.local', purpose: '2FA' }]));
-    expect(responses.slice(0, 10).every((res) => res.status === 404)).toBe(true);
+    const responses = await burst(freshIp(), repeat(11, ['resend-otp', { email: 'nobody@test.local', purpose: 'RESET_PASSWORD' }]));
+    expect(responses.slice(0, 10).every((res) => res.status === 200)).toBe(true);
     expect(responses[10].status).toBe(429);
     expect(responses[10].body).toEqual({ message: 'Забагато запитів на відправку коду. Спробуйте пізніше.' });
   });
@@ -133,14 +133,23 @@ describe('обмежувачі частоти', () => {
 
 describe('Cloudflare Turnstile', () => {
   const TOKEN_REQUIRED = { message: "Перевірка безпеки (Turnstile) обов'язкова." };
-  const onSite = (url, body, ip = freshIp()) => onPublicHost(fromIp(request(app).post(`/api/auth/${url}`), ip)).send(body);
+  const onSite = (url, body, ip = freshIp()) => fromIp(request(app).post(`/api/auth/${url}`), ip).send(body);
+
+  let savedDisabled;
+  beforeEach(() => {
+    savedDisabled = process.env.TURNSTILE_DISABLED;
+    process.env.TURNSTILE_DISABLED = 'false';
+  });
+  afterEach(() => {
+    process.env.TURNSTILE_DISABLED = savedDisabled;
+  });
 
   it.each([
     ['register', { username: 'olena', email: 'olena@test.local', password: 'Strong-pass1' }],
     ['login', { loginInput: 'olena', password: 'Strong-pass1' }],
     ['admin/login', { loginInput: 'root', password: 'Strong-pass1' }],
     ['forgot-password', { email: 'olena@test.local' }],
-  ])('POST /api/auth/%s на публічному домені без токена Turnstile — 400', async (url, body) => {
+  ])('POST /api/auth/%s без токена Turnstile — 400', async (url, body) => {
     const res = await onSite(url, body);
     expect(res.status).toBe(400);
     expect(res.body).toEqual(TOKEN_REQUIRED);
@@ -154,7 +163,7 @@ describe('Cloudflare Turnstile', () => {
     ['verify-email', {}],
     ['verify-reset-code', {}],
     ['reset-password', {}],
-    ['resend-otp', { email: 'nobody@test.local', purpose: '2FA' }],
+    ['resend-otp', { email: 'nobody@test.local', purpose: 'RESET_PASSWORD' }],
   ])('POST /api/auth/%s не вимагає токена Turnstile', async (url, body) => {
     const res = await onSite(url, body);
     expect(res.body.message).not.toBe(TOKEN_REQUIRED.message);
@@ -191,26 +200,43 @@ describe('Cloudflare Turnstile', () => {
     expect(res.body).toEqual({ message: 'Помилка сервера при перевірці безпеки.' });
   });
 
-  it('localhost і 127.0.0.1 перевірку пропускають: токен не потрібен і до Cloudflare запит не йде', async () => {
-    const byDefault = await fromIp(request(app).post('/api/auth/login')).send({ loginInput: 'nobody', password: 'x' });
-    const viaLocalhost = await fromIp(request(app).post('/api/auth/login'))
-      .set('Host', 'localhost')
-      .set('X-Forwarded-Host', 'localhost')
-      .send({ loginInput: 'nobody', password: 'x' });
-    expect(byDefault.status).toBe(401);
-    expect(viaLocalhost.status).toBe(401);
+  it('TURNSTILE_DISABLED=true вимикає перевірку: токен не потрібен і до Cloudflare запит не йде', async () => {
+    process.env.TURNSTILE_DISABLED = 'true';
+    const res = await onSite('login', { loginInput: 'nobody', password: 'x' });
+    expect(res.status).toBe(401);
     expect(out.turnstile).toHaveLength(0);
   });
 
-  // KNOWN-DEFECT D-SEC-25: рішення «це розробка, капчу пропустити» ухвалюється за ім'ям хоста з самого запиту,
-  // а не за налаштуванням середовища. Достатньо заголовка X-Forwarded-Host (застосунок довіряє першому проксі).
-  it('KNOWN-DEFECT D-SEC-25: заголовок X-Forwarded-Host: localhost вимикає Turnstile на публічному домені', async () => {
+  it('у виробничому режимі TURNSTILE_DISABLED ігнорується', async () => {
+    process.env.TURNSTILE_DISABLED = 'true';
+    const savedEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    try {
+      const res = await onSite('login', { loginInput: 'nobody', password: 'x' });
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual(TOKEN_REQUIRED);
+    } finally {
+      process.env.NODE_ENV = savedEnv;
+    }
+  });
+
+  it.each([
+    ['localhost', 'localhost'],
+    ['127.0.0.1', '127.0.0.1'],
+  ])('D-SEC-25: ім\'я хоста %s із запиту не вимикає Turnstile', async (_label, host) => {
+    const res = await onPublicHost(fromIp(request(app).post('/api/auth/login')), host).send({ loginInput: 'nobody', password: 'x' });
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual(TOKEN_REQUIRED);
+    expect(out.turnstile).toHaveLength(0);
+  });
+
+  it('D-SEC-25: заголовок X-Forwarded-Host: localhost не вимикає Turnstile на публічному домені', async () => {
     const res = await fromIp(request(app).post('/api/auth/login'))
       .set('Host', 'kendr.test')
       .set('X-Forwarded-Host', 'localhost')
       .send({ loginInput: 'nobody', password: 'x' });
-    expect(res.status).toBe(401);
-    expect(res.body).toEqual({ message: 'Невірний логін або пароль.' });
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual(TOKEN_REQUIRED);
     expect(out.turnstile).toHaveLength(0);
   });
 });

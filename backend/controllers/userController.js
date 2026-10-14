@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const jwt = require('jsonwebtoken');
 const { deleteFile } = require('../utils/fileUtils');
+const { signAccessToken } = require('../utils/authTokens');
 const db = require('../config/db');
 const PlanPolicy = require('../services/PlanPolicy');
 const getUserStats = async (userId, plan, role) => {
@@ -197,11 +198,12 @@ exports.changePassword = async (req, res, next) => {
         }
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(newPassword, salt);
-        await User.update(userId, { password_hash: hashedPassword });
+        await User.changePassword(userId, hashedPassword);
         const updatedUserRaw = await User.findById(userId);
         const stats = await getUserStats(userId, updatedUserRaw.plan, updatedUserRaw.role);
         res.json({ 
             message: user.password_hash ? 'Пароль успішно змінено.' : 'Пароль успішно встановлено.',
+            token: signAccessToken(updatedUserRaw),
             user: sanitizeUser({ ...updatedUserRaw, has_password: true }, stats) 
         });
     } catch (error) {
@@ -235,7 +237,8 @@ exports.restoreAccount = async (req, res, next) => {
         const token = jwt.sign({ 
             id: user.id, 
             role: user.role, 
-            plan: user.plan || 'FREE' 
+            plan: user.plan || 'FREE',
+            token_version: user.token_version
         }, process.env.JWT_SECRET, { expiresIn: '24h' });
         const stats = await getUserStats(userId, user.plan, user.role);
         res.json({ 

@@ -1,6 +1,7 @@
 // backend/middleware/verifyTurnstile.js
+const isDisabled = () => process.env.TURNSTILE_DISABLED === 'true' && process.env.NODE_ENV !== 'production';
 const verifyTurnstile = async (req, res, next) => {
-    if (req.hostname === 'localhost' || req.hostname === '127.0.0.1') {
+    if (isDisabled()) {
         return next();
     }
     const token = req.body.turnstileToken;

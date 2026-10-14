@@ -11,7 +11,7 @@ import { useCooldown } from '../../../shared/hooks/useCooldown';
 import { Lock, Trash2, AlertCircle, Timer } from 'lucide-react';
 
 const ProfileSecurityTab = () => {
-    const { user, updateUser, logout } = useContext(AuthContext);
+    const { user, login, logout } = useContext(AuthContext);
     const { confirm } = useConfirm(); 
     const [isLoading, setIsLoading] = useState(false);
     const hasPassword = user.has_password === true;
@@ -69,7 +69,7 @@ const ProfileSecurityTab = () => {
                 ...(response.data.user || {}), 
                 has_password: true        
             };
-            updateUser(updatedUser); 
+            login(updatedUser, response.data.token); 
             setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' });
             startSecurityCooldown(30);
         } catch (error) {

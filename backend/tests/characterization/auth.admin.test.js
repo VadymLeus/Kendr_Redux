@@ -1,12 +1,12 @@
 // Вхід до адмін-панелі (/api/auth/admin/login, /verify-2fa) і повторне надсилання коду (/resend-otp).
-// Фіксує D-SEC-04 (resend-otp + verify-2fa обходять пароль і вимкнене для staff скидання пароля) і D-SEC-26 (розкриття стану акаунта).
+// Фіксує виправлення D-SEC-04 (resend-otp і verify-2fa більше не обходять пароль і вимкнене для staff скидання пароля) і D-SEC-26 (розкриття стану акаунта).
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import { createRequire } from 'node:module';
 import { app } from '../helpers/app.js';
 import { useTestDatabase } from '../helpers/suite.js';
-import { captureOutbound, quietly } from '../helpers/outbound.js';
+import { captureOutbound } from '../helpers/outbound.js';
 import { fromIp } from '../helpers/client.js';
 import { createUser, patchUser, setOtp, getUser } from '../helpers/factories.js';
 
@@ -154,9 +154,14 @@ describe('POST /api/auth/verify-2fa: другий крок (код)', () => {
 });
 
 describe('POST /api/auth/resend-otp', () => {
-  it('перевипускає код для підтвердження пошти на 15 хвилин і надсилає лист', async () => {
+  const unverified = async () => {
     const user = await createUser({ username: 'olena', email: 'olena@test.local' });
     await patchUser(user, { is_verified: 0 });
+    return user;
+  };
+
+  it('перевипускає код для підтвердження пошти на 15 хвилин і надсилає лист', async () => {
+    const user = await unverified();
     await setOtp(user, { code: '111111', purpose: 'VERIFY_EMAIL', minutes: 1 });
 
     const res = await resendOtp({ email: 'olena@test.local', purpose: 'VERIFY_EMAIL' });
@@ -168,102 +173,121 @@ describe('POST /api/auth/resend-otp', () => {
     expect(out.codeSentTo('olena@test.local')).toBe(row.otp_code);
     expect(out.emails[0].subject).toBe('Підтвердження пошти | Kendr');
   });
+
+  it('перевипускає код скидання пароля для звичайного акаунта', async () => {
+    const user = await createUser({ username: 'olena', email: 'olena@test.local' });
+    const res = await resendOtp({ email: 'olena@test.local', purpose: 'RESET_PASSWORD' });
+    expect(res.status).toBe(200);
+    const row = await getUser(user.id);
+    expect(row.otp_purpose).toBe('RESET_PASSWORD');
+    expect(out.codeSentTo('olena@test.local')).toBe(row.otp_code);
+  });
+
+  it('підтверджений акаунт не отримує код підтвердження пошти', async () => {
+    const user = await createUser({ username: 'olena', email: 'olena@test.local' });
+    const res = await resendOtp({ email: 'olena@test.local', purpose: 'VERIFY_EMAIL' });
+    expect(res.status).toBe(200);
+    expect(out.emails).toHaveLength(0);
+    expect((await getUser(user.id)).otp_code).toBeNull();
+  });
+
+  it('заблокований акаунт не отримує жодного коду', async () => {
+    const user = await unverified();
+    await patchUser(user, { status: 'suspended' });
+    for (const purpose of ['VERIFY_EMAIL', 'RESET_PASSWORD']) {
+      expect((await resendOtp({ email: 'olena@test.local', purpose })).status).toBe(200);
+    }
+    expect(out.emails).toHaveLength(0);
+    expect((await getUser(user.id)).otp_code).toBeNull();
+  });
 });
 
-// KNOWN-DEFECT D-SEC-04: resend-otp не вимагає автентифікації, приймає purpose від клієнта й не зв'язаний із входом,
-// а verify-2fa не вимагає пройденого кроку пароля, ролі й статусу акаунта. Потрібен лише доступ до пошти.
-describe('D-SEC-04: resend-otp і verify-2fa обходять крок пароля', () => {
+// D-SEC-04 виправлено: resend-otp видає лише коди VERIFY_EMAIL і RESET_PASSWORD та лише тим акаунтам, яким вони дозволені;
+// код 2FA з'являється тільки після пароля в admin/login, а verify-2fa приймає його лише від активного співробітника.
+describe('D-SEC-04: resend-otp і verify-2fa не обходять крок пароля', () => {
   it.each([
     ['admin', 'admin@test.local'],
     ['moderator', 'mod@test.local'],
-  ])('KNOWN-DEFECT D-SEC-04: для %s код 2FA замовляється без пароля, verify-2fa видає токен панелі керування', async (role, email) => {
+  ])('D-SEC-04: для %s код 2FA без пароля не замовити, токена панелі керування немає', async (_role, email) => {
     const resend = await resendOtp({ email, purpose: '2FA' });
-    expect(resend.status).toBe(200);
-    expect(out.emails).toHaveLength(1);
-    expect(out.emails[0].subject).toBe('Підтвердження входу | Kendr');
+    expect(resend.status).toBe(400);
+    expect(resend.body).toEqual({ message: 'Невірне призначення коду.' });
+    expect(out.emails).toHaveLength(0);
 
-    const res = await verify2fa({ email, code: out.codeSentTo(email) });
-    expect(res.status).toBe(200);
-    expect(jwt.verify(res.body.token, process.env.JWT_SECRET)).toMatchObject({ role });
-    // Крок пароля (POST /admin/login) у цьому сценарії не викликався жодного разу
-    const panel = await request(app).get('/api/admin/users').set('Authorization', `Bearer ${res.body.token}`);
-    expect(panel.status).toBe(200);
+    const res = await verify2fa({ email, code: '123456' });
+    expect(res.status).toBe(401);
+    expect(res.body).not.toHaveProperty('token');
   });
 
-  it('KNOWN-DEFECT D-SEC-04: verify-2fa не перевіряє роль: токен отримує й звичайний користувач', async () => {
+  it('D-SEC-04: verify-2fa перевіряє роль: код 2FA звичайного користувача токена не дає', async () => {
     const regular = await createUser({ username: 'regular', email: 'regular@test.local' });
-    await resendOtp({ email: regular.email, purpose: '2FA' });
-    const res = await verify2fa({ email: regular.email, code: out.codeSentTo(regular.email) });
-    expect(res.status).toBe(200);
-    expect(res.body.user).toMatchObject({ id: regular.id, role: 'user' });
+    await setOtp(regular, { code: '123456', purpose: '2FA', minutes: 5 });
+    const res = await verify2fa({ email: regular.email, code: '123456' });
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({ message: 'Невірний код підтвердження.' });
   });
 
-  it('KNOWN-DEFECT D-SEC-04: verify-2fa не перевіряє статус: заблокований акаунт отримує токен (його відхиляє лише verifyToken)', async () => {
-    const banned = await createUser({ username: 'banned', email: 'banned@test.local' });
-    await patchUser(banned, { status: 'suspended' });
-    await resendOtp({ email: banned.email, purpose: '2FA' });
-    const res = await verify2fa({ email: banned.email, code: out.codeSentTo(banned.email) });
-    expect(res.status).toBe(200);
-    const me = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${res.body.token}`);
-    expect(me.status).toBe(403);
-    expect(me.body.code).toBe('ACCOUNT_SUSPENDED');
+  it.each(['suspended', 'deleted'])('D-SEC-04: verify-2fa перевіряє статус: співробітник зі статусом %s токена не отримує', async (status) => {
+    await setOtp(admin, { code: '123456', purpose: '2FA', minutes: 5 });
+    await patchUser(admin, { status });
+    const res = await verify2fa({ email: 'admin@test.local', code: '123456' });
+    expect(res.status).toBe(401);
+    expect(res.body).not.toHaveProperty('token');
   });
 
-  it('KNOWN-DEFECT D-SEC-04: непідтверджений акаунт обходить заборону входу й користується токеном', async () => {
+  it('D-SEC-04: непідтверджений акаунт не отримує ні код 2FA, ні токен', async () => {
     const fresh = await createUser({ username: 'fresh', email: 'fresh@test.local' });
     await patchUser(fresh, { is_verified: 0 });
-    await resendOtp({ email: fresh.email, purpose: '2FA' });
-    const res = await verify2fa({ email: fresh.email, code: out.codeSentTo(fresh.email) });
-    expect(res.status).toBe(200);
-    const me = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${res.body.token}`);
-    expect(me.status).toBe(200);
+    expect((await resendOtp({ email: fresh.email, purpose: '2FA' })).status).toBe(400);
+    expect((await verify2fa({ email: fresh.email, code: '123456' })).status).toBe(401);
+    expect(out.emails).toHaveLength(0);
     expect((await getUser(fresh.id)).is_verified).toBe(0);
   });
 
-  it('KNOWN-DEFECT D-SEC-04: пароль адміністратора скидається поштою, хоча forgot-password для staff вимкнено навмисно', async () => {
+  it('D-SEC-04: пароль адміністратора поштою не скидається: ні forgot-password, ні resend-otp не видають код', async () => {
     const forgot = await post('forgot-password', { email: 'admin@test.local' });
     expect(forgot.status).toBe(200);
+    const resend = await resendOtp({ email: 'admin@test.local', purpose: 'RESET_PASSWORD' });
+    expect(resend.status).toBe(200);
     expect(out.emails).toHaveLength(0);
     expect((await getUser(admin.id)).otp_code).toBeNull();
 
-    await resendOtp({ email: 'admin@test.local', purpose: 'RESET_PASSWORD' });
-    const code = out.codeSentTo('admin@test.local');
-    expect(code).toMatch(/^\d{6}$/);
-
-    const reset = await post('reset-password', { email: 'admin@test.local', code, newPassword: 'Brand-new1' });
-    expect(reset.status).toBe(200);
+    const reset = await post('reset-password', { email: 'admin@test.local', code: '123456', newPassword: 'Brand-new1' });
+    expect(reset.status).toBe(400);
     const row = await getUser(admin.id);
-    expect(bcrypt.compareSync('Brand-new1', row.password_hash)).toBe(true);
-    expect(row.token_version).toBe(1);
-    const firstStep = await adminLogin({ loginInput: 'admin@test.local', password: 'Brand-new1' });
-    expect(firstStep.body).toMatchObject({ success: true, require2FA: true });
+    expect(bcrypt.compareSync(PASSWORD, row.password_hash)).toBe(true);
+    expect(row.token_version).toBe(0);
   });
 
-  it('KNOWN-DEFECT D-SEC-04: resend-otp розкриває наявність акаунта (404 проти 200)', async () => {
-    const unknown = await resendOtp({ email: 'nobody@test.local', purpose: '2FA' });
-    const known = await resendOtp({ email: 'admin@test.local', purpose: '2FA' });
-    expect(unknown.status).toBe(404);
-    expect(unknown.body).toEqual({ message: 'Користувача не знайдено.' });
+  it('D-SEC-04: resend-otp не розкриває наявність акаунта: відповідь однакова для відомого й невідомого email', async () => {
+    const unknown = await resendOtp({ email: 'nobody@test.local', purpose: 'RESET_PASSWORD' });
+    const known = await resendOtp({ email: 'admin@test.local', purpose: 'RESET_PASSWORD' });
+    expect(unknown.status).toBe(200);
     expect(known.status).toBe(200);
+    expect(unknown.body).toEqual(known.body);
   });
 
-  it('KNOWN-DEFECT D-SEC-04: без purpose відповідь 200, лист не надсилається, а чинний код жертви знецінюється', async () => {
+  it.each([
+    ['без purpose', {}],
+    ['purpose поза переліком', { purpose: 'NOT_A_PURPOSE' }],
+    ['purpose не рядок', { purpose: ['2FA'] }],
+  ])('D-SEC-04: %s — 400, чинний код жертви лишається', async (_label, extra) => {
     const victim = await createUser({ username: 'victim', email: 'victim@test.local' });
     await setOtp(victim, { code: '111111', purpose: 'RESET_PASSWORD', minutes: 10 });
 
-    const res = await resendOtp({ email: victim.email });
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({ message: 'Код успішно відправлено повторно!' });
+    const res = await resendOtp({ email: victim.email, ...extra });
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ message: 'Невірне призначення коду.' });
     expect(out.emails).toHaveLength(0);
-    expect((await getUser(victim.id)).otp_purpose).toBeNull();
+    expect((await getUser(victim.id)).otp_purpose).toBe('RESET_PASSWORD');
 
     const check = await post('verify-reset-code', { email: victim.email, code: '111111' });
-    expect(check.status).toBe(400);
+    expect(check.status).toBe(200);
   });
 
-  it('KNOWN-DEFECT D-SEC-04: purpose поза переліком призводить до помилки БД (500 із текстом SQL)', async () => {
-    const res = await quietly(() => resendOtp({ email: 'admin@test.local', purpose: 'NOT_A_PURPOSE' }));
-    expect(res.status).toBe(500);
-    expect(res.body.message).toMatch(/otp_purpose/);
+  it('D-SEC-04: email не рядок не потрапляє в запит до БД', async () => {
+    const res = await resendOtp({ email: { $ne: null }, purpose: 'RESET_PASSWORD' });
+    expect(res.status).toBe(200);
+    expect(out.emails).toHaveLength(0);
   });
 });

@@ -41,7 +41,7 @@ class User {
 
     static async findById(id) {
         const [rows] = await db.query(
-            `SELECT id, username, slug, email, phone_number, role, status, plan, deleted_at,
+            `SELECT id, username, slug, email, phone_number, role, status, plan, deleted_at, token_version,
             platform_theme_mode, platform_theme_accent, 
             bio, social_telegram, social_instagram, social_website, is_profile_public,
             created_at, avatar_url, last_login_at 
@@ -123,6 +123,10 @@ class User {
         params.push(userId);
         await db.query(query, params);
         return this.findById(userId);
+    }
+
+    static async changePassword(userId, passwordHash) {
+        await db.query('UPDATE users SET password_hash = ?, token_version = token_version + 1 WHERE id = ?', [passwordHash, userId]);
     }
 
     static async updateLastLogin(userId) {

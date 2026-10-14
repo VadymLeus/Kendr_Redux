@@ -1,8 +1,9 @@
 // Профіль користувача (/api/users): публічний профіль, редагування, зміна пароля, аватар.
 // Фіксує D-BIZ-04 (зміна пароля без перевірки складності), D-BIZ-13 (немає валідації), D-BIZ-15 (slug мінливий при збереженні),
-// D-SEC-19 (довільне видалення файлів через avatar-url), D-SEC-21 (зміна пароля не відкликає сесії), D-CON-05, D-ARC-12.
+// D-SEC-19 (довільне видалення файлів через avatar-url), виправлення D-SEC-21 (зміна пароля відкликає сесії), D-CON-05, D-ARC-12.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import request from 'supertest';
+import jwt from 'jsonwebtoken';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -308,6 +309,7 @@ describe('PUT /api/users/profile/password', () => {
     expect(res.status).toBe(200);
     expect(res.body.message).toBe('Пароль успішно встановлено.');
     expect(res.body.user.has_password).toBe(true);
+    expect(jwt.verify(res.body.token, process.env.JWT_SECRET)).toMatchObject({ id: owner.id, token_version: 1 });
   });
 
   // KNOWN-DEFECT D-BIZ-04: складність нового пароля не перевіряється зовсім.
@@ -323,15 +325,24 @@ describe('PUT /api/users/profile/password', () => {
     expect(res.body.message).toMatch(/illegal arguments/i);
   });
 
-  // KNOWN-DEFECT D-SEC-21: скидання пароля поштою збільшує token_version і відкликає сесії (auth.recovery.test.js),
-  // а зміна пароля в профілі — ні. Токен, видалений на момент зміни, продовжує діяти до закінчення строку.
-  it('KNOWN-DEFECT D-SEC-21: зміна пароля не збільшує token_version, старий токен лишається чинним', async () => {
+  it('D-SEC-21: зміна пароля збільшує token_version, відкликає старі токени й видає новий токен у відповіді', async () => {
     const stolen = authHeader(owner);
     const res = await changePassword({ currentPassword: PASSWORD, newPassword: 'Brand-new1' });
     expect(res.status).toBe(200);
+    expect((await getUser(owner.id)).token_version).toBe(1);
+    expect(jwt.verify(res.body.token, process.env.JWT_SECRET)).toMatchObject({ id: owner.id, role: 'user', plan: 'FREE', token_version: 1 });
+
+    const old = await request(app).get('/api/auth/me').set(stolen);
+    expect(old.status).toBe(401);
+    const fresh = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${res.body.token}`);
+    expect(fresh.status).toBe(200);
+  });
+
+  it('невдала зміна пароля токени не відкликає', async () => {
+    const res = await changePassword({ currentPassword: 'Wrong-pass1', newPassword: 'Brand-new1' });
+    expect(res.status).toBe(401);
     expect((await getUser(owner.id)).token_version).toBe(0);
-    const me = await request(app).get('/api/auth/me').set(stolen);
-    expect(me.status).toBe(200);
+    expect((await request(app).get('/api/auth/me').set(authHeader(owner))).status).toBe(200);
   });
 
   it('обмежувач: 3 спроби на годину з однієї адреси, четверта — 429', async () => {

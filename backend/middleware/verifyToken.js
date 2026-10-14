@@ -1,6 +1,14 @@
 // backend/middleware/verifyToken.js
 const jwt = require('jsonwebtoken');
 const db = require('../config/db');
+const RESTORE_FLOW = [
+    { method: 'GET', path: '/api/auth/me' },
+    { method: 'POST', path: '/api/users/me/restore' }
+];
+const isRestoreFlow = (req) => {
+    const pathname = req.originalUrl.split('?')[0];
+    return RESTORE_FLOW.some(route => route.method === req.method && route.path === pathname);
+};
 const verifyToken = async (req, res, next) => {
     try {
         const authHeader = req.headers.authorization;
@@ -18,16 +26,14 @@ const verifyToken = async (req, res, next) => {
              return res.status(403).json({ message: 'Доступ заблоковано. Ваш акаунт деактивовано.', code: 'ACCOUNT_SUSPENDED' });
         }
         if (user.status === 'deleted') {
-            const isRestoreRoute = req.originalUrl.includes('/restore');
-            const isMeRoute = req.originalUrl.match(/\/(auth|users)\/me/);
-            if (!isRestoreRoute && !isMeRoute) {
+            if (!isRestoreFlow(req)) {
                 return res.status(403).json({ 
                     message: 'Акаунт видалено. Необхідно відновити.', 
                     code: 'ACCOUNT_DELETED' 
                 });
             }
         }
-        if (decoded.token_version !== undefined && user.token_version !== decoded.token_version) {
+        if (decoded.token_version === undefined || user.token_version !== decoded.token_version) {
             return res.status(401).json({ message: 'Сесія застаріла через зміну пароля або налаштувань безпеки. Будь ласка, увійдіть знову.' });
         }
         req.user = decoded;

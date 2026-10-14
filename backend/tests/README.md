@@ -52,6 +52,8 @@ npm run test:coverage         # покриття (v8)
 | `PaymentService.test.js` | `services/PaymentService.js`: розбір callback, порівняння підпису функцією сталого часу, успішні статуси, збіг суми й валюти (D-SEC-07), відмова Google Pay без серверної перевірки (D-SEC-01, D-SEC-02) |
 | `SubscriptionService.test.js` | `services/SubscriptionService.js`: початок оплати тарифу, callback LiqPay (статус, сума, валюта, повторна обробка), оплата Google Pay лише після підтвердження |
 | `PlanPolicy.test.js` | `services/PlanPolicy.js`: ліміти тарифів FREE, PLUS, ADMIN, невідомий тариф, регістр і пробіли; перевірка ліміту сайтів, товарів і категорій (D-BIZ-03) |
+| `AuthPolicy.test.js` | `services/AuthPolicy.js`: хто є співробітником, які призначення коду дозволено повторно надсилати, кому код можна надіслати, хто завершує вхід до панелі (D-SEC-04) |
+| `authTokens.test.js` | `utils/authTokens.js`: склад токена, токен лише для відновлення, відмова видавати токен без `token_version` (D-SEC-10) |
 | `siteAccess.test.js` | `services/siteAccess.js`: вимоги `OWNER`, `read`, `write` за роллю й секціями співавтора, розбір дозволів із JSON, `requireSiteAccess` і `hasSiteAccess` (D-SEC-06) |
 | `SiteService.test.js` | `services/SiteService.js`: створення сайту (вимкнене створення, адреса, шаблон, транзакція), каталог, відкриття за адресою (статуси suspended, probation, private), збереження налаштувань (права, блокування, статус), перейменування, скидання до шаблону, закріплення, аналітика; фіксує D-ARC-10, D-BIZ-03, D-SEC-05, D-SEC-17 на рівні сервісу; перевіряє виправлення D-SEC-06 (права за групами полів, скидання й закріплення лише власником, аналітика за секцією `overview`) |
 | `siteValidation.test.js` | `services/siteValidation.js`: правила адреси сайту (довжина, символи, зарезервовані й прості послідовності, D-BIZ-05) і назви сайту |
@@ -95,17 +97,17 @@ npm run test:coverage         # покриття (v8)
 | D-BLK-05 | `pages.test.js` | `block_content` зберігається без перевірки, відсутнє поле стирає вміст, не-JSON ламає читання |
 | D-ARC-11 | `sites.public.test.js` | сторінки зі slug `analytics` і `pages` недоступні публічно |
 | D-DEAD-08 | `products.test.js` | видалення із галереї змінює лише галерею й відповідає 200 (виправлено в v2.0, крок 7.3: `ProductRepository.update` записує лише передані поля) |
-| D-SEC-04 | `auth.admin.test.js` | код 2FA замовляється через `resend-otp` без пароля, `verify-2fa` видає токен панелі для admin, moderator, звичайного, заблокованого й непідтвердженого акаунта; пароль адміністратора скидається поштою; 404 проти 200; `purpose` поза переліком — 500 |
+| D-SEC-04 | `auth.admin.test.js` | `resend-otp` приймає лише `VERIFY_EMAIL` і `RESET_PASSWORD` та мовчки нічого не надсилає недозволеним акаунтам (staff, заблокованим, підтвердженим); код 2FA дає лише пароль в `admin/login`, `verify-2fa` вимагає активного співробітника; відповідь не розкриває наявність акаунта (виправлено в v2.0, крок 7.4a) |
 | D-SEC-09 | `auth.tokens.test.js` | без `JWT_SECRET` токен із секретом `secret_key` приймається, вхід підписує ним, відновлення акаунта повертає 500 |
-| D-SEC-10 | `auth.tokens.test.js`, `auth.google.test.js`, `users.lifecycle.test.js` | токени з `refresh`, відновлення й першого входу через Google без `token_version` переживають зміну версії |
+| D-SEC-10 | `auth.tokens.test.js`, `auth.google.test.js`, `users.lifecycle.test.js` | усі токени несуть `token_version` (вхід, `refresh`, відновлення, перший вхід через Google, зміна пароля), токен без нього відхиляється (виправлено в v2.0, крок 7.4a) |
 | D-SEC-12 | `auth.register.test.js` | код одноразового пароля повністю визначається `Math.random()` |
 | D-SEC-19 | `users.profile.test.js` | відносний шлях із `..` в `avatar_url` дозволяє видалити довільний файл у каталозі backend |
 | D-SEC-20 | `auth.guards.test.js`, `auth.register.test.js` | після блокування IP підбір коду триває з іншої адреси, лічильника на акаунт немає |
-| D-SEC-21 | `users.profile.test.js` | зміна пароля не збільшує `token_version`, старий токен чинний |
-| D-SEC-22 | `auth.google.test.js` | вхід через Google підтверджує чужий непідтверджений акаунт, пароль зловмисника лишається чинним |
-| D-SEC-23 | `users.lifecycle.test.js` | `?next=/restore` та подібні рядки запиту обходять заборону для видаленого акаунта |
+| D-SEC-21 | `users.profile.test.js` | зміна пароля збільшує `token_version`, відкликає старі токени й повертає новий токен (виправлено в v2.0, крок 7.4a) |
+| D-SEC-22 | `auth.google.test.js` | Google прив'язується до наявного акаунта лише після підтвердження його пошти; непідтверджений акаунт із паролем зловмисника не змінюється (виправлено в v2.0, крок 7.4a) |
+| D-SEC-23 | `users.lifecycle.test.js` | для видаленого акаунта відкрито лише `GET /api/auth/me` і `POST /api/users/me/restore` за точним шляхом, рядок запиту не береться до уваги (виправлено в v2.0, крок 7.4a) |
 | D-SEC-24 | `support.test.js` | сторонній подає апеляцію від імені чужого робочого сайту, власнику вже відмовлено |
-| D-SEC-25 | `auth.guards.test.js` | `X-Forwarded-Host: localhost` вимикає Turnstile на публічному домені |
+| D-SEC-25 | `auth.guards.test.js` | Turnstile вимикає змінна `TURNSTILE_DISABLED=true` (ігнорується при `NODE_ENV=production`), ім'я хоста й `X-Forwarded-Host` ролі не відіграють (виправлено в v2.0, крок 7.4a) |
 | D-SEC-26 | `auth.login.test.js`, `auth.admin.test.js` | стан акаунта (заблокований, непідтверджений, не staff) і його email віддаються до перевірки пароля |
 | D-SEC-28 | `forms.test.js` | статус заявки чужого сайту змінюється через власний `siteId` у URL; після виправлення вибірка й зміна заявки виконуються за парою `id` і `site_id`, чужа заявка дає 404 (виправлено в v2.0, крок 7.2b) |
 | D-BIZ-04 | `auth.register.test.js`, `auth.recovery.test.js`, `users.profile.test.js` | слабкі паролі приймаються при реєстрації, скиданні й зміні пароля |

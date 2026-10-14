@@ -1,6 +1,6 @@
 // Видалення й відновлення акаунта (DELETE /api/users/me, POST /api/users/me/restore) та поведінка видаленого акаунта.
-// Фіксує D-BIZ-06 (видалення акаунта падає з 500 після зміни стану), D-SEC-10 (токен відновлення без token_version),
-// D-SEC-23 (обмеження для видаленого акаунта обходиться рядком запиту), D-BIZ-14 (відкладене видалення лише при вході).
+// Фіксує D-BIZ-06 (видалення акаунта падає з 500 після зміни стану), виправлення D-SEC-10 (токен відновлення несе token_version),
+// виправлення D-SEC-23 (обмеження для видаленого акаунта не залежить від рядка запиту), D-BIZ-14 (відкладене видалення лише при вході).
 import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
@@ -107,31 +107,36 @@ describe('акаунт у стані видалення (14 днів на від
     expect(tickets.status).toBe(200);
   });
 
-  // KNOWN-DEFECT D-SEC-10: токен відновлення видається без token_version і не відкликається зміною версії.
-  it('KNOWN-DEFECT D-SEC-10: токен відновлення не має token_version і переживає зміну версії, а токен входу — ні', async () => {
+  it('D-SEC-10: токен відновлення несе актуальну token_version і відкликається її зміною', async () => {
+    await patchUser(user, { token_version: 2 });
     await softDelete();
-    const res = await restore();
-    expect(jwt.verify(res.body.token, process.env.JWT_SECRET)).not.toHaveProperty('token_version');
+    const res = await restore(authHeader({ ...user, token_version: 2 }));
+    expect(jwt.verify(res.body.token, process.env.JWT_SECRET)).toMatchObject({ id: user.id, token_version: 2 });
 
-    await patchUser(user, { token_version: 1 }); // скидання пароля
-    const survivor = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${res.body.token}`);
-    const stale = await request(app).get('/api/auth/me').set(authHeader(user));
-    expect(survivor.status).toBe(200);
+    await patchUser(user, { token_version: 3 });
+    const stale = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${res.body.token}`);
     expect(stale.status).toBe(401);
   });
 
-  // KNOWN-DEFECT D-SEC-23: verifyToken визначає «маршрут відновлення» за підрядком у req.originalUrl, а той включає рядок запиту.
   it.each([
     ['/api/support/my-tickets?next=/restore'],
     ['/api/support/my-tickets?from=/auth/me'],
     ['/api/support/my-tickets?x=/users/me'],
-  ])('KNOWN-DEFECT D-SEC-23: %s обходить заборону для видаленого акаунта', async (url) => {
+  ])('D-SEC-23: %s не знімає заборону для видаленого акаунта', async (url) => {
     await softDelete();
-    const blocked = await request(app).get('/api/support/my-tickets').set(authHeader(user));
-    expect(blocked.status).toBe(403);
     const res = await request(app).get(url).set(authHeader(user));
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual([]);
+    expect(res.status).toBe(403);
+    expect(res.body).toEqual({ message: 'Акаунт видалено. Необхідно відновити.', code: 'ACCOUNT_DELETED' });
+  });
+
+  it('D-SEC-23: маршрути відновлення відкриті лише за точним шляхом: повторне видалення акаунта недоступне', async () => {
+    await softDelete();
+    const me = await request(app).get('/api/auth/me?next=/restore').set(authHeader(user));
+    expect(me.status).toBe(200);
+    expect(me.body).toMatchObject({ require_restore: true });
+    const removal = await request(app).delete('/api/users/me').set(authHeader(user)).send({ confirmation: 'DELETE' });
+    expect(removal.status).toBe(403);
+    expect((await restore()).status).toBe(200);
   });
 });
 

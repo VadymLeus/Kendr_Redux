@@ -1,5 +1,5 @@
 // Перевірка токена (middleware verifyToken) і життєвий цикл JWT.
-// Фіксує D-SEC-09 (запасний секрет 'secret_key') і D-SEC-10 (токени без token_version: /auth/refresh та відновлення акаунта).
+// Фіксує D-SEC-09 (запасний секрет 'secret_key') і виправлення D-SEC-10 (кожен токен несе token_version і відкликається).
 // Як «пробу» використовується GET /api/auth/me: він лише повертає профіль і не має побічних ефектів.
 import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
@@ -149,35 +149,36 @@ describe('D-SEC-09: запасний секрет JWT', () => {
   });
 });
 
-// KNOWN-DEFECT D-SEC-10: токен без поля token_version не проходить перевірку відкликання, а /auth/refresh видає саме такі токени,
-// бо User.findById не вибирає стовпець token_version.
-describe('D-SEC-10: токени без token_version', () => {
-  it('токен без поля token_version приймається, навіть коли версія в БД змінилась', async () => {
-    await patchUser(user, { token_version: 5 });
+// D-SEC-10 виправлено: токен без поля token_version не приймається, а /auth/refresh видає токен з актуальною версією.
+describe('D-SEC-10: токени з token_version', () => {
+  it('токен без поля token_version відхиляється, навіть коли версія в БД нульова', async () => {
     const unversioned = sign({ id: user.id, role: 'user', plan: 'FREE' });
     const res = await probe(unversioned);
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({
+      message: 'Сесія застаріла через зміну пароля або налаштувань безпеки. Будь ласка, увійдіть знову.',
+    });
   });
 
-  it('KNOWN-DEFECT D-SEC-10: /auth/refresh видає токен без token_version', async () => {
-    const res = await request(app).post('/api/auth/refresh').set(authHeader(user));
+  it('/auth/refresh видає токен з актуальною версією з БД', async () => {
+    await patchUser(user, { token_version: 4 });
+    const res = await request(app).post('/api/auth/refresh').set(authHeader({ ...user, token_version: 4 }));
     expect(res.status).toBe(200);
     const payload = jwt.verify(res.body.token, process.env.JWT_SECRET);
-    expect(payload).toMatchObject({ id: user.id, role: 'user', plan: 'FREE' });
-    expect(payload).not.toHaveProperty('token_version');
+    expect(payload).toMatchObject({ id: user.id, role: 'user', plan: 'FREE', token_version: 4 });
   });
 
-  it('KNOWN-DEFECT D-SEC-10: оновлений токен переживає зміну версії, а звичайний токен входу — ні', async () => {
+  it('оновлений токен відкликається зміною версії, як і звичайний токен входу', async () => {
     const original = authHeader(user);
     const refreshed = await request(app).post('/api/auth/refresh').set(original);
-    await patchUser(user, { token_version: 1 }); // скидання пароля збільшує версію
+    await patchUser(user, { token_version: 1 });
     const stale = await request(app).get('/api/auth/me').set(original);
-    const survivor = await probe(refreshed.body.token);
+    const staleRefreshed = await probe(refreshed.body.token);
     expect(stale.status).toBe(401);
-    expect(survivor.status).toBe(200);
+    expect(staleRefreshed.status).toBe(401);
   });
 
-  it('токен, оновлений повторно, лишається чинним: сесію можна продовжувати без кінця', async () => {
+  it('токен, оновлений повторно, лишається чинним, доки версія не змінилась', async () => {
     let token = tokenFor(user);
     for (let i = 0; i < 3; i++) {
       const res = await request(app).post('/api/auth/refresh').set('Authorization', `Bearer ${token}`);
@@ -185,5 +186,7 @@ describe('D-SEC-10: токени без token_version', () => {
       token = res.body.token;
     }
     expect((await probe(token)).status).toBe(200);
+    await patchUser(user, { token_version: 1 });
+    expect((await probe(token)).status).toBe(401);
   });
 });

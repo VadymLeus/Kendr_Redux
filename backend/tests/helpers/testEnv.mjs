@@ -28,6 +28,7 @@ export const testEnv = {
   CLOUDINARY_API_KEY: 'test',
   CLOUDINARY_API_SECRET: 'test',
   TURNSTILE_SECRET_KEY: '1x0000000000000000000000000000000AA',
+  TURNSTILE_DISABLED: 'true',
   CLIENT_URL: 'http://localhost:5173',
   FRONTEND_URL: 'http://localhost:5173',
   BACKEND_URL: 'http://localhost:5000',
