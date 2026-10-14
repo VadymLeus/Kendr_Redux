@@ -1,5 +1,7 @@
 // backend/controllers/userTemplateController.js
 const SiteRepository = require('../repositories/SiteRepository');
+const { requireSiteAccess, OWNER } = require('../services/siteAccess');
+const sendServiceError = require('../utils/sendServiceError');
 const PageRepository = require('../repositories/PageRepository');
 const db = require('../config/db');
 
@@ -11,10 +13,7 @@ exports.saveAsTemplate = async (req, res, next) => {
         if (!siteId || !templateName) {
             return res.status(400).json({ message: 'Необхідно вказати ID сайту та назву шаблону.' });
         }
-        const site = await SiteRepository.findByIdAndUserId(siteId, userId);
-        if (!site) {
-            return res.status(403).json({ message: 'Сайт не знайдено або у вас немає прав.' });
-        }
+        const site = await requireSiteAccess(siteId, userId, OWNER, 'Сайт не знайдено або у вас немає прав.');
         const siteDetails = await SiteRepository.findByPath(site.site_path);
         if (!siteDetails) return res.status(404).json({ message: 'Деталі сайту не знайдено.' });
         const pages = await PageRepository.findBySiteId(siteId);
@@ -49,8 +48,7 @@ exports.saveAsTemplate = async (req, res, next) => {
         );
         res.status(201).json({ message: 'Шаблон успішно створено!' });
     } catch (error) {
-        console.error('Error in saveAsTemplate:', error);
-        next(error);
+        sendServiceError(error, res, next);
     }
 };
 
@@ -123,8 +121,7 @@ exports.updateTemplate = async (req, res, next) => {
             }
             return res.json({ message: 'Інформацію про шаблон оновлено!' });
         }
-        const site = await SiteRepository.findByIdAndUserId(siteId, userId);
-        if (!site) return res.status(403).json({ message: 'Сайт для оновлення шаблону не знайдено.' });
+        const site = await requireSiteAccess(siteId, userId, OWNER, 'Сайт для оновлення шаблону не знайдено.');
         const siteDetails = await SiteRepository.findByPath(site.site_path);
         if (!siteDetails) return res.status(404).json({ message: 'Деталі сайту не знайдено.' });
         const pages = await PageRepository.findBySiteId(siteId);
@@ -161,7 +158,6 @@ exports.updateTemplate = async (req, res, next) => {
         }
         res.json({ message: 'Шаблон та його структуру успішно оновлено!' });
     } catch (error) {
-        console.error('Error in updateTemplate:', error);
-        next(error);
+        sendServiceError(error, res, next);
     }
 };

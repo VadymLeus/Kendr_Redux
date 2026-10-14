@@ -1,9 +1,12 @@
 // backend/controllers/formController.js
 const FormSubmission = require('../models/FormSubmission');
-const SiteRepository = require('../repositories/SiteRepository');
 const User = require('../models/User');
+const { requireSiteAccess, read, write } = require('../services/siteAccess');
+const sendServiceError = require('../utils/sendServiceError');
 const { sendSubmissionNotification } = require('../utils/emailService');
 const db = require('../config/db');
+
+const ACCESS_DENIED = 'Доступ заборонено.';
 
 exports.submitForm = async (req, res, next) => {
     try {
@@ -41,32 +44,24 @@ exports.submitForm = async (req, res, next) => {
 exports.getSubmissions = async (req, res, next) => {
     try {
         const { siteId } = req.params;
-        const site = await SiteRepository.findByIdAndUserId(siteId, req.user.id);
-
-        if (!site) {
-            return res.status(403).json({ message: 'Доступ заборонено.' });
-        }
+        await requireSiteAccess(siteId, req.user.id, read('overview'), ACCESS_DENIED);
 
         const submissions = await FormSubmission.findBySiteId(siteId);
         res.json(submissions);
     } catch (error) {
-        next(error);
+        sendServiceError(error, res, next);
     }
 };
 
 exports.markSubmissionRead = async (req, res, next) => {
     try {
         const { siteId, submissionId } = req.params;
-        const site = await SiteRepository.findByIdAndUserId(siteId, req.user.id);
-
-        if (!site) {
-            return res.status(403).json({ message: 'Доступ заборонено.' });
-        }
+        await requireSiteAccess(siteId, req.user.id, write('overview'), ACCESS_DENIED);
 
         await FormSubmission.markAsRead(submissionId, siteId);
         res.json({ message: 'Заявку позначено як прочитану.' });
     } catch (error) {
-        next(error);
+        sendServiceError(error, res, next);
     }
 };
 
@@ -74,37 +69,30 @@ exports.updateStatus = async (req, res, next) => {
     try {
         const { siteId, submissionId } = req.params;
         const { status } = req.body;
-        
-        const site = await SiteRepository.findByIdAndUserId(siteId, req.user.id);
-        if (!site) return res.status(403).json({ message: 'Доступ заборонено.' });
 
-        const [rows] = await db.query('SELECT form_data FROM form_submissions WHERE id = ?', [submissionId]);
-        if (!rows[0]) return res.status(404).json({ message: 'Заявку не знайдено' });
+        await requireSiteAccess(siteId, req.user.id, write('overview'), ACCESS_DENIED);
 
-        let formData = rows[0].form_data;
+        const submission = await FormSubmission.findById(submissionId, siteId);
+        if (!submission) return res.status(404).json({ message: 'Заявку не знайдено' });
+
+        let formData = submission.form_data;
         if (typeof formData === 'string') formData = JSON.parse(formData);
 
         formData.status = status;
 
-        await db.query(
-            'UPDATE form_submissions SET form_data = ? WHERE id = ?', 
-            [JSON.stringify(formData), submissionId]
-        );
+        await FormSubmission.updateFormData(submissionId, siteId, formData);
 
         res.json({ message: 'Статус оновлено' });
     } catch (error) {
-        next(error);
+        sendServiceError(error, res, next);
     }
 };
 
 exports.toggleSubmissionPin = async (req, res, next) => {
     try {
         const { siteId, submissionId } = req.params;
-        
-        const site = await SiteRepository.findByIdAndUserId(siteId, req.user.id);
-        if (!site) {
-            return res.status(403).json({ message: 'Доступ заборонено.' });
-        }
+
+        await requireSiteAccess(siteId, req.user.id, write('overview'), ACCESS_DENIED);
 
         const newPinState = await FormSubmission.togglePin(submissionId, siteId);
         
@@ -113,22 +101,18 @@ exports.toggleSubmissionPin = async (req, res, next) => {
             is_pinned: newPinState 
         });
     } catch (error) {
-        next(error);
+        sendServiceError(error, res, next);
     }
 };
 
 exports.deleteSubmission = async (req, res, next) => {
     try {
         const { siteId, submissionId } = req.params;
-        const site = await SiteRepository.findByIdAndUserId(siteId, req.user.id);
-
-        if (!site) {
-            return res.status(403).json({ message: 'Доступ заборонено.' });
-        }
+        await requireSiteAccess(siteId, req.user.id, write('overview'), ACCESS_DENIED);
 
         await FormSubmission.deleteById(submissionId, siteId);
         res.json({ message: 'Заявку успішно видалено.' });
     } catch (error) {
-        next(error);
+        sendServiceError(error, res, next);
     }
 };

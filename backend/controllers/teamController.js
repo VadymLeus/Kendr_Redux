@@ -2,6 +2,11 @@
 const db = require('../config/db');
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
+const { requireSiteAccess, read, write } = require('../services/siteAccess');
+const sendServiceError = require('../utils/sendServiceError');
+const { ServiceError } = require('../services/ServiceError');
+
+const isPlatformStaff = (user) => user.role === 'admin' || user.role === 'moderator';
 
 exports.heartbeat = async (req, res, next) => {
     try {
@@ -9,6 +14,7 @@ exports.heartbeat = async (req, res, next) => {
         const userId = req.user.id;
         const [sites] = await db.query('SELECT locked_by_user_id, locked_until FROM sites WHERE id = ?', [siteId]);
         if (!sites.length) return res.status(404).json({ message: 'Сайт не знайдено' });
+        await requireSiteAccess(siteId, userId, write(), 'У вас немає прав редагувати цей сайт.');
         const site = sites[0];
         const now = new Date();
         if (site.locked_by_user_id && site.locked_by_user_id !== userId && new Date(site.locked_until) > now) {
@@ -24,8 +30,8 @@ exports.heartbeat = async (req, res, next) => {
         );
         res.json({ locked: false });
     } catch (error) {
-        console.error('Помилка heartbeat:', error);
-        next(error);
+        if (!(error instanceof ServiceError)) console.error('Помилка heartbeat:', error);
+        sendServiceError(error, res, next);
     }
 };
 
@@ -133,6 +139,9 @@ exports.acceptInvite = async (req, res, next) => {
 exports.getCollaborators = async (req, res, next) => {
     try {
         const { id: siteId } = req.params;
+        if (!isPlatformStaff(req.user)) {
+            await requireSiteAccess(siteId, req.user.id, read('settings'), 'Доступ заборонено.');
+        }
         const [collabs] = await db.query(`
             SELECT u.id, u.username, u.email, u.avatar_url, sc.role, sc.permissions, sc.created_at
             FROM site_collaborators sc
@@ -146,7 +155,7 @@ exports.getCollaborators = async (req, res, next) => {
         
         res.json(formattedCollabs);
     } catch (error) {
-        next(error);
+        sendServiceError(error, res, next);
     }
 };
 

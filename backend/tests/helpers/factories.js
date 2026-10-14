@@ -254,6 +254,21 @@ export async function createWarning(user, site, reason = null) {
   return { id: result.insertId };
 }
 
+export async function createSubmission(site, overrides = {}) {
+  const i = next();
+  const submission = {
+    form_data: { name: `Клієнт ${i}`, email: `client${i}@test.local`, message: `Повідомлення ${i}` },
+    is_read: 0,
+    is_pinned: 0,
+    ...overrides,
+  };
+  const result = await query(
+    'INSERT INTO form_submissions (site_id, form_data, is_read, is_pinned) VALUES (?, ?, ?, ?)',
+    [site.id, JSON.stringify(submission.form_data), submission.is_read, submission.is_pinned]
+  );
+  return { id: result.insertId, site_id: site.id, ...submission };
+}
+
 // ---- Читання стану БД для перевірок ----
 export async function getOrder(id) {
   const rows = await query('SELECT * FROM orders WHERE id = ?', [id]);
@@ -320,6 +335,15 @@ export async function getCategory(id) {
 
 export async function getCollaboratorRows(siteId) {
   return query('SELECT * FROM site_collaborators WHERE site_id = ? ORDER BY user_id', [siteId]);
+}
+
+export async function getSubmission(id) {
+  const rows = await query('SELECT * FROM form_submissions WHERE id = ?', [id]);
+  return rows[0];
+}
+
+export async function getTemplates(userId) {
+  return query('SELECT * FROM templates WHERE user_id = ? ORDER BY id', [userId]);
 }
 
 export async function getReview(id) {

@@ -152,17 +152,6 @@ class SiteRepository {
     return { ...site, products: productRows };
   }
 
-  static async findByIdAndUserId(siteId, userId) {
-    const [rows] = await db.query(`
-        SELECT s.* 
-        FROM sites s
-        LEFT JOIN site_collaborators sc ON s.id = sc.site_id
-        WHERE s.id = ? AND (s.user_id = ? OR sc.user_id = ?)
-    `, [siteId, userId, userId]);
-    
-    return rows[0] || null;
-  }
-
   static async findWithCollaborator(siteId, userId) {
     const [rows] = await db.query(`
         SELECT s.*, sc.role AS collaborator_role, sc.permissions AS collaborator_permissions

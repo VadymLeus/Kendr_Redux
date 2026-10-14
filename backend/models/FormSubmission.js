@@ -18,6 +18,22 @@ class FormSubmission {
         return rows;
     }
 
+    static async findById(submissionId, siteId) {
+        const [rows] = await db.query(
+            'SELECT id, form_data FROM form_submissions WHERE id = ? AND site_id = ?',
+            [submissionId, siteId]
+        );
+        return rows[0] || null;
+    }
+
+    static async updateFormData(submissionId, siteId, formData) {
+        const [result] = await db.query(
+            'UPDATE form_submissions SET form_data = ? WHERE id = ? AND site_id = ?',
+            [JSON.stringify(formData), submissionId, siteId]
+        );
+        return result;
+    }
+
     static async markAsRead(submissionId, siteId) {
         const [result] = await db.query(
             'UPDATE form_submissions SET is_read = 1 WHERE id = ? AND site_id = ?',
@@ -33,8 +49,8 @@ class FormSubmission {
         );
         
         const [rows] = await db.query(
-            'SELECT is_pinned FROM form_submissions WHERE id = ?', 
-            [submissionId]
+            'SELECT is_pinned FROM form_submissions WHERE id = ? AND site_id = ?', 
+            [submissionId, siteId]
         );
         return rows[0] ? !!rows[0].is_pinned : false;
     }

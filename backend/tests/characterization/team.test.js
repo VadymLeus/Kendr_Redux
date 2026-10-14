@@ -1,6 +1,4 @@
-// Команда сайту (/api/team): блокування редагування, запрошення, співавтори, права, передача сайту.
-// Фіксує D-SEC-15 (список співавторів без перевірки доступу), D-SEC-16 (блокування сайту без перевірки доступу),
-// D-SEC-06 (permissions зберігаються, але не діють), D-ARC-10.
+// backend/tests/characterization/team.test.js
 import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import { app } from '../helpers/app.js';
@@ -91,19 +89,49 @@ describe('блокування редагування сайту', () => {
       expect(res.body.message).toBe('Сайт не знайдено');
     });
 
-    // KNOWN-DEFECT D-SEC-16: доступ до сайту не перевіряється, тож будь-який користувач може його заблокувати.
-    it('KNOWN-DEFECT D-SEC-16: сторонній користувач блокує чужий сайт, власник отримує 423 і не може зберегти налаштування', async () => {
+    it('D-SEC-16: сторонній користувач не блокує чужий сайт, власник зберігає налаштування', async () => {
       const lock = await team('post', `/${site.id}/lock`, stranger);
-      expect(lock.status).toBe(200);
-      expect(lock.body).toEqual({ locked: false });
+      expect(lock.status).toBe(403);
+      expect(lock.body).toEqual({ message: 'У вас немає прав редагувати цей сайт.' });
+      expect(await lockOf()).toEqual({ by: null, until: null });
 
       const heartbeat = await team('post', `/${site.id}/lock`, owner);
-      expect(heartbeat.status).toBe(423);
-      expect(heartbeat.body.lockedBy).toBe('stranger_user');
+      expect(heartbeat.status).toBe(200);
 
       const save = await withAuth(request(app).put('/api/sites/acme-shop/settings'), owner).send({ title: 'Нова назва' });
-      expect(save.status).toBe(423);
-      expect((await getSite(site.id)).title).toBe('Акме');
+      expect(save.status).toBe(200);
+      expect((await getSite(site.id)).title).toBe('Нова назва');
+    });
+
+    it('D-SEC-16: глядач не блокує сайт', async () => {
+      const res = await team('post', `/${site.id}/lock`, viewer);
+      expect(res.status).toBe(403);
+      expect(await lockOf()).toEqual({ by: null, until: null });
+    });
+
+    it('D-SEC-16: співавтор editor без жодного дозволу не блокує сайт', async () => {
+      const bare = await createUser({ username: 'bare_editor' });
+      await addCollaborator(site, bare, 'editor', []);
+      const res = await team('post', `/${site.id}/lock`, bare);
+      expect(res.status).toBe(403);
+      expect(await lockOf()).toEqual({ by: null, until: null });
+    });
+
+    it('D-SEC-16: співавтор іншого сайту не блокує цей', async () => {
+      const otherOwner = await createUser({ plan: 'PLUS' });
+      const otherSite = await createSite(otherOwner);
+      const member = await createUser();
+      await addCollaborator(otherSite, member, 'editor', ['editor']);
+      const res = await team('post', `/${site.id}/lock`, member);
+      expect(res.status).toBe(403);
+      expect(await lockOf()).toEqual({ by: null, until: null });
+    });
+
+    it('D-SEC-16: відмова не знімає чуже блокування', async () => {
+      await team('post', `/${site.id}/lock`, owner);
+      const res = await team('post', `/${site.id}/lock`, stranger);
+      expect(res.status).toBe(403);
+      expect((await lockOf()).by).toBe(owner.id);
     });
   });
 
@@ -275,18 +303,49 @@ describe('співавтори', () => {
       expect(byId[viewer.id]).toMatchObject({ username: 'viewer_user', email: viewer.email, role: 'viewer', permissions: VIEWER_PERMISSIONS });
     });
 
-    // KNOWN-DEFECT D-SEC-15: доступ до сайту не перевіряється.
-    it('KNOWN-DEFECT D-SEC-15: сторонній користувач отримує пошту й права співавторів чужого сайту', async () => {
+    it('D-SEC-15: сторонній користувач отримує 403 без пошти й прав співавторів', async () => {
       const res = await team('get', `/${site.id}/collaborators`, stranger);
-      expect(res.status).toBe(200);
-      expect(res.body.map((c) => c.email).sort()).toEqual([editor.email, viewer.email].sort());
-      expect(res.body.find((c) => c.id === editor.id).permissions).toEqual(EDITOR_PERMISSIONS);
+      expect(res.status).toBe(403);
+      expect(res.body).toEqual({ message: 'Доступ заборонено.' });
+      expect(JSON.stringify(res.body)).not.toContain(editor.email);
     });
 
-    it('неіснуючий сайт — порожній список', async () => {
-      const res = await team('get', '/999999/collaborators', owner);
+    it.each([['editor'], ['viewer']])('D-SEC-15: співавтор %s без секції settings отримує 403', async (who) => {
+      const res = await team('get', `/${site.id}/collaborators`, actor(who));
+      expect(res.status).toBe(403);
+    });
+
+    it.each([['editor'], ['viewer']])('D-SEC-15: співавтор %s із секцією settings бачить команду', async (role) => {
+      const member = await createUser({ username: `settings_${role}` });
+      await addCollaborator(site, member, role, ['settings']);
+      const res = await team('get', `/${site.id}/collaborators`, member);
       expect(res.status).toBe(200);
-      expect(res.body).toEqual([]);
+      expect(res.body.map((c) => c.id).sort()).toEqual([editor.id, viewer.id, member.id].sort());
+    });
+
+    it('D-SEC-15: співавтор іншого сайту не бачить команду цього', async () => {
+      const otherOwner = await createUser({ plan: 'PLUS' });
+      const otherSite = await createSite(otherOwner);
+      const member = await createUser();
+      await addCollaborator(otherSite, member, 'editor', ['settings']);
+      const res = await team('get', `/${site.id}/collaborators`, member);
+      expect(res.status).toBe(403);
+    });
+
+    it.each([['admin'], ['moderator']])('співробітник платформи (%s) бачить команду будь-якого сайту', async (role) => {
+      const staff = await createUser({ role });
+      const res = await team('get', `/${site.id}/collaborators`, staff);
+      expect(res.status).toBe(200);
+      expect(res.body.map((c) => c.id).sort()).toEqual([editor.id, viewer.id].sort());
+    });
+
+    it('неіснуючий сайт — 403 для власника і порожній список для співробітника платформи', async () => {
+      const denied = await team('get', '/999999/collaborators', owner);
+      expect(denied.status).toBe(403);
+      const staff = await createUser({ role: 'admin' });
+      const listed = await team('get', '/999999/collaborators', staff);
+      expect(listed.status).toBe(200);
+      expect(listed.body).toEqual([]);
     });
 
     it('без токена — 401', async () => {
