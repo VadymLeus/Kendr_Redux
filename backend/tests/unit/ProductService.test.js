@@ -7,6 +7,7 @@ const ProductService = require('../../services/ProductService');
 const ProductRepository = require('../../repositories/ProductRepository');
 const OrderRepository = require('../../repositories/OrderRepository');
 const SiteRepository = require('../../repositories/SiteRepository');
+const UserRepository = require('../../repositories/UserRepository');
 const { ServiceError } = require('../../services/ServiceError');
 
 const OWNER_SITE = { id: 3, user_id: 11, collaborator_role: null, collaborator_permissions: null };
@@ -40,6 +41,8 @@ beforeEach(() => {
     findReviewById: vi.spyOn(ProductRepository, 'findReviewById').mockResolvedValue({ user_id: 50, product_id: 7 }),
     getReviewByUser: vi.spyOn(ProductRepository, 'getReviewByUser').mockResolvedValue(null),
     hasPurchased: vi.spyOn(OrderRepository, 'hasPurchased').mockResolvedValue(true),
+    countBySite: vi.spyOn(ProductRepository, 'countBySite').mockResolvedValue(0),
+    findPlan: vi.spyOn(UserRepository, 'findPlan').mockResolvedValue('FREE'),
   };
   site = vi.spyOn(SiteRepository, 'findWithCollaborator').mockResolvedValue(OWNER_SITE);
 });
@@ -93,25 +96,25 @@ describe('create', () => {
     expect(repo.create).not.toHaveBeenCalled();
   });
 
-  it('галерея-масив: перше зображення стає image_path, у репозиторій іде JSON-рядок усього масиву', async () => {
+  it('галерея-масив: перше зображення стає image_path, у репозиторій іде весь масив', async () => {
     await ProductService.create(11, { ...body, image_gallery: ['/1.jpg', '/2.jpg'] });
     const data = repo.create.mock.calls[0][0];
     expect(data.image_path).toBe('/1.jpg');
-    expect(data.image_gallery).toBe(JSON.stringify(['/1.jpg', '/2.jpg']));
+    expect(data.image_gallery).toEqual(['/1.jpg', '/2.jpg']);
   });
 
   it('галерея-рядок перетворюється на масив з одним елементом', async () => {
     await ProductService.create(11, { ...body, image_gallery: '/only.jpg' });
     const data = repo.create.mock.calls[0][0];
     expect(data.image_path).toBe('/only.jpg');
-    expect(data.image_gallery).toBe('["/only.jpg"]');
+    expect(data.image_gallery).toEqual(['/only.jpg']);
   });
 
-  it('без галереї: image_path = null, image_gallery = "[]"', async () => {
+  it('без галереї: image_path = null, image_gallery = []', async () => {
     await ProductService.create(11, body);
     const data = repo.create.mock.calls[0][0];
     expect(data.image_path).toBeNull();
-    expect(data.image_gallery).toBe('[]');
+    expect(data.image_gallery).toEqual([]);
   });
 
   it('category_ids: одне значення стає масивом, відсутнє — порожнім масивом', async () => {
@@ -122,24 +125,83 @@ describe('create', () => {
   });
 
   it.each([
-    ['12.5', 12.5], ['', 0], [undefined, 0], [null, 0], ['abc', 0], [7, 7],
+    ['12.5', 12.5], ['', 0], [undefined, 0], [null, 0], [7, 7], ['0', 0],
   ])('ціна %j → %j', async (input, expected) => {
     await ProductService.create(11, { ...body, price: input });
     expect(repo.create.mock.calls[0][0].price).toBe(expected);
   });
 
+  it.each([['abc'], [-1], ['-5'], [1e12], [NaN], [{}]])('D-BIZ-11: ціна %j відхиляється з 400, товар не створюється', async (input) => {
+    const error = await failure(() => ProductService.create(11, { ...body, price: input }));
+    expect([error.status, error.message]).toEqual([400, 'Ціна товару має бути числом від 0 до 99999999.99.']);
+    expect(repo.create).not.toHaveBeenCalled();
+  });
+
   it.each([
-    ['10', 10], ['', 0], [undefined, 0],
+    ['10', 10], ['', 0], [undefined, 0], [12.4, 12], [100, 100], [0, 0],
   ])('знижка %j → %j', async (input, expected) => {
     await ProductService.create(11, { ...body, sale_percentage: input });
     expect(repo.create.mock.calls[0][0].sale_percentage).toBe(expected);
   });
 
+  it.each([[-1], [101], ['abc'], [1000]])('D-BIZ-11: знижка %j відхиляється з 400', async (input) => {
+    const error = await failure(() => ProductService.create(11, { ...body, sale_percentage: input }));
+    expect([error.status, error.message]).toEqual([400, 'Знижка товару має бути від 0 до 100 %.']);
+    expect(repo.create).not.toHaveBeenCalled();
+  });
+
   it.each([
-    ['5', 5], ['0', 0], ['', null], [undefined, null], ['abc', null],
+    ['5', 5], ['0', 0], [0, 0], ['', null], [undefined, null], [null, null],
   ])('залишок %j → %j', async (input, expected) => {
     await ProductService.create(11, { ...body, stock_quantity: input });
     expect(repo.create.mock.calls[0][0].stock_quantity).toBe(expected);
+  });
+
+  it.each([['abc'], [-1], ['1.5'], [2.5]])('D-BIZ-10: залишок %j відхиляється з 400 замість мовчазного «без обмежень»', async (input) => {
+    const error = await failure(() => ProductService.create(11, { ...body, stock_quantity: input }));
+    expect([error.status, error.message]).toEqual([400, 'Залишок товару має бути цілим числом не менше 0.']);
+    expect(repo.create).not.toHaveBeenCalled();
+  });
+
+  it.each([['physical', 'physical'], ['digital', 'digital'], [undefined, undefined], ['', undefined]])('тип %j → %j', async (input, expected) => {
+    await ProductService.create(11, { ...body, type: input });
+    expect(repo.create.mock.calls[0][0].type).toBe(expected);
+  });
+
+  it('недопустимий тип товару — 400', async () => {
+    const error = await failure(() => ProductService.create(11, { ...body, type: 'gift' }));
+    expect([error.status, error.message]).toEqual([400, 'Недопустимий тип товару.']);
+  });
+
+  it('D-BIZ-03: на тарифі FREE 50-й товар створюється, 51-й — 403', async () => {
+    repo.countBySite.mockResolvedValue(49);
+    await ProductService.create(11, body);
+    expect(repo.create).toHaveBeenCalledTimes(1);
+    repo.countBySite.mockResolvedValue(50);
+    const error = await failure(() => ProductService.create(11, body));
+    expect([error.status, error.message]).toEqual([403, 'Досягнуто ліміту товарів (50) на тарифі власника сайту.']);
+    expect(repo.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('D-BIZ-03: ліміт береться за тарифом власника сайту, а не співавтора', async () => {
+    site.mockResolvedValue(collaboratorSite('editor', '["commerce"]'));
+    repo.findPlan.mockResolvedValue('PLUS');
+    repo.countBySite.mockResolvedValue(120);
+    await ProductService.create(11, body);
+    expect(repo.findPlan).toHaveBeenCalledWith(1);
+    expect(repo.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('D-BIZ-03: лічильник рахує товари саме цього сайту', async () => {
+    await ProductService.create(11, body);
+    expect(repo.countBySite).toHaveBeenCalledWith(3);
+  });
+
+  it('D-BIZ-03: без доступу до сайту тариф і кількість не читаються', async () => {
+    site.mockResolvedValue(null);
+    await failure(() => ProductService.create(11, body));
+    expect(repo.findPlan).not.toHaveBeenCalled();
+    expect(repo.countBySite).not.toHaveBeenCalled();
   });
 
   it('повертає результат репозиторію', async () => {
@@ -158,9 +220,9 @@ describe('update', () => {
     expect(repo.update).not.toHaveBeenCalled();
   });
 
-  it('без category_ids зберігає поточні категорії товару', async () => {
+  it('без category_ids категорії не змінюються: ключ не передається в репозиторій', async () => {
     await ProductService.update(7, 11, body);
-    expect(repo.update).toHaveBeenCalledWith(7, expect.objectContaining({ category_ids: [1, 2] }));
+    expect('category_ids' in repo.update.mock.calls[0][1]).toBe(false);
   });
 
   it('category_ids: одне значення стає масивом, порожній масив очищає категорії', async () => {
@@ -175,16 +237,62 @@ describe('update', () => {
     expect('image_gallery' in repo.update.mock.calls[0][1]).toBe(false);
   });
 
-  it('image_gallery: масив і одне значення серіалізуються в JSON-рядок', async () => {
+  it('image_gallery: масив і одне значення передаються в репозиторій масивом', async () => {
     await ProductService.update(7, 11, { ...body, image_gallery: ['/x.jpg'] });
-    expect(repo.update.mock.calls[0][1].image_gallery).toBe('["/x.jpg"]');
+    expect(repo.update.mock.calls[0][1].image_gallery).toEqual(['/x.jpg']);
     await ProductService.update(7, 11, { ...body, image_gallery: '/y.jpg' });
-    expect(repo.update.mock.calls[1][1].image_gallery).toBe('["/y.jpg"]');
+    expect(repo.update.mock.calls[1][1].image_gallery).toEqual(['/y.jpg']);
   });
 
-  it('числові поля очищаються так само, як при створенні', async () => {
-    await ProductService.update(7, 11, { ...body, price: '', sale_percentage: 'abc', stock_quantity: '' });
-    expect(repo.update).toHaveBeenCalledWith(7, expect.objectContaining({ price: 0, sale_percentage: 0, stock_quantity: null }));
+  it('D-BIZ-11: запит лише з name змінює тільки назву, решта полів не передається', async () => {
+    await ProductService.update(7, 11, { name: 'Нова' });
+    expect(repo.update).toHaveBeenCalledWith(7, { name: 'Нова' });
+  });
+
+  it('D-BIZ-11: присутні поля очищаються так само, як при створенні', async () => {
+    await ProductService.update(7, 11, { price: '', sale_percentage: '', stock_quantity: '' });
+    expect(repo.update).toHaveBeenCalledWith(7, { price: 0, sale_percentage: 0, stock_quantity: null });
+  });
+
+  it('залишок 0 при зміні зберігається як 0, а null означає «без обліку»', async () => {
+    await ProductService.update(7, 11, { stock_quantity: 0 });
+    expect(repo.update.mock.calls[0][1].stock_quantity).toBe(0);
+    await ProductService.update(7, 11, { stock_quantity: null });
+    expect(repo.update.mock.calls[1][1].stock_quantity).toBeNull();
+  });
+
+  it('variants: відсутні не чіпаються, null і масив передаються як є', async () => {
+    await ProductService.update(7, 11, { name: 'A' });
+    expect('variants' in repo.update.mock.calls[0][1]).toBe(false);
+    await ProductService.update(7, 11, { variants: null });
+    expect(repo.update.mock.calls[1][1].variants).toBeNull();
+    await ProductService.update(7, 11, { variants: [{ name: 'Розмір', values: [] }] });
+    expect(repo.update.mock.calls[2][1].variants).toEqual([{ name: 'Розмір', values: [] }]);
+  });
+
+  it('digital_file_url: порожній рядок стає null, відсутнє поле не чіпається', async () => {
+    await ProductService.update(7, 11, { digital_file_url: '' });
+    expect(repo.update.mock.calls[0][1].digital_file_url).toBeNull();
+    await ProductService.update(7, 11, { name: 'A' });
+    expect('digital_file_url' in repo.update.mock.calls[1][1]).toBe(false);
+  });
+
+  it.each([
+    [{ price: -1 }, 'Ціна товару має бути числом від 0 до 99999999.99.'],
+    [{ price: 'abc' }, 'Ціна товару має бути числом від 0 до 99999999.99.'],
+    [{ sale_percentage: 101 }, 'Знижка товару має бути від 0 до 100 %.'],
+    [{ stock_quantity: -5 }, 'Залишок товару має бути цілим числом не менше 0.'],
+    [{ type: 'gift' }, 'Недопустимий тип товару.'],
+  ])('D-BIZ-11: %j відхиляється з 400, товар не змінюється', async (input, message) => {
+    const error = await failure(() => ProductService.update(7, 11, { name: 'Нова', ...input }));
+    expect([error.status, error.message]).toEqual([400, message]);
+    expect(repo.update).not.toHaveBeenCalled();
+  });
+
+  it('ліміт товарів при зміні не перевіряється', async () => {
+    repo.countBySite.mockResolvedValue(500);
+    await ProductService.update(7, 11, body);
+    expect(repo.update).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -207,7 +315,7 @@ describe('галерея (D-DEAD-08)', () => {
   it('addToGallery дописує зображення й викликає update лише з image_gallery', async () => {
     const result = await ProductService.addToGallery(7, 11, '/new.jpg');
     expect(result).toEqual(['/a.jpg', '/new.jpg']);
-    expect(repo.update).toHaveBeenCalledWith(7, { image_gallery: '["/a.jpg","/new.jpg"]' });
+    expect(repo.update).toHaveBeenCalledWith(7, { image_gallery: ['/a.jpg', '/new.jpg'] });
   });
 
   it('addToGallery для товару без галереї створює галерею з одного зображення', async () => {
@@ -226,7 +334,7 @@ describe('галерея (D-DEAD-08)', () => {
     repo.findById.mockResolvedValue({ ...PRODUCT, image_gallery: ['/a.jpg', '/b.jpg'] });
     const result = await ProductService.removeFromGallery(7, 11, '/a.jpg');
     expect(result).toEqual(['/b.jpg']);
-    expect(repo.update).toHaveBeenCalledWith(7, { image_gallery: '["/b.jpg"]' });
+    expect(repo.update).toHaveBeenCalledWith(7, { image_gallery: ['/b.jpg'] });
   });
 
   it('403 без доступу', async () => {

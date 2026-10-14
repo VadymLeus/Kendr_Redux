@@ -8,7 +8,7 @@ import { useTestDatabase } from '../helpers/suite.js';
 import { authHeader } from '../helpers/auth.js';
 import { decodeLiqpay, signLiqpay } from '../helpers/liqpay.js';
 import {
-  createUser, createSite, createProduct, createOrder, addCollaborator, setGlobalSetting,
+  createUser, createSite, createProduct, createCategory, linkProductToCategory, createOrder, addCollaborator, setGlobalSetting,
   getOrder, getOrderItems, countOrders,
 } from '../helpers/factories.js';
 
@@ -214,12 +214,21 @@ describe('checkout: створення замовлення', () => {
     expect(order.delivery_address).toBe('Цифрова доставка');
   });
 
-  it('кілька позицій: сума — сума каталожних цін на кількість', async () => {
-    const second = await createProduct(site, { price: 49.5, stock_quantity: 10 });
+  it('кілька позицій: сума — сума цін позицій на кількість', async () => {
+    const second = await createProduct(site, { price: 49, stock_quantity: 10 });
     const res = await checkout(buyer, codBody([{ id: product.id, quantity: 1 }, { id: second.id, quantity: 2 }]));
     expect(res.status).toBe(200);
-    expect(Number((await getOrder(res.body.orderId)).total_amount)).toBe(199);
+    expect(Number((await getOrder(res.body.orderId)).total_amount)).toBe(198);
     expect(await getOrderItems(res.body.orderId)).toHaveLength(2);
+  });
+
+  it('D-BIZ-01: ціна позиції округлюється до цілої грошової одиниці, як на вітрині', async () => {
+    const fractional = await createProduct(site, { price: 49.5, stock_quantity: 10 });
+    const res = await checkout(buyer, codBody([{ id: fractional.id, quantity: 2 }]));
+    expect(res.status).toBe(200);
+    const order = await getOrder(res.body.orderId);
+    expect(Number(order.total_amount)).toBe(100);
+    expect(Number((await getOrderItems(order.id))[0].price)).toBe(50);
   });
 
   it('онлайн без ключів LiqPay у магазину: повертає лише orderId', async () => {
@@ -260,35 +269,122 @@ describe('checkout: створення замовлення', () => {
 });
 
 describe('checkout: ціна замовлення', () => {
-  // KNOWN-DEFECT D-BIZ-01: картка товару й кошик показують ціну зі знижкою, а сервер рахує за каталожною ціною.
-  it('KNOWN-DEFECT D-BIZ-01: знижка товару (sale_percentage) не враховується', async () => {
+  const SIZE = {
+    name: 'Розмір',
+    values: [
+      { label: 'S', priceModifier: 0, salePercentage: 0 },
+      { label: 'XL', priceModifier: 50, salePercentage: 0 },
+      { label: 'Акція', priceModifier: 20, salePercentage: 25 },
+    ],
+  };
+
+  it('D-BIZ-01: знижка товару (sale_percentage) входить у ціну позиції й суму замовлення', async () => {
     const onSale = await createProduct(site, { price: 100, sale_percentage: 20, stock_quantity: 10 });
     const res = await checkout(buyer, codBody([{ id: onSale.id, quantity: 2 }]));
     expect(res.status).toBe(200);
     const order = await getOrder(res.body.orderId);
-    expect(Number(order.total_amount)).toBe(200); // зі знижкою 20 % було б 160
+    expect(Number(order.total_amount)).toBe(160);
     const [item] = await getOrderItems(order.id);
-    expect(Number(item.price)).toBe(100);
+    expect(Number(item.price)).toBe(80);
+    expect(item.quantity).toBe(2);
   });
 
-  it('KNOWN-DEFECT D-BIZ-01: ціна й надбавка варіанта, надіслані клієнтом, ігноруються', async () => {
-    const res = await checkout(buyer, codBody([
-      { id: product.id, quantity: 1, price: 1, options: { size: 'XL', priceModifier: 50 } },
-    ]));
+  it('D-BIZ-01: надбавка вибраного варіанта додається до ціни, вибір зберігається в позиції', async () => {
+    const shirt = await createProduct(site, { price: 100, stock_quantity: 10, variants: [SIZE] });
+    const res = await checkout(buyer, codBody([{ id: shirt.id, quantity: 1, options: { 'Розмір': 'XL' } }]));
     expect(res.status).toBe(200);
     const order = await getOrder(res.body.orderId);
-    expect(Number(order.total_amount)).toBe(100); // з надбавкою варіанта було б 150
+    expect(Number(order.total_amount)).toBe(150);
     const [item] = await getOrderItems(order.id);
-    expect(item.options).toEqual({ size: 'XL', priceModifier: 50 }); // опції зберігаються, але на ціну не впливають
+    expect(Number(item.price)).toBe(150);
+    expect(item.options).toEqual({ 'Розмір': 'XL' });
   });
 
-  it('KNOWN-DEFECT D-BIZ-01: сума платежу LiqPay дорівнює каталожній ціні, а не знижці', async () => {
+  it('D-BIZ-01: знижка вибраного варіанта має пріоритет над знижкою товару', async () => {
+    const shirt = await createProduct(site, { price: 100, sale_percentage: 50, stock_quantity: 10, variants: [SIZE] });
+    const res = await checkout(buyer, codBody([{ id: shirt.id, quantity: 1, options: { 'Розмір': 'Акція' } }]));
+    expect(res.status).toBe(200);
+    expect(Number((await getOrder(res.body.orderId)).total_amount)).toBe(90);
+  });
+
+  it('D-BIZ-01: знижка категорії діє, якщо знижки товару й варіанта немає', async () => {
+    const category = await createCategory(site, { discount_percentage: 30 });
+    const tea = await createProduct(site, { price: 100, stock_quantity: 10 });
+    await linkProductToCategory(tea, category);
+    const res = await checkout(buyer, codBody([{ id: tea.id, quantity: 1 }]));
+    expect(res.status).toBe(200);
+    expect(Number((await getOrder(res.body.orderId)).total_amount)).toBe(70);
+  });
+
+  it('D-BIZ-01: знижка товару має пріоритет над знижкою категорії, знижки не складаються', async () => {
+    const category = await createCategory(site, { discount_percentage: 50 });
+    const tea = await createProduct(site, { price: 100, sale_percentage: 10, stock_quantity: 10 });
+    await linkProductToCategory(tea, category);
+    const res = await checkout(buyer, codBody([{ id: tea.id, quantity: 1 }]));
+    expect(Number((await getOrder(res.body.orderId)).total_amount)).toBe(90);
+  });
+
+  it('D-BIZ-01: з кількох категорій береться найбільша знижка', async () => {
+    const small = await createCategory(site, { discount_percentage: 10 });
+    const big = await createCategory(site, { discount_percentage: 40 });
+    const tea = await createProduct(site, { price: 100, stock_quantity: 10 });
+    await linkProductToCategory(tea, small);
+    await linkProductToCategory(tea, big);
+    const res = await checkout(buyer, codBody([{ id: tea.id, quantity: 1 }]));
+    expect(Number((await getOrder(res.body.orderId)).total_amount)).toBe(60);
+  });
+
+  it('D-BIZ-01: ціна, надіслана клієнтом, ігнорується', async () => {
+    const shirt = await createProduct(site, { price: 100, stock_quantity: 10, variants: [SIZE] });
+    const res = await checkout(buyer, codBody([
+      { id: shirt.id, quantity: 1, price: 1, finalPrice: 1, options: { 'Розмір': 'XL' } },
+    ]));
+    expect(res.status).toBe(200);
+    expect(Number((await getOrder(res.body.orderId)).total_amount)).toBe(150);
+  });
+
+  it('D-BIZ-01: товар без вибраних варіантів рахується за базовою ціною', async () => {
+    const shirt = await createProduct(site, { price: 100, stock_quantity: 10, variants: [SIZE] });
+    const res = await checkout(buyer, codBody([{ id: shirt.id, quantity: 3 }]));
+    expect(res.status).toBe(200);
+    expect(Number((await getOrder(res.body.orderId)).total_amount)).toBe(300);
+  });
+
+  it.each([
+    [{ size: 'XL' }],
+    [{ 'Розмір': 'XXL' }],
+    [{ priceModifier: 50 }],
+  ])('D-BIZ-01: невідомий варіант %j — 400, замовлення не створюється', async (options) => {
+    const shirt = await createProduct(site, { price: 100, stock_quantity: 10, variants: [SIZE] });
+    const res = await checkout(buyer, codBody([{ id: shirt.id, quantity: 1, options }]));
+    expect(res.status).toBe(400);
+    expect(res.body.message).toContain('недоступний');
+    expect(await countOrders()).toBe(0);
+  });
+
+  it('D-BIZ-01: товар без варіантів відхиляє довільні опції', async () => {
+    const res = await checkout(buyer, codBody([{ id: product.id, quantity: 1, options: { size: 'XL', priceModifier: 50 } }]));
+    expect(res.status).toBe(400);
+    expect(await countOrders()).toBe(0);
+  });
+
+  it('D-BIZ-01: сума кількох позицій — сума цін позицій із їхніми знижками', async () => {
+    const onSale = await createProduct(site, { price: 100, sale_percentage: 10, stock_quantity: 10 });
+    const shirt = await createProduct(site, { price: 200, stock_quantity: 10, variants: [SIZE] });
+    const res = await checkout(buyer, codBody([
+      { id: onSale.id, quantity: 2 },
+      { id: shirt.id, quantity: 1, options: { 'Розмір': 'XL' } },
+    ]));
+    expect(Number((await getOrder(res.body.orderId)).total_amount)).toBe(430);
+  });
+
+  it('D-BIZ-01: сума платежу LiqPay дорівнює ціні зі знижкою', async () => {
     const shop = await createSite(seller, { liqpay: LIQPAY });
     const onSale = await createProduct(shop, { price: 100, sale_percentage: 50, stock_quantity: 10 });
     const res = await checkout(buyer, {
       siteId: shop.id, items: [{ id: onSale.id, quantity: 1 }], paymentMethod: 'online', customerData: { address: ADDRESS },
     });
     expect(res.status).toBe(200);
-    expect(decodeLiqpay(res.body.liqpayData).amount).toBe(100); // зі знижкою 50 % було б 50
+    expect(decodeLiqpay(res.body.liqpayData).amount).toBe(50);
   });
 });

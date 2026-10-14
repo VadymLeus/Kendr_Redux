@@ -66,6 +66,7 @@ beforeEach(() => {
     findItems: vi.spyOn(OrderRepository, 'findItems').mockResolvedValue([]),
     findItemsForPayment: vi.spyOn(OrderRepository, 'findItemsForPayment').mockResolvedValue([]),
     findItemsWithImages: vi.spyOn(OrderRepository, 'findItemsWithImages').mockResolvedValue([]),
+    findForUpdate: vi.spyOn(OrderRepository, 'findForUpdate').mockImplementation(async (id) => OrderRepository.findById(id)),
     updateStatus: vi.spyOn(OrderRepository, 'updateStatus').mockImplementation(async () => { log.push('updateStatus'); }),
     settleIfPending: vi.spyOn(OrderRepository, 'settleIfPending').mockImplementation(async () => { log.push('settleIfPending'); return true; }),
   };
@@ -73,6 +74,7 @@ beforeEach(() => {
     findForCheckout: vi.spyOn(ProductRepository, 'findForCheckout').mockImplementation(async (id) => ({ 10: PHYSICAL, 11: DIGITAL }[id])),
     findStock: vi.spyOn(ProductRepository, 'findStock').mockResolvedValue({ stock_quantity: 5, name: 'Кава' }),
     decrementStock: vi.spyOn(ProductRepository, 'decrementStock').mockImplementation(async () => { log.push('decrementStock'); }),
+    incrementStock: vi.spyOn(ProductRepository, 'incrementStock').mockImplementation(async () => { log.push('incrementStock'); }),
   };
   site = vi.spyOn(SiteRepository, 'findWithCollaborator').mockResolvedValue(OWNER_SITE);
   vi.spyOn(GlobalSettingsRepository, 'findBilling').mockResolvedValue({ billing_enabled: 1 });
@@ -127,6 +129,49 @@ describe('checkout: вхідні дані', () => {
     expect(error.status).toBe(400);
     expect(error.message).toBe('Список товарів порожній.');
     expect(repo.transaction).not.toHaveBeenCalled();
+  });
+
+  it.each([['abc'], [{}], [5], [true]])('список товарів %j, який не є масивом, — 400', async (items) => {
+    const error = await serviceFailure(() => OrderService.checkout(2, { siteId: 3, items }));
+    expect([error.status, error.message]).toEqual([400, 'Список товарів порожній.']);
+    expect(repo.transaction).not.toHaveBeenCalled();
+  });
+
+  it.each([[-1], [0], [1.5], ['abc'], [''], [null], [undefined], [true], [[]], [NaN]])(
+    "D-BIZ-09: кількість %j відхиляється, транзакція не відкривається",
+    async (quantity) => {
+      const error = await serviceFailure(() => OrderService.checkout(2, {
+        siteId: 3, items: [{ id: 10, quantity }], paymentMethod: 'cod', customerData: { address: 'Київ' },
+      }));
+      expect([error.status, error.message]).toEqual([400, 'Кількість товару має бути цілим числом не менше 1.']);
+      expect(repo.transaction).not.toHaveBeenCalled();
+    }
+  );
+
+  it.each([[undefined], [null], [0], [-3], ['abc'], [1.5], [{}]])(
+    'ідентифікатор товару %j відхиляється, транзакція не відкривається',
+    async (id) => {
+      const error = await serviceFailure(() => OrderService.checkout(2, {
+        siteId: 3, items: [{ id, quantity: 1 }], paymentMethod: 'cod', customerData: { address: 'Київ' },
+      }));
+      expect([error.status, error.message]).toEqual([400, 'Некоректний товар у замовленні.']);
+      expect(repo.transaction).not.toHaveBeenCalled();
+    }
+  );
+
+  it('елемент списку, що не є об\'єктом, відхиляється', async () => {
+    const error = await serviceFailure(() => OrderService.checkout(2, {
+      siteId: 3, items: [null], paymentMethod: 'cod', customerData: { address: 'Київ' },
+    }));
+    expect(error.status).toBe(400);
+  });
+
+  it('D-BIZ-09: кількість-рядок із цілим числом приймається як число', async () => {
+    await OrderService.checkout(2, {
+      siteId: 3, items: [{ id: '10', quantity: '2' }], paymentMethod: 'cod', customerData: { address: 'Київ' },
+    });
+    expect(repo.addItem.mock.calls[0][1].quantity).toBe(2);
+    expect(repo.create.mock.calls[0][0].totalAmount).toBe(200);
   });
 
   it.each([['online', 'online'], ['cod', 'cod'], ['bitcoin', 'online'], [undefined, 'online']])(
@@ -217,7 +262,7 @@ describe('checkout: перевірки в транзакції', () => {
     expect(repo.findSiteForPayment).toHaveBeenCalledWith(3, CONN);
     expect(repo.isCollaborator).toHaveBeenCalledWith(3, 2, CONN);
     expect(repo.findCustomer).toHaveBeenCalledWith(2, CONN);
-    expect(products.findForCheckout).toHaveBeenCalledWith(10, 3, CONN);
+    expect(products.findForCheckout).toHaveBeenCalledWith('10', 3, CONN);
     expect(repo.create.mock.calls[0][1]).toBe(CONN);
     expect(repo.addItem.mock.calls[0][2]).toBe(CONN);
   });
@@ -228,15 +273,15 @@ describe('checkout: товари', () => {
     siteId: 3, items, paymentMethod: 'cod', customerData: { address: 'Київ' }, ...overrides,
   });
 
-  it('D-ARC-10: товар недоступний або чужого магазину — звичайна помилка без статусу', async () => {
-    const error = await failure(() => run([{ id: 99, quantity: 1 }]));
-    expect(error).not.toBeInstanceOf(ServiceError);
-    expect(error.message).toBe('Деякі товари недоступні або не належать цьому магазину.');
+  it('товар недоступний або чужого магазину — 400', async () => {
+    const error = await serviceFailure(() => run([{ id: 99, quantity: 1 }]));
+    expect([error.status, error.message]).toEqual([400, 'Деякі товари недоступні або не належать цьому магазину.']);
+    expect(repo.create).not.toHaveBeenCalled();
   });
 
-  it('кількість більша за залишок — помилка з назвою товару', async () => {
-    const error = await failure(() => run([{ id: 10, quantity: 6 }]));
-    expect(error.message).toBe('Недостатньо товару "Кава" на складі.');
+  it('кількість більша за залишок — 400 з назвою товару', async () => {
+    const error = await serviceFailure(() => run([{ id: 10, quantity: 6 }]));
+    expect([error.status, error.message]).toEqual([400, 'Недостатньо товару "Кава" на складі.']);
   });
 
   it('кількість, що дорівнює залишку, дозволена', async () => {
@@ -258,14 +303,14 @@ describe('checkout: товари', () => {
 
   it('фізичний товар без адреси — помилка', async () => {
     for (const customerData of [undefined, {}, { address: '' }, { address: '   ' }]) {
-      const error = await failure(() => run([{ id: 10, quantity: 1 }], { customerData }));
-      expect(error.message).toBe('Адреса доставки обов\'язкова для фізичних товарів.');
+      const error = await serviceFailure(() => run([{ id: 10, quantity: 1 }], { customerData }));
+      expect([error.status, error.message]).toEqual([400, 'Адреса доставки обов\'язкова для фізичних товарів.']);
     }
   });
 
   it('цифровий товар не можна замовити післяплатою', async () => {
-    const error = await failure(() => run([{ id: 11, quantity: 1 }], { paymentMethod: 'cod' }));
-    expect(error.message).toBe('Цифрові товари не можна замовити післяплатою.');
+    const error = await serviceFailure(() => run([{ id: 11, quantity: 1 }], { paymentMethod: 'cod' }));
+    expect([error.status, error.message]).toEqual([400, 'Цифрові товари не можна замовити післяплатою.']);
   });
 
   it('суто цифрове замовлення отримує адресу «Цифрова доставка» і не вимагає адреси', async () => {
@@ -278,27 +323,77 @@ describe('checkout: товари', () => {
     expect(repo.create.mock.calls[0][0].deliveryAddress).toBe('Київ');
   });
 
-  it('D-BIZ-01: сума — ціна з БД × кількість, опції та знижки не враховуються', async () => {
-    const result = await run([{ id: 10, quantity: 2, options: { size: 'XL' } }, { id: 11, quantity: 1 }]);
+  it('сума — каталожна ціна × кількість для товару без знижок і варіантів', async () => {
+    const result = await run([{ id: 10, quantity: 2 }, { id: 11, quantity: 1 }]);
     expect(repo.create.mock.calls[0][0].totalAmount).toBe(250);
     expect(result.orderId).toBe(repo.create.mock.calls[0][0].id);
   });
 
-  it("D-BIZ-09: від'ємна кількість приймається, сума від'ємна", async () => {
-    await run([{ id: 10, quantity: -1 }]);
-    expect(repo.create.mock.calls[0][0].totalAmount).toBe(-100);
-    expect(repo.addItem.mock.calls[0][1].quantity).toBe(-1);
+  it('D-BIZ-01: позиція записується з ефективною ціною за одиницю', async () => {
+    products.findForCheckout.mockResolvedValue({ ...PHYSICAL, sale_percentage: 20 });
+    await run([{ id: 10, quantity: 2 }]);
+    expect(repo.addItem.mock.calls[0][1].price).toBe(80);
+    expect(repo.create.mock.calls[0][0].totalAmount).toBe(160);
   });
 
-  it('D-BIZ-02: залишок при оформленні не списується', async () => {
-    await run([{ id: 10, quantity: 5 }]);
+  it('D-BIZ-01: ціна й опції з клієнта не впливають на суму, якщо варіант існує', async () => {
+    products.findForCheckout.mockResolvedValue({
+      ...PHYSICAL,
+      variants: [{ name: 'Розмір', values: [{ label: 'XL', priceModifier: 50, salePercentage: 0 }] }],
+    });
+    await run([{ id: 10, quantity: 1, price: 1, options: { 'Розмір': 'XL' } }]);
+    expect(repo.create.mock.calls[0][0].totalAmount).toBe(150);
+    expect(repo.addItem.mock.calls[0][1].options).toEqual({ 'Розмір': 'XL' });
+  });
+
+  it('D-BIZ-01: невідомий варіант або значення — 400, замовлення не створюється', async () => {
+    const error = await serviceFailure(() => run([{ id: 10, quantity: 1, options: { size: 'XL' } }]));
+    expect(error.status).toBe(400);
+    expect(error.message).toContain('недоступний');
+    expect(repo.create).not.toHaveBeenCalled();
+  });
+
+  it('D-BIZ-09: одна позиція не може мати нульову або від\'ємну кількість у товарів з різними id', async () => {
+    const error = await serviceFailure(() => run([{ id: 10, quantity: 1 }, { id: 11, quantity: -50 }]));
+    expect(error.status).toBe(400);
+    expect(repo.create).not.toHaveBeenCalled();
+  });
+
+  it('D-BIZ-02: рядки товарів блокуються в порядку зростання id', async () => {
+    await run([{ id: 11, quantity: 1 }, { id: 10, quantity: 1 }]);
+    expect(products.findForCheckout.mock.calls.map(call => call[0])).toEqual(['10', '11']);
+  });
+
+  it('D-BIZ-02: онлайн-замовлення залишок при оформленні не списує', async () => {
+    await run([{ id: 10, quantity: 5 }], { paymentMethod: 'online' });
     expect(products.decrementStock).not.toHaveBeenCalled();
   });
 
-  it('D-BIZ-02: один товар у двох позиціях перевіряється на залишок окремо кожен раз', async () => {
-    await run([{ id: 10, quantity: 5 }, { id: 10, quantity: 5 }]);
+  it('D-BIZ-02: замовлення з післяплатою списує залишок у тій самій транзакції після запису позицій', async () => {
+    repo.addItem.mockImplementation(async () => { log.push('addItem'); });
+    await run([{ id: 10, quantity: 5 }]);
+    expect(products.decrementStock).toHaveBeenCalledTimes(1);
+    expect(products.decrementStock).toHaveBeenCalledWith('10', 5, CONN);
+    expect(log).toEqual(['addItem', 'decrementStock']);
+  });
+
+  it('D-BIZ-02: цифрові товари й товари без обліку залишку при післяплаті не списуються', async () => {
+    products.findForCheckout.mockImplementation(async (id) => ({ 10: { ...PHYSICAL, stock_quantity: null }, 11: DIGITAL }[id]));
+    await run([{ id: 10, quantity: 3 }, { id: 11, quantity: 1 }]);
+    expect(products.decrementStock).not.toHaveBeenCalled();
+  });
+
+  it('D-BIZ-02: один товар у двох позиціях перевіряється на залишок сумарно', async () => {
+    const error = await serviceFailure(() => run([{ id: 10, quantity: 3 }, { id: 10, quantity: 3 }]));
+    expect([error.status, error.message]).toEqual([400, 'Недостатньо товару "Кава" на складі.']);
+    expect(repo.create).not.toHaveBeenCalled();
+  });
+
+  it('D-BIZ-02: сумарна кількість у двох позиціях списується одним запитом', async () => {
+    await run([{ id: 10, quantity: 2 }, { id: 10, quantity: 3 }]);
     expect(repo.addItem).toHaveBeenCalledTimes(2);
-    expect(repo.create.mock.calls[0][0].totalAmount).toBe(1000);
+    expect(products.decrementStock).toHaveBeenCalledTimes(1);
+    expect(products.decrementStock).toHaveBeenCalledWith('10', 5, CONN);
   });
 
   it('позиції зберігаються з опціями за замовчуванням {}', async () => {
@@ -489,6 +584,13 @@ describe('handleLiqPayCallback', () => {
     } finally {
       spy.mockRestore();
     }
+  });
+
+  it('D-BIZ-02: замовлення з оплатою при отриманні callback не обробляє, залишок вдруге не списується', async () => {
+    repo.findById.mockResolvedValue({ ...ORDER, payment_method: 'cod' });
+    await OrderService.handleLiqPayCallback(payload());
+    expect(repo.settleIfPending).not.toHaveBeenCalled();
+    expect(products.decrementStock).not.toHaveBeenCalled();
   });
 
   it('невірний підпис — 403, замовлення не змінюється', async () => {
@@ -838,7 +940,7 @@ describe('updateStatus', () => {
 
   it('D-SEC-03: власник сайту змінює статус', async () => {
     await OrderService.updateStatus('ORD1', 1, 'shipped');
-    expect(repo.updateStatus).toHaveBeenCalledWith('ORD1', 'shipped');
+    expect(repo.updateStatus).toHaveBeenCalledWith('ORD1', 'shipped', CONN);
     expect(site).toHaveBeenCalledWith(3, 1);
   });
 
@@ -853,7 +955,7 @@ describe('updateStatus', () => {
   it('D-SEC-03: редактор із секцією commerce змінює статус', async () => {
     site.mockResolvedValue(collaboratorSite('editor', '["commerce"]'));
     await OrderService.updateStatus('ORD1', 2, 'completed');
-    expect(repo.updateStatus).toHaveBeenCalledWith('ORD1', 'completed');
+    expect(repo.updateStatus).toHaveBeenCalledWith('ORD1', 'completed', CONN);
   });
 
   it.each([
@@ -869,7 +971,7 @@ describe('updateStatus', () => {
 
   it.each([['paid'], ['shipped'], ['completed'], ['cancelled']])('D-SEC-03: дозволений статус %s записується', async (status) => {
     await OrderService.updateStatus('ORD1', 1, status);
-    expect(repo.updateStatus).toHaveBeenCalledWith('ORD1', status);
+    expect(repo.updateStatus).toHaveBeenCalledWith('ORD1', status, CONN);
   });
 
   it.each([['whatever'], ['pending'], [''], [undefined], [null], [5], ['PAID']])('D-SEC-03: недопустиме значення %j → 400', async (status) => {
@@ -890,13 +992,74 @@ describe('updateStatus', () => {
   it('неоплачене онлайн-замовлення можна скасувати', async () => {
     repo.findById.mockResolvedValue({ ...ORDER, status: 'pending', payment_method: 'online' });
     await OrderService.updateStatus('ORD1', 1, 'cancelled');
-    expect(repo.updateStatus).toHaveBeenCalledWith('ORD1', 'cancelled');
+    expect(repo.updateStatus).toHaveBeenCalledWith('ORD1', 'cancelled', CONN);
   });
 
   it.each([['paid'], ['shipped'], ['completed']])('замовлення з оплатою при отриманні в очікуванні можна перевести в %s', async (status) => {
     repo.findById.mockResolvedValue({ ...ORDER, status: 'pending', payment_method: 'cod' });
     await OrderService.updateStatus('ORD1', 1, status);
-    expect(repo.updateStatus).toHaveBeenCalledWith('ORD1', status);
+    expect(repo.updateStatus).toHaveBeenCalledWith('ORD1', status, CONN);
+  });
+
+  describe('D-BIZ-02: залишок при зміні статусу', () => {
+    const ITEMS = [
+      { product_id: 10, quantity: 2, type: 'physical' },
+      { product_id: 11, quantity: 1, type: 'digital' },
+      { product_id: null, quantity: 4, type: 'physical' },
+    ];
+
+    beforeEach(() => {
+      repo.findItems.mockResolvedValue(ITEMS);
+    });
+
+    it.each([
+      ['cod', 'pending'], ['cod', 'paid'], ['cod', 'shipped'], ['cod', 'completed'],
+      ['online', 'paid'], ['online', 'shipped'], ['online', 'completed'],
+    ])('скасування замовлення (%s, %s) повертає залишок фізичних товарів', async (method, current) => {
+      repo.findById.mockResolvedValue({ ...ORDER, status: current, payment_method: method });
+      await OrderService.updateStatus('ORD1', 1, 'cancelled');
+      expect(products.incrementStock).toHaveBeenCalledTimes(1);
+      expect(products.incrementStock).toHaveBeenCalledWith(10, 2, CONN);
+    });
+
+    it('неоплачене онлайн-замовлення залишок не тримало, тому скасування його не повертає', async () => {
+      repo.findById.mockResolvedValue({ ...ORDER, status: 'pending', payment_method: 'online' });
+      await OrderService.updateStatus('ORD1', 1, 'cancelled');
+      expect(products.incrementStock).not.toHaveBeenCalled();
+    });
+
+    it.each([['paid', 'shipped'], ['shipped', 'completed'], ['paid', 'completed']])(
+      'перехід %s → %s між статусами, що тримають залишок, його не змінює',
+      async (current, next) => {
+        repo.findById.mockResolvedValue({ ...ORDER, status: current, payment_method: 'cod' });
+        await OrderService.updateStatus('ORD1', 1, next);
+        expect(products.incrementStock).not.toHaveBeenCalled();
+        expect(products.decrementStock).not.toHaveBeenCalled();
+      }
+    );
+
+    it.each([['paid'], ['shipped'], ['completed']])('скасоване замовлення не можна перевести в %s', async (status) => {
+      repo.findById.mockResolvedValue({ ...ORDER, status: 'cancelled', payment_method: 'cod' });
+      const error = await serviceFailure(() => OrderService.updateStatus('ORD1', 1, status));
+      expect([error.status, error.message]).toEqual([400, 'Скасоване замовлення змінити не можна.']);
+      expect(repo.updateStatus).not.toHaveBeenCalled();
+      expect(products.incrementStock).not.toHaveBeenCalled();
+    });
+
+    it('повторне скасування скасованого замовлення залишок вдруге не повертає', async () => {
+      repo.findById.mockResolvedValue({ ...ORDER, status: 'cancelled', payment_method: 'cod' });
+      await OrderService.updateStatus('ORD1', 1, 'cancelled');
+      expect(products.incrementStock).not.toHaveBeenCalled();
+    });
+
+    it('стан замовлення читається з блокуванням, а не з попереднього читання', async () => {
+      repo.findById.mockResolvedValue({ ...ORDER, status: 'cod-stale', payment_method: 'cod' });
+      repo.findForUpdate.mockResolvedValue({ ...ORDER, status: 'cancelled', payment_method: 'cod' });
+      const error = await serviceFailure(() => OrderService.updateStatus('ORD1', 1, 'shipped'));
+      expect(error.status).toBe(400);
+      expect(repo.findForUpdate).toHaveBeenCalledWith('ORD1', CONN);
+      expect(repo.updateStatus).not.toHaveBeenCalled();
+    });
   });
 
   it('права перевіряються до значення статусу', async () => {

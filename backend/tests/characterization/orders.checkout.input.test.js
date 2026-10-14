@@ -1,13 +1,14 @@
-// Вхідні дані чекаута: кількість у позиціях замовлення (orderController.processCheckout).
-// Усі тести цього файлу фіксують дефекти: кількість не валідується.
+// Вхідні дані чекаута: кількість і ідентифікатори товарів у позиціях замовлення (orderController.processCheckout).
 import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import { app } from '../helpers/app.js';
 import { useTestDatabase } from '../helpers/suite.js';
 import { authHeader } from '../helpers/auth.js';
-import { createUser, createSite, createProduct, getOrder, getOrderItems, countOrders } from '../helpers/factories.js';
+import { createUser, createSite, createProduct, getOrder, getOrderItems, getProduct, countOrders } from '../helpers/factories.js';
 
 useTestDatabase();
+
+const QUANTITY_ERROR = 'Кількість товару має бути цілим числом не менше 1.';
 
 let seller, buyer, site, product;
 
@@ -25,51 +26,110 @@ const checkoutCod = (items) =>
     .send({ siteId: site.id, items, paymentMethod: 'cod', customerData: { address: 'Київ, вул. Хрещатик, 1' } });
 
 describe('кількість у позиціях замовлення', () => {
-  // KNOWN-DEFECT D-BIZ-09: кількість не перевіряється, перевірка залишку пропускає від'ємні значення.
-  it("KNOWN-DEFECT D-BIZ-09: від'ємна кількість приймається, сума замовлення від'ємна", async () => {
+  it("D-BIZ-09: від'ємна кількість відхиляється, замовлення не створюється", async () => {
     const res = await checkoutCod([{ id: product.id, quantity: -1 }]);
-    expect(res.status).toBe(200);
-    const order = await getOrder(res.body.orderId);
-    expect(Number(order.total_amount)).toBe(-100);
-    const [item] = await getOrderItems(order.id);
-    expect(item.quantity).toBe(-1);
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe(QUANTITY_ERROR);
+    expect(await countOrders()).toBe(0);
   });
 
-  it("KNOWN-DEFECT D-BIZ-09: від'ємна кількість дешевого товару зменшує суму дорогого", async () => {
+  it("D-BIZ-09: від'ємна кількість дешевого товару не зменшує суму дорогого", async () => {
     const cheap = await createProduct(site, { price: 1, stock_quantity: null });
     const res = await checkoutCod([
-      { id: product.id, quantity: 1 },  // 100
-      { id: cheap.id, quantity: -50 },  // -50
+      { id: product.id, quantity: 1 },
+      { id: cheap.id, quantity: -50 },
     ]);
-    expect(res.status).toBe(200);
-    expect(Number((await getOrder(res.body.orderId)).total_amount)).toBe(50);
+    expect(res.status).toBe(400);
+    expect(await countOrders()).toBe(0);
+    expect((await getProduct(product.id)).stock_quantity).toBe(10);
   });
 
-  it('KNOWN-DEFECT D-BIZ-09: нульова кількість приймається, сума дорівнює нулю', async () => {
+  it('D-BIZ-09: нульова кількість відхиляється', async () => {
     const res = await checkoutCod([{ id: product.id, quantity: 0 }]);
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe(QUANTITY_ERROR);
+    expect(await countOrders()).toBe(0);
+  });
+
+  it.each([[1.5], ['abc'], [''], [null], [true], [[]]])('D-BIZ-09: кількість %j відхиляється з 400', async (quantity) => {
+    const res = await checkoutCod([{ id: product.id, quantity }]);
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe(QUANTITY_ERROR);
+    expect(await countOrders()).toBe(0);
+  });
+
+  it('D-BIZ-09: відсутня кількість відхиляється', async () => {
+    const res = await checkoutCod([{ id: product.id }]);
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe(QUANTITY_ERROR);
+  });
+
+  it('D-BIZ-09: кількість-рядок із цілим числом приймається як число', async () => {
+    const res = await checkoutCod([{ id: product.id, quantity: '2' }]);
     expect(res.status).toBe(200);
-    expect(Number((await getOrder(res.body.orderId)).total_amount)).toBe(0);
+    const [item] = await getOrderItems(res.body.orderId);
+    expect(item.quantity).toBe(2);
+    expect(Number((await getOrder(res.body.orderId)).total_amount)).toBe(200);
+  });
+
+  it.each([[undefined], [null], [0], [-1], ['abc'], [1.5]])('ідентифікатор товару %j відхиляється з 400', async (id) => {
+    const res = await checkoutCod([{ id, quantity: 1 }]);
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('Некоректний товар у замовленні.');
+    expect(await countOrders()).toBe(0);
+  });
+
+  it.each([['рядок'], [{}], [5]])('items у вигляді %j (не масив) відхиляється з 400', async (items) => {
+    const res = await checkoutCod(items);
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('Список товарів порожній.');
+  });
+
+  it('елемент списку null відхиляється з 400', async () => {
+    const res = await checkoutCod([null]);
+    expect(res.status).toBe(400);
+    expect(await countOrders()).toBe(0);
   });
 });
 
 describe('залишок при кількох позиціях одного товару', () => {
-  // KNOWN-DEFECT D-BIZ-02: залишок перевіряється для кожної позиції окремо, а не для суми.
-  it('KNOWN-DEFECT D-BIZ-02: товар у двох позиціях перевищує залишок, але замовлення приймається', async () => {
+  it('D-BIZ-02: товар у двох позиціях перевіряється на залишок сумарно', async () => {
     const res = await checkoutCod([
       { id: product.id, quantity: 6 },
       { id: product.id, quantity: 6 },
-    ]); // разом 12 при залишку 10
+    ]);
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe(`Недостатньо товару "${product.name}" на складі.`);
+    expect(await countOrders()).toBe(0);
+    expect((await getProduct(product.id)).stock_quantity).toBe(10);
+  });
+
+  it('D-BIZ-02: дві позиції, що разом дорівнюють залишку, приймаються, залишок стає 0', async () => {
+    const res = await checkoutCod([
+      { id: product.id, quantity: 4 },
+      { id: product.id, quantity: 6 },
+    ]);
     expect(res.status).toBe(200);
     expect(await getOrderItems(res.body.orderId)).toHaveLength(2);
+    expect((await getProduct(product.id)).stock_quantity).toBe(0);
+  });
+
+  it('ідентифікатор товару у вигляді рядка та числа вважається одним товаром', async () => {
+    const res = await checkoutCod([
+      { id: String(product.id), quantity: 6 },
+      { id: product.id, quantity: 6 },
+    ]);
+    expect(res.status).toBe(400);
+    expect(await countOrders()).toBe(0);
   });
 });
 
-describe('помилки без статусу в processCheckout', () => {
-  // KNOWN-DEFECT D-ARC-10: збій SQL не має status, тож клієнт отримує 400 із текстом помилки БД.
-  it('KNOWN-DEFECT D-ARC-10: нечислова кількість — 400 із текстом помилки БД замість 500', async () => {
+describe('помилки валідації в processCheckout', () => {
+  it('нечислова кількість більше не доходить до БД: 400 з повідомленням про кількість, а не текст SQL', async () => {
     const res = await checkoutCod([{ id: product.id, quantity: 'abc' }]);
     expect(res.status).toBe(400);
-    expect(res.body.message).toMatch(/NaN/); // «Unknown column 'NaN' in 'field list'»
+    expect(res.body.message).toBe(QUANTITY_ERROR);
+    expect(res.body.message).not.toMatch(/NaN/);
     expect(await countOrders()).toBe(0);
   });
 });

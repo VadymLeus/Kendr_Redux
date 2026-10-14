@@ -166,6 +166,11 @@ class SiteRepository {
     const [rows] = await db.query('SELECT * FROM sites WHERE user_id = ?', [userId]);
     return rows;
   }
+
+  static async countByOwner(userId, connection) {
+    const [rows] = await executor(connection).query('SELECT COUNT(*) AS count FROM sites WHERE user_id = ?', [userId]);
+    return rows[0].count;
+  }
   
   static async create(userId, sitePath, title, logoUrl, connection) {
     const [result] = await executor(connection).query(

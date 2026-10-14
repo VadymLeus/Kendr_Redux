@@ -116,7 +116,7 @@ const OrdersTab = ({ site, siteData }) => {
     const getStatusControl = (order) => {
         const hasItems = order.items && order.items.length > 0;
         const isDigitalOnly = hasItems && order.items.every(item => item.type === 'digital');
-        const isDisabled = (order.status === 'pending' && order.payment_method === 'online') || isDigitalOnly;
+        const isDisabled = (order.status === 'pending' && order.payment_method === 'online') || isDigitalOnly || order.status === 'cancelled';
         let config = STATUS_MAP[order.status] || STATUS_MAP['pending'];
         if (order.status === 'pending' && order.payment_method === 'cod') {
             config = { label: 'Нове замовлення (Наложка)', color: 'bg-blue-500/10 text-blue-600 border-blue-500/20' };

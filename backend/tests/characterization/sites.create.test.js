@@ -1,12 +1,12 @@
 // Створення сайту (createSite) і перевірка адреси (checkSlug): валідація, шаблони, транзакція, ліміти тарифу.
-// Фіксує D-BIZ-03 (ліміт сайтів не застосовується), D-BIZ-05 (довжина адреси), D-SEC-17 (рівень доступу шаблона),
+// Фіксує D-BIZ-03 (ліміт сайтів), D-BIZ-05 (довжина адреси), D-SEC-17 (рівень доступу шаблона),
 // D-ARC-10 (код відповіді визначається за текстом помилки).
 import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import { app } from '../helpers/app.js';
 import { useTestDatabase } from '../helpers/suite.js';
 import { authHeader } from '../helpers/auth.js';
-import { setGlobalSetting, createUser, createSite, createTemplate, getSite, getPages, countRows } from '../helpers/factories.js';
+import { setGlobalSetting, createUser, createSite, createTemplate, addCollaborator, getSite, getPages, countRows } from '../helpers/factories.js';
 
 useTestDatabase();
 
@@ -140,12 +140,44 @@ describe('POST /api/sites/create: валідація', () => {
     expect(await countRows('sites')).toBe(0);
   });
 
-  // KNOWN-DEFECT D-BIZ-03: ліміт maxSites (FREE — 3 сайти) лише віддається клієнту, сервер його не перевіряє.
-  it('KNOWN-DEFECT D-BIZ-03: четвертий сайт на тарифі FREE створюється (ліміт 3)', async () => {
-    for (let i = 0; i < 3; i++) await createSite(user);
+  it('D-BIZ-03: третій сайт на тарифі FREE створюється, четвертий — 403', async () => {
+    for (let i = 0; i < 2; i++) await createSite(user);
+    const third = await create(user, { title: 'Третій', sitePath: 'third-shop', isBlank: true });
+    expect(third.status).toBe(201);
     const res = await create(user, { title: 'Четвертий', sitePath: 'fourth-shop', isBlank: true });
+    expect(res.status).toBe(403);
+    expect(res.body.message).toBe('Ви досягли ліміту сайтів (3) на вашому тарифі.');
+    expect(await countRows('sites', 'user_id = ?', [user.id])).toBe(3);
+  });
+
+  it('D-BIZ-03: сайти, де користувач лише співавтор, ліміт не вичерпують', async () => {
+    const other = await createUser({ plan: 'PLUS' });
+    for (let i = 0; i < 3; i++) await addCollaborator(await createSite(other), user, 'editor', ['editor']);
+    const res = await create(user, { title: 'Мій перший', sitePath: 'my-first', isBlank: true });
     expect(res.status).toBe(201);
-    expect(await countRows('sites', 'user_id = ?', [user.id])).toBe(4);
+  });
+
+  it('D-BIZ-03: на тарифі PLUS дозволено 8 сайтів, дев\'ятий — 403', async () => {
+    const plus = await createUser({ plan: 'PLUS' });
+    for (let i = 0; i < 7; i++) await createSite(plus);
+    const eighth = await create(plus, { title: 'Восьмий', sitePath: 'eighth-shop', isBlank: true });
+    expect(eighth.status).toBe(201);
+    const res = await create(plus, { title: 'Дев\'ятий', sitePath: 'ninth-shop', isBlank: true });
+    expect(res.status).toBe(403);
+    expect(res.body.message).toBe('Ви досягли ліміту сайтів (8) на вашому тарифі.');
+  });
+
+  it('D-BIZ-03: тариф ADMIN без обмежень', async () => {
+    const admin = await createUser({ plan: 'ADMIN' });
+    for (let i = 0; i < 10; i++) await createSite(admin);
+    const res = await create(admin, { title: 'Ще один', sitePath: 'one-more', isBlank: true });
+    expect(res.status).toBe(201);
+  });
+
+  it('D-BIZ-03: тариф береться з БД, а не з токена', async () => {
+    for (let i = 0; i < 3; i++) await createSite(user);
+    const res = await create({ ...user, plan: 'PLUS' }, { title: 'Четвертий', sitePath: 'fourth-shop', isBlank: true });
+    expect(res.status).toBe(403);
   });
 });
 

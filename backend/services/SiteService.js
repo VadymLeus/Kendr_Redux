@@ -7,6 +7,7 @@ const CollaboratorRepository = require('../repositories/CollaboratorRepository')
 const GlobalSettingsRepository = require('../repositories/GlobalSettingsRepository');
 const OrderRepository = require('../repositories/OrderRepository');
 const { ServiceError } = require('./ServiceError');
+const PlanPolicy = require('./PlanPolicy');
 const { requireSiteAccess, isAllowed, OWNER, read, write } = require('./siteAccess');
 const { validateSlug, validateSiteCreation } = require('./siteValidation');
 const { regenerateBlockIds, readTemplate, parseTemplateContent } = require('./siteTemplate');
@@ -87,6 +88,11 @@ class SiteService {
         const cleanTitle = title.trim();
         const cleanSitePath = sitePath.toLowerCase().trim();
         return SiteRepository.transaction(async (connection) => {
+            PlanPolicy.assertWithinLimit(
+                await UserRepository.findPlanForUpdate(userId, connection),
+                'sites',
+                await SiteRepository.countByOwner(userId, connection)
+            );
             if (!templateId && !isBlank) {
                 throw new ServiceError(500, 'ID шаблону не було надано.');
             }

@@ -1,6 +1,9 @@
 // backend/controllers/categoryController.js
 const Category = require('../models/Category');
+const UserRepository = require('../repositories/UserRepository');
 const { requireSiteAccess, write } = require('../services/siteAccess');
+const PlanPolicy = require('../services/PlanPolicy');
+const { readDiscount } = require('../services/productValidation');
 const sendServiceError = require('../utils/sendServiceError');
 
 exports.getCategoriesForSite = async (req, res, next) => {
@@ -18,9 +21,16 @@ exports.createCategory = async (req, res, next) => {
         const { siteId, name, discount_percentage, icon } = req.body;
         const userId = req.user.id;
 
-        await requireSiteAccess(siteId, userId, write('commerce'), 'У вас немає прав для додавання категорій на цей сайт.');
+        const site = await requireSiteAccess(siteId, userId, write('commerce'), 'У вас немає прав для додавання категорій на цей сайт.');
 
-        const newCategory = await Category.create(siteId, name, discount_percentage, icon);
+        const discount = readDiscount(discount_percentage);
+        PlanPolicy.assertWithinLimit(
+            await UserRepository.findPlan(site.user_id),
+            'categories',
+            await Category.countBySiteId(siteId)
+        );
+
+        const newCategory = await Category.create(siteId, name, discount, icon);
         res.status(201).json(newCategory);
     } catch (error) {
         sendServiceError(error, res, next);
@@ -44,7 +54,7 @@ exports.updateCategory = async (req, res, next) => {
 
         await requireSiteAccess(category.site_id, userId, write('commerce'), 'У вас немає прав на редагування цієї категорії.');
 
-        await Category.update(categoryId, name.trim(), discount_percentage, icon);
+        await Category.update(categoryId, name.trim(), readDiscount(discount_percentage), icon);
         res.json({ message: 'Категорію оновлено.' });
 
     } catch (error) {

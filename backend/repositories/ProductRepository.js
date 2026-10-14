@@ -41,7 +41,16 @@ const safeParseCategories = (catsData) => {
     return Array.isArray(catsData) ? catsData : [];
 };
 
+const UPDATABLE_COLUMNS = ['name', 'description', 'price', 'stock_quantity', 'sale_percentage', 'type', 'digital_file_url', 'image_gallery', 'variants'];
+const SERIALIZED_COLUMNS = ['image_gallery', 'variants'];
+const serializeJson = (value) => (value ? JSON.stringify(value) : null);
+
 class ProductRepository {
+    static async countBySite(siteId) {
+        const [rows] = await db.query('SELECT COUNT(*) AS count FROM products WHERE site_id = ?', [siteId]);
+        return rows[0].count;
+    }
+
     static async findById(productId) {
         const [rows] = await db.query(
             `SELECT p.*, 
@@ -97,11 +106,12 @@ class ProductRepository {
 
     static async create(productData) {
         const { site_id, name, description, price, image_path, category_ids, stock_quantity, variants, sale_percentage, type, digital_file_url } = productData;
-        const image_gallery = image_path ? JSON.stringify([image_path]) : (productData.image_gallery ? JSON.stringify(productData.image_gallery) : null);
+        const gallery = Array.isArray(productData.image_gallery) && productData.image_gallery.length > 0 ? productData.image_gallery : (image_path ? [image_path] : null);
+        const image_gallery = gallery ? JSON.stringify(gallery) : null;
         const variantsJson = variants ? JSON.stringify(variants) : null;
         const [result] = await db.query(
             'INSERT INTO products (site_id, name, description, price, image_gallery, stock_quantity, variants, sale_percentage, type, digital_file_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [site_id, name, description, price || 0, image_gallery, stock_quantity || null, variantsJson, sale_percentage || 0, type || 'physical', digital_file_url || null]
+            [site_id, name, description, price || 0, image_gallery, stock_quantity ?? null, variantsJson, sale_percentage || 0, type || 'physical', digital_file_url || null]
         );
         const productId = result.insertId;
         if (Array.isArray(category_ids) && category_ids.length > 0) {
@@ -112,20 +122,18 @@ class ProductRepository {
     }
 
     static async update(productId, productData) {
-        const { name, description, price, category_ids, stock_quantity, image_gallery, variants, sale_percentage, type, digital_file_url } = productData;
-        let query = 'UPDATE products SET name = ?, description = ?, price = ?, stock_quantity = ?, sale_percentage = ?, type = ?, digital_file_url = ?';
-        const params = [name, description, price, stock_quantity, sale_percentage || 0, type || 'physical', digital_file_url || null];
-        if ('image_gallery' in productData) {
-            query += ', image_gallery = ?';
-            params.push(JSON.stringify(image_gallery));
+        const { category_ids } = productData;
+        const assignments = [];
+        const params = [];
+        for (const column of UPDATABLE_COLUMNS) {
+            if (productData[column] === undefined) continue;
+            assignments.push(`${column} = ?`);
+            params.push(SERIALIZED_COLUMNS.includes(column) ? serializeJson(productData[column]) : productData[column]);
         }
-        if ('variants' in productData) {
-            query += ', variants = ?';
-            params.push(variants ? JSON.stringify(variants) : null);
+        if (assignments.length > 0) {
+            params.push(productId);
+            await db.query(`UPDATE products SET ${assignments.join(', ')} WHERE id = ?`, params);
         }
-        query += ' WHERE id = ?';
-        params.push(productId);
-        await db.query(query, params);
         if (category_ids !== undefined) {
             await db.query('DELETE FROM product_categories WHERE product_id = ?', [productId]);
             if (Array.isArray(category_ids) && category_ids.length > 0) {
@@ -215,9 +223,19 @@ class ProductRepository {
 
     static async findForCheckout(productId, siteId, connection) {
         const [products] = await (connection || db).query(
-            'SELECT id, name, price, type, digital_file_url, stock_quantity FROM products WHERE id = ? AND site_id = ? AND is_available = 1',
+            `SELECT p.id, p.name, p.price, p.type, p.digital_file_url, p.stock_quantity, p.sale_percentage, p.variants,
+                    (
+                        SELECT MAX(c.discount_percentage)
+                        FROM product_categories pc
+                        JOIN categories c ON pc.category_id = c.id
+                        WHERE pc.product_id = p.id
+                    ) AS category_discount
+             FROM products p
+             WHERE p.id = ? AND p.site_id = ? AND p.is_available = 1${connection ? ' FOR UPDATE' : ''}`,
             [productId, siteId]
         );
+        if (!products[0]) return products[0];
+        products[0].variants = safeParseVariants(products[0].variants);
         return products[0];
     }
 
@@ -229,6 +247,13 @@ class ProductRepository {
     static async decrementStock(productId, quantity, connection) {
         await (connection || db).query(
             `UPDATE products SET stock_quantity = GREATEST(stock_quantity - ?, 0) WHERE id = ? AND stock_quantity IS NOT NULL`,
+            [quantity, productId]
+        );
+    }
+
+    static async incrementStock(productId, quantity, connection) {
+        await (connection || db).query(
+            `UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ? AND stock_quantity IS NOT NULL`,
             [quantity, productId]
         );
     }

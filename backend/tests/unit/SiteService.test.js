@@ -71,6 +71,7 @@ beforeEach(() => {
   repo = {
     transaction: vi.spyOn(SiteRepository, 'transaction').mockImplementation(async (work) => work(CONN)),
     existsByPath: vi.spyOn(SiteRepository, 'existsByPath').mockResolvedValue(false),
+    countByOwner: vi.spyOn(SiteRepository, 'countByOwner').mockResolvedValue(0),
     findInfoById: vi.spyOn(SiteRepository, 'findInfoById').mockResolvedValue(null),
     findLock: vi.spyOn(SiteRepository, 'findLock').mockResolvedValue({ locked_by_user_id: null, locked_until: null }),
     findOwnerAndStats: vi.spyOn(SiteRepository, 'findOwnerAndStats').mockResolvedValue(null),
@@ -100,6 +101,7 @@ beforeEach(() => {
   };
   users = {
     findRole: vi.spyOn(UserRepository, 'findRole').mockResolvedValue('user'),
+    findPlanForUpdate: vi.spyOn(UserRepository, 'findPlanForUpdate').mockResolvedValue('FREE'),
     findIdByUsername: vi.spyOn(UserRepository, 'findIdByUsername').mockResolvedValue(null),
     findAuthor: vi.spyOn(UserRepository, 'findAuthor').mockResolvedValue(null),
   };
@@ -274,10 +276,44 @@ describe('createSite: перевірки всередині транзакції
     expect(result.id).toBe(50);
   });
 
-  it('KNOWN-DEFECT D-BIZ-03: кількість сайтів користувача не перевіряється', async () => {
+  it('D-BIZ-03: тариф і кількість сайтів читаються на з\'єднанні транзакції, рядок користувача блокується', async () => {
     await SiteService.createSite(1, { title: 'Сайт', sitePath: 'my-shop', isBlank: true });
-    expect(repo.findAllAccessible).not.toHaveBeenCalled();
-    expect(repo.create).toHaveBeenCalled();
+    expect(users.findPlanForUpdate).toHaveBeenCalledWith(1, CONN);
+    expect(repo.countByOwner).toHaveBeenCalledWith(1, CONN);
+  });
+
+  it('D-BIZ-03: на тарифі FREE третій сайт створюється, четвертий — 403 до будь-якого запису', async () => {
+    repo.countByOwner.mockResolvedValue(2);
+    await SiteService.createSite(1, { title: 'Сайт', sitePath: 'my-shop', isBlank: true });
+    expect(repo.create).toHaveBeenCalledTimes(1);
+    repo.countByOwner.mockResolvedValue(3);
+    const error = await serviceFailure(() => SiteService.createSite(1, { title: 'Сайт', sitePath: 'other-shop', isBlank: true }));
+    expect([error.status, error.message]).toEqual([403, 'Ви досягли ліміту сайтів (3) на вашому тарифі.']);
+    expect(repo.existsByPath).toHaveBeenCalledTimes(1);
+    expect(repo.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('D-BIZ-03: на тарифі PLUS дозволено 8 сайтів', async () => {
+    users.findPlanForUpdate.mockResolvedValue('PLUS');
+    repo.countByOwner.mockResolvedValue(7);
+    await SiteService.createSite(1, { title: 'Сайт', sitePath: 'my-shop', isBlank: true });
+    repo.countByOwner.mockResolvedValue(8);
+    const error = await serviceFailure(() => SiteService.createSite(1, { title: 'Сайт', sitePath: 'other-shop', isBlank: true }));
+    expect(error.status).toBe(403);
+  });
+
+  it('D-BIZ-03: тариф ADMIN не обмежений', async () => {
+    users.findPlanForUpdate.mockResolvedValue('ADMIN');
+    repo.countByOwner.mockResolvedValue(500);
+    await SiteService.createSite(1, { title: 'Сайт', sitePath: 'my-shop', isBlank: true });
+    expect(repo.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('D-BIZ-03: перевищення ліміту перевіряється раніше за шаблон і адресу', async () => {
+    repo.countByOwner.mockResolvedValue(3);
+    const error = await serviceFailure(() => SiteService.createSite(1, { title: 'Сайт', sitePath: 'my-shop' }));
+    expect(error.status).toBe(403);
+    expect(repo.existsByPath).not.toHaveBeenCalled();
   });
 
   it('помилка репозиторію всередині транзакції передається нагору без змін', async () => {

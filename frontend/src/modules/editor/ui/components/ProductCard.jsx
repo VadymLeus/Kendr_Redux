@@ -51,10 +51,12 @@ const ProductCard = ({ product, isEditorPreview, siteData, fontStyles }) => {
     );
     
     const isForbiddenToBuy = isOwner || isStaff || isCollaborator;
-    const hasDiscount = product.sale_percentage > 0;
-    const finalPrice = product.price ? (hasDiscount 
-        ? Math.round(product.price * (1 - product.sale_percentage / 100)) 
-        : product.price) : 0;
+    const categoryDiscount = Array.isArray(product.categories)
+        ? product.categories.reduce((max, c) => Math.max(max, parseFloat(c.discount_percentage) || 0), 0)
+        : 0;
+    const discountPercent = product.sale_percentage > 0 ? product.sale_percentage : categoryDiscount;
+    const hasDiscount = discountPercent > 0;
+    const finalPrice = product.price ? Math.round(product.price * (1 - discountPercent / 100)) : 0;
     const isSoldOut = product.stock_quantity === 0 && product.type !== 'digital';
     const hasVariants = product.variants && Array.isArray(product.variants) && product.variants.length > 0;
     const sitePath = siteData?.site_path || product.site_path;
@@ -121,7 +123,7 @@ const ProductCard = ({ product, isEditorPreview, siteData, fontStyles }) => {
                 site_name: siteData?.title || product.site_name,
                 currency: siteCurrency
             };
-            addToCart(productForCart, {}, { finalPrice, originalPrice: product.price, discount: product.sale_percentage });
+            addToCart(productForCart, {}, { finalPrice, originalPrice: product.price, discount: discountPercent });
         }
     };
 
@@ -179,7 +181,7 @@ const ProductCard = ({ product, isEditorPreview, siteData, fontStyles }) => {
                     )}
                     {hasDiscount && !isSoldOut && (
                         <div className="absolute top-3 left-3 bg-red-500 text-white px-2.5 py-1 rounded-lg text-xs font-bold tracking-wide z-10 shadow-sm">
-                            -{product.sale_percentage}%
+                            -{discountPercent}%
                         </div>
                     )}
                     {product.type === 'digital' && !isSoldOut && (

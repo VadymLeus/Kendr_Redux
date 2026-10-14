@@ -68,17 +68,23 @@ export async function createProduct(site, overrides = {}) {
     is_available: 1,
     sale_percentage: 0,
     digital_file_url: null,
+    variants: null,
     ...overrides,
   };
   const result = await query(
-    `INSERT INTO products (site_id, name, type, price, stock_quantity, is_available, sale_percentage, digital_file_url)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO products (site_id, name, type, price, stock_quantity, is_available, sale_percentage, digital_file_url, variants)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       site.id, product.name, product.type, product.price, product.stock_quantity,
       product.is_available, product.sale_percentage, product.digital_file_url,
+      product.variants ? JSON.stringify(product.variants) : null,
     ]
   );
   return { id: result.insertId, site_id: site.id, ...product };
+}
+
+export async function linkProductToCategory(product, category) {
+  await query('INSERT INTO product_categories (product_id, category_id) VALUES (?, ?)', [product.id, category.id]);
 }
 
 export async function addCollaborator(site, user, role = 'editor', permissions = []) {

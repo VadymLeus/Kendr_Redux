@@ -73,6 +73,11 @@ class OrderRepository {
         return orders[0];
     }
 
+    static async findForUpdate(orderId, connection) {
+        const [orders] = await connection.query('SELECT * FROM orders WHERE id = ? FOR UPDATE', [orderId]);
+        return orders[0];
+    }
+
     static async findByIdAndCustomer(orderId, customerId) {
         const [orders] = await db.query('SELECT * FROM orders WHERE id = ? AND customer_id = ?', [orderId, customerId]);
         return orders[0];

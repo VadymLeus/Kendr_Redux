@@ -158,6 +158,12 @@ describe('POST /api/products', () => {
     expect(await getProduct(res.body.id)).toMatchObject({ name: 'Чай', stock_quantity: 3 });
   });
 
+  it('D-ARC-14: галерея зберігається повністю й одним шаром JSON (раніше — лише перше зображення в подвійному кодуванні)', async () => {
+    const res = await addProduct(owner, { ...BODY(), image_gallery: ['/uploads/a.png', '/uploads/b.png'] });
+    expect(res.status).toBe(201);
+    expect((await getProduct(res.body.id)).image_gallery).toEqual(['/uploads/a.png', '/uploads/b.png']);
+  });
+
   it('прив\'язує товар до категорій', async () => {
     const category = await createCategory(site, { name: 'Напої' });
     const res = await addProduct(owner, { ...BODY(), category_ids: [category.id] });
@@ -179,20 +185,43 @@ describe('POST /api/products', () => {
     expect(row.stock_quantity).toBeNull();
   });
 
-  // KNOWN-DEFECT D-BIZ-10: Product.create робить stock_quantity || null, тому 0 стає NULL (необмежений залишок).
-  it('KNOWN-DEFECT D-BIZ-10: залишок 0 при створенні зберігається як NULL (товар стає необмеженим)', async () => {
+  it('D-BIZ-10: залишок 0 при створенні зберігається як 0, товар не стає необмеженим', async () => {
     const res = await addProduct(owner, { ...BODY(), stock_quantity: 0 });
     expect(res.status).toBe(201);
-    expect((await getProduct(res.body.id)).stock_quantity).toBeNull();
+    expect((await getProduct(res.body.id)).stock_quantity).toBe(0);
   });
 
-  // KNOWN-DEFECT D-BIZ-11: сервер не перевіряє ціну, знижку й назву.
-  it('KNOWN-DEFECT D-BIZ-11: від\'ємна ціна й знижка понад 100 % приймаються', async () => {
-    const res = await addProduct(owner, { ...BODY(), price: -50, sale_percentage: 150 });
+  it.each([['abc'], [-1], ['1.5']])('D-BIZ-10: залишок %j відхиляється, а не стає «без обмежень»', async (stock) => {
+    const res = await addProduct(owner, { ...BODY(), stock_quantity: stock });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('Залишок товару має бути цілим числом не менше 0.');
+    expect(await countRows('products', 'site_id = ?', [site.id])).toBe(1);
+  });
+
+  it('D-BIZ-11: від\'ємна ціна відхиляється', async () => {
+    const res = await addProduct(owner, { ...BODY(), price: -50 });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('Ціна товару має бути числом від 0 до 99999999.99.');
+    expect(await countRows('products', 'site_id = ?', [site.id])).toBe(1);
+  });
+
+  it.each([[150], [-1], ['abc']])('D-BIZ-11: знижка %j відхиляється', async (sale) => {
+    const res = await addProduct(owner, { ...BODY(), sale_percentage: sale });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('Знижка товару має бути від 0 до 100 %.');
+    expect(await countRows('products', 'site_id = ?', [site.id])).toBe(1);
+  });
+
+  it('D-BIZ-11: знижка 100 % і ціна 0 допустимі', async () => {
+    const res = await addProduct(owner, { ...BODY(), price: 0, sale_percentage: 100 });
     expect(res.status).toBe(201);
-    const row = await getProduct(res.body.id);
-    expect(Number(row.price)).toBe(-50);
-    expect(row.sale_percentage).toBe(150);
+    expect(res.body.sale_percentage).toBe(100);
+  });
+
+  it('D-BIZ-11: невідомий тип товару відхиляється', async () => {
+    const res = await addProduct(owner, { ...BODY(), type: 'gift' });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('Недопустимий тип товару.');
   });
 
   it('KNOWN-DEFECT D-ARC-10: без назви — 500 із текстом помилки БД', async () => {
@@ -201,13 +230,45 @@ describe('POST /api/products', () => {
     expect(res.body.message).toContain('cannot be null');
   });
 
-  // KNOWN-DEFECT D-BIZ-03: ліміт maxProducts (FREE — 50 товарів) сервер не перевіряє.
-  it('KNOWN-DEFECT D-BIZ-03: 51-й товар на тарифі FREE створюється (ліміт 50)', async () => {
-    for (let i = 0; i < 49; i++) await createProduct(site);
+  it('D-BIZ-03: 50-й товар на тарифі FREE створюється, 51-й — 403', async () => {
+    for (let i = 0; i < 48; i++) await createProduct(site);
+    const fiftieth = await addProduct(owner, BODY());
+    expect(fiftieth.status).toBe(201);
     expect(await countRows('products', 'site_id = ?', [site.id])).toBe(50);
     const res = await addProduct(owner, BODY());
+    expect(res.status).toBe(403);
+    expect(res.body.message).toBe('Досягнуто ліміту товарів (50) на тарифі власника сайту.');
+    expect(await countRows('products', 'site_id = ?', [site.id])).toBe(50);
+  });
+
+  it('D-BIZ-03: співавтор не обходить ліміт власника', async () => {
+    for (let i = 0; i < 49; i++) await createProduct(site);
+    const res = await addProduct(editor, BODY());
+    expect(res.status).toBe(403);
+    expect(await countRows('products', 'site_id = ?', [site.id])).toBe(50);
+  });
+
+  it('D-BIZ-03: ліміт рахується за сайтом, товари іншого сайту не враховуються', async () => {
+    const other = await createSite(owner);
+    for (let i = 0; i < 50; i++) await createProduct(other);
+    const res = await addProduct(owner, BODY());
     expect(res.status).toBe(201);
-    expect(await countRows('products', 'site_id = ?', [site.id])).toBe(51);
+  });
+
+  it('D-BIZ-03: на тарифі PLUS дозволено 200 товарів, ліміт береться з тарифу власника', async () => {
+    const plusOwner = await createUser({ plan: 'PLUS' });
+    const plusSite = await createSite(plusOwner);
+    for (let i = 0; i < 60; i++) await createProduct(plusSite);
+    const res = await addProduct(plusOwner, { ...BODY(), site_id: plusSite.id });
+    expect(res.status).toBe(201);
+  });
+
+  it('D-BIZ-03: тариф ADMIN без обмежень', async () => {
+    const admin = await createUser({ plan: 'ADMIN' });
+    const adminSite = await createSite(admin);
+    for (let i = 0; i < 205; i++) await createProduct(adminSite);
+    const res = await addProduct(admin, { ...BODY(), site_id: adminSite.id });
+    expect(res.status).toBe(201);
   });
 
   it('сторонній користувач — 403', async () => {
@@ -246,6 +307,12 @@ describe('PUT /api/products/:productId', () => {
     expect(Number(row.price)).toBe(200);
   });
 
+  it('D-ARC-14: галерея при оновленні записується одним шаром JSON', async () => {
+    const res = await updateProduct(owner, product.id, { ...BODY, image_gallery: ['/uploads/x.png', '/uploads/y.png'] });
+    expect(res.status).toBe(200);
+    expect((await getProduct(product.id)).image_gallery).toEqual(['/uploads/x.png', '/uploads/y.png']);
+  });
+
   it('при оновленні залишок 0 зберігається як 0 (на відміну від створення, D-BIZ-10)', async () => {
     await updateProduct(owner, product.id, { ...BODY, stock_quantity: 0 });
     expect((await getProduct(product.id)).stock_quantity).toBe(0);
@@ -265,18 +332,44 @@ describe('PUT /api/products/:productId', () => {
     expect(await linked()).toEqual([]);
   });
 
-  // KNOWN-DEFECT D-BIZ-11: пропущені поля не зберігаються, а скидаються до значень за замовчуванням.
-  it('KNOWN-DEFECT D-BIZ-11: запит лише з name скидає ціну, опис, тип, посилання на файл і залишок', async () => {
+  it('D-BIZ-11: запит лише з name змінює назву, решта полів зберігається', async () => {
     const digital = await createProduct(site, {
-      name: 'Книга', type: 'digital', price: 500, stock_quantity: 7, digital_file_url: FILE_URL,
+      name: 'Книга', type: 'digital', price: 500, stock_quantity: 7, digital_file_url: FILE_URL, sale_percentage: 10,
     });
-    await query("UPDATE products SET description = 'Опис книги' WHERE id = ?", [digital.id]);
+    await query("UPDATE products SET description = 'Опис книги', variants = ? WHERE id = ?", [JSON.stringify([{ name: 'Формат', values: [{ label: 'PDF' }] }]), digital.id]);
     const res = await updateProduct(owner, digital.id, { name: 'Книга (нова назва)' });
     expect(res.status).toBe(200);
     const row = await getProduct(digital.id);
     expect(row.name).toBe('Книга (нова назва)');
-    expect(Number(row.price)).toBe(0);
-    expect(row).toMatchObject({ description: null, type: 'physical', digital_file_url: null, stock_quantity: null });
+    expect(Number(row.price)).toBe(500);
+    expect(row).toMatchObject({
+      description: 'Опис книги', type: 'digital', digital_file_url: FILE_URL, stock_quantity: 7, sale_percentage: 10,
+      variants: [{ name: 'Формат', values: [{ label: 'PDF' }] }],
+    });
+  });
+
+  it('D-BIZ-11: явний null у залишку знімає облік, null у variants очищає варіанти', async () => {
+    await query("UPDATE products SET variants = ? WHERE id = ?", [JSON.stringify([{ name: 'Розмір', values: [] }]), product.id]);
+    const res = await updateProduct(owner, product.id, { stock_quantity: null, variants: null });
+    expect(res.status).toBe(200);
+    const row = await getProduct(product.id);
+    expect(row.stock_quantity).toBeNull();
+    expect(row.variants).toBeNull();
+    expect(row.name).toBe('Кава');
+  });
+
+  it.each([
+    [{ price: -1 }, 'Ціна товару має бути числом від 0 до 99999999.99.'],
+    [{ sale_percentage: 101 }, 'Знижка товару має бути від 0 до 100 %.'],
+    [{ stock_quantity: -3 }, 'Залишок товару має бути цілим числом не менше 0.'],
+    [{ type: 'gift' }, 'Недопустимий тип товару.'],
+  ])('D-BIZ-11: %j відхиляється, товар не змінюється', async (change, message) => {
+    const res = await updateProduct(owner, product.id, { name: 'Інша назва', ...change });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe(message);
+    const row = await getProduct(product.id);
+    expect(row.name).toBe('Кава');
+    expect(Number(row.price)).toBe(150);
   });
 
   it('неіснуючий товар — 404', async () => {
@@ -372,15 +465,16 @@ describe('DELETE /api/products/:productId/gallery', () => {
     expect(res.body.message).toBe('У вас немає прав для зміни цього товару.');
   });
 
-  // KNOWN-DEFECT D-DEAD-08: маршрути галереї викликають Product.update лише з image_gallery, а метод пише всі поля;
-  // name стає NULL і запит падає. Frontend ці маршрути не викликає.
-  it('KNOWN-DEFECT D-DEAD-08: видалення зображення з галереї завершується помилкою 500, товар не змінюється', async () => {
+  it('D-DEAD-08: видалення зображення з галереї змінює лише галерею, решта полів товару зберігається', async () => {
     await query('UPDATE products SET image_gallery = ? WHERE id = ?', [JSON.stringify(['/uploads/a.png', '/uploads/b.png']), product.id]);
     const res = await removeImage(owner, product.id, { imagePath: '/uploads/a.png' });
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ message: 'Зображення видалено з галереї.', image_gallery: ['/uploads/b.png'] });
     const row = await getProduct(product.id);
     expect(row.name).toBe('Кава');
-    expect(row.image_gallery).toEqual(['/uploads/a.png', '/uploads/b.png']);
+    expect(Number(row.price)).toBe(150);
+    expect(row.stock_quantity).toBe(10);
+    expect(row.image_gallery).toEqual(['/uploads/b.png']);
   });
 });
 
@@ -427,12 +521,35 @@ describe('категорії', () => {
       expect(res.body.message).toBe('Помилка під час створення категорії: Назва категорії не може бути порожньою.');
     });
 
-    // KNOWN-DEFECT D-BIZ-03: ліміт maxCategories (FREE — 20) сервер не перевіряє.
-    it('KNOWN-DEFECT D-BIZ-03: 21-ша категорія на тарифі FREE створюється (ліміт 20)', async () => {
-      for (let i = 0; i < 20; i++) await createCategory(site);
+    it('D-BIZ-03: 20-та категорія на тарифі FREE створюється, 21-ша — 403', async () => {
+      for (let i = 0; i < 19; i++) await createCategory(site);
+      const twentieth = await addCategory(owner, { siteId: site.id, name: 'Двадцята' });
+      expect(twentieth.status).toBe(201);
       const res = await addCategory(owner, { siteId: site.id, name: 'Двадцять перша' });
+      expect(res.status).toBe(403);
+      expect(res.body.message).toBe('Досягнуто ліміту категорій (20) на тарифі власника сайту.');
+      expect(await countRows('categories', 'site_id = ?', [site.id])).toBe(20);
+    });
+
+    it('D-BIZ-03: співавтор не обходить ліміт власника', async () => {
+      for (let i = 0; i < 20; i++) await createCategory(site);
+      const res = await addCategory(editor, { siteId: site.id, name: 'Двадцять перша' });
+      expect(res.status).toBe(403);
+    });
+
+    it('D-BIZ-03: на тарифі PLUS дозволено 100 категорій', async () => {
+      const plusOwner = await createUser({ plan: 'PLUS' });
+      const plusSite = await createSite(plusOwner);
+      for (let i = 0; i < 25; i++) await createCategory(plusSite);
+      const res = await addCategory(plusOwner, { siteId: plusSite.id, name: 'Ще одна' });
       expect(res.status).toBe(201);
-      expect(await countRows('categories', 'site_id = ?', [site.id])).toBe(21);
+    });
+
+    it.each([[150], [-5], [10.5], ['abc']])('D-BIZ-11: знижка категорії %j відхиляється', async (discount) => {
+      const res = await addCategory(owner, { siteId: site.id, name: 'Напої', discount_percentage: discount });
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe('Знижка категорії має бути цілим числом від 0 до 100 %.');
+      expect(await countRows('categories', 'site_id = ?', [site.id])).toBe(0);
     });
 
     it('сторонній користувач — 403', async () => {
@@ -469,6 +586,13 @@ describe('категорії', () => {
       expect(res.status).toBe(200);
       expect(res.body.message).toBe('Категорію оновлено.');
       expect(await getCategory(category.id)).toMatchObject({ name: 'Гарячі напої', discount_percentage: 5, icon: 'star' });
+    });
+
+    it.each([[101], [-1], [2.5]])('D-BIZ-11: знижка категорії %j відхиляється, категорія не змінюється', async (discount) => {
+      const res = await updateCategory(owner, category.id, { name: 'Гарячі напої', discount_percentage: discount });
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe('Знижка категорії має бути цілим числом від 0 до 100 %.');
+      expect((await getCategory(category.id)).name).toBe('Напої');
     });
 
     it('порожня назва — 400 (перевіряється раніше за існування категорії)', async () => {

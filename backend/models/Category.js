@@ -14,6 +14,11 @@ class Category {
         }
     }
 
+    static async countBySiteId(siteId) {
+        const [rows] = await db.query('SELECT COUNT(*) AS count FROM categories WHERE site_id = ?', [siteId]);
+        return rows[0].count;
+    }
+
     static async findById(categoryId) {
         try {
             const [rows] = await db.query(

@@ -42,6 +42,31 @@ const assertAwaitingOnlinePayment = (order) => {
     }
 };
 
+const holdsStock = (order, status) => (order.payment_method === 'cod'
+    ? status !== 'cancelled'
+    : ['paid', 'shipped', 'completed'].includes(status));
+
+const restoreStockFor = async (items, connection) => {
+    for (const item of items) {
+        if (item.type !== 'digital' && item.product_id) {
+            await ProductRepository.incrementStock(item.product_id, item.quantity, connection);
+        }
+    }
+};
+
+const normalizeItems = (items) => items.map((item) => {
+    const id = item && Number(item.id);
+    if (!Number.isInteger(id) || id < 1) {
+        throw new ServiceError(400, 'Некоректний товар у замовленні.');
+    }
+    const quantity = typeof item.quantity === 'string' && item.quantity.trim() !== '' ? Number(item.quantity) : item.quantity;
+    if (!Number.isInteger(quantity) || quantity < 1) {
+        throw new ServiceError(400, 'Кількість товару має бути цілим числом не менше 1.');
+    }
+    const options = item.options && typeof item.options === 'object' && !Array.isArray(item.options) ? item.options : {};
+    return { id: String(id), quantity, options };
+});
+
 const decrementStockFor = async (items, connection) => {
     for (const item of items) {
         if (item.type !== 'digital' && item.product_id) {
@@ -70,9 +95,10 @@ class OrderService {
     static async checkout(userId, { siteId, items, customerData, paymentMethod }) {
         const method = paymentMethod === 'cod' ? 'cod' : 'online';
         if (!siteId) throw new ServiceError(400, 'Не вказано магазин для оформлення.');
-        if (!items || items.length === 0) throw new ServiceError(400, 'Список товарів порожній.');
+        if (!Array.isArray(items) || items.length === 0) throw new ServiceError(400, 'Список товарів порожній.');
+        const lines = normalizeItems(items);
         const placed = await OrderRepository.transaction(
-            (connection) => OrderService.placeOrder(connection, userId, siteId, items, customerData, method)
+            (connection) => OrderService.placeOrder(connection, userId, siteId, lines, customerData, method)
         );
         const { orderId, total, sitePublicKey, sitePrivateKey } = placed;
         if (method === 'online' && sitePublicKey && sitePrivateKey) {
@@ -124,31 +150,35 @@ class OrderService {
                 }
             }
         }
-        let isDigitalOnly = true;
-        const validatedItems = [];
-        for (const reqItem of items) {
-            const product = await ProductRepository.findForCheckout(reqItem.id, siteId, connection);
-            if (!product) throw new Error(`Деякі товари недоступні або не належать цьому магазину.`);
-            if (product.type !== 'digital' && product.stock_quantity !== null) {
-                if (reqItem.quantity > product.stock_quantity) {
-                    throw new Error(`Недостатньо товару "${product.name}" на складі.`);
-                }
-                isDigitalOnly = false;
-            } else if (product.type !== 'digital') {
-                isDigitalOnly = false;
-            }
-            validatedItems.push({
-                ...product,
-                quantity: reqItem.quantity,
-                options: reqItem.options || {}
-            });
+        const requested = new Map();
+        for (const line of items) {
+            requested.set(line.id, (requested.get(line.id) || 0) + line.quantity);
         }
+        const products = new Map();
+        for (const productId of [...requested.keys()].sort((a, b) => Number(a) - Number(b))) {
+            const product = await ProductRepository.findForCheckout(productId, siteId, connection);
+            if (!product) throw new ServiceError(400, 'Деякі товари недоступні або не належать цьому магазину.');
+            if (product.type !== 'digital' && product.stock_quantity !== null && requested.get(productId) > product.stock_quantity) {
+                throw new ServiceError(400, `Недостатньо товару "${product.name}" на складі.`);
+            }
+            products.set(productId, product);
+        }
+        const validatedItems = items.map((line) => {
+            const product = products.get(line.id);
+            return {
+                ...product,
+                quantity: line.quantity,
+                options: line.options,
+                price: PricingService.unitPrice(product, line.options)
+            };
+        });
+        const isDigitalOnly = validatedItems.every(item => item.type === 'digital');
         const total = PricingService.calculateOrderTotal(validatedItems);
         if (!isDigitalOnly && (!customerData || !customerData.address || !customerData.address.trim())) {
-            throw new Error('Адреса доставки обов\'язкова для фізичних товарів.');
+            throw new ServiceError(400, 'Адреса доставки обов\'язкова для фізичних товарів.');
         }
         if (isDigitalOnly && method === 'cod') {
-            throw new Error('Цифрові товари не можна замовити післяплатою.');
+            throw new ServiceError(400, 'Цифрові товари не можна замовити післяплатою.');
         }
         const orderId = generateOrderNumber();
         await OrderRepository.create({
@@ -164,6 +194,14 @@ class OrderService {
         }, connection);
         for (const item of validatedItems) {
             await OrderRepository.addItem(orderId, item, connection);
+        }
+        if (method === 'cod') {
+            for (const [productId, quantity] of requested) {
+                const product = products.get(productId);
+                if (product.type !== 'digital' && product.stock_quantity !== null) {
+                    await ProductRepository.decrementStock(productId, quantity, connection);
+                }
+            }
         }
         return { orderId, total, sitePublicKey, sitePrivateKey };
     }
@@ -225,7 +263,7 @@ class OrderService {
         if (!PaymentService.verifySignature(data, signature, sitePrivateKey)) {
             throw new ServiceError(403, 'Invalid signature');
         }
-        if (!PaymentService.isPaidStatus(payload.status) || order.status !== 'pending') return;
+        if (!PaymentService.isPaidStatus(payload.status) || order.status !== 'pending' || order.payment_method === 'cod') return;
         PaymentService.assertPaymentMatches(payload, { amount: order.total_amount });
         const digitalItems = await OrderRepository.transaction(async (connection) => {
             const items = await OrderRepository.findItems(realOrderId, connection);
@@ -313,7 +351,16 @@ class OrderService {
         if (order.status === 'pending' && order.payment_method === 'online' && status !== 'cancelled') {
             throw new ServiceError(400, 'Замовлення з онлайн-оплатою можна позначити оплаченим лише після підтвердження платежу.');
         }
-        await OrderRepository.updateStatus(orderId, status);
+        await OrderRepository.transaction(async (connection) => {
+            const current = await OrderRepository.findForUpdate(orderId, connection);
+            if (current.status === 'cancelled' && status !== 'cancelled') {
+                throw new ServiceError(400, 'Скасоване замовлення змінити не можна.');
+            }
+            await OrderRepository.updateStatus(orderId, status, connection);
+            if (holdsStock(current, current.status) && !holdsStock(current, status)) {
+                await restoreStockFor(await OrderRepository.findItems(orderId, connection), connection);
+            }
+        });
     }
 }
 
