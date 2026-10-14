@@ -1,4 +1,4 @@
-// Характеризаційні тести v0: операції над деревом блоків (шляхи виду [0], [1, 'data', 'columns', 0, 2]).
+// Характеризаційні тести: операції над деревом блоків (шляхи виду [0], [1, 'data', 'columns', 0, 2]).
 // Ці функції використовує редактор для додавання, видалення й переміщення блоків; після переходу
 // на реєстр блоків (v1.0) їхня поведінка не змінюється.
 import { describe, it, expect } from 'vitest';
@@ -127,20 +127,57 @@ describe('moveBlock', () => {
         expect(ids(after)).toEqual(['a', 'L']);
         expect(ids(after[1].data.columns[0])).toEqual(['e', 'b', 'c']);
     });
-    it('KNOWN-DEFECT D-BLK-07: перенесення блока з початку списку в контейнер нижче губить блок', () => {
-        // Після видалення з індексу 0 усі індекси того самого списку зсуваються на 1, а шлях призначення
-        // [1, 'data', 'columns', 0, 0] не коригується: тепер індекс 1 — це текстовий блок "e" без колонок.
+    // D-BLK-07 виправлено: шлях призначення, що йде через елемент того самого списку після блока, коригується після видалення.
+    it('переміщує блок з початку списку в контейнер нижче, не втрачаючи його', () => {
         const after = moveBlock(tree(), [0], [1, 'data', 'columns', 0, 0]);
         expect(ids(after)).toEqual(['L', 'e']);
-        const everyId = JSON.stringify(after);
-        expect(everyId).not.toContain('"block_id":"a"');
+        expect(ids(after[0].data.columns[0])).toEqual(['a', 'b', 'c']);
+        expect(ids(after[0].data.columns[1])).toEqual(['d']);
     });
-    it('KNOWN-DEFECT D-BLK-07: якщо після блока є два макети, він потрапляє не в той макет', () => {
+    it('із двома макетами блок потрапляє саме в той, на який вказує шлях', () => {
         const two = [text('a'), layout('L1', [[text('b')]]), layout('L2', [[text('c')]])];
-        const after = moveBlock(two, [0], [1, 'data', 'columns', 0, 0]);
+        const first = moveBlock(two, [0], [1, 'data', 'columns', 0, 0]);
+        expect(ids(first)).toEqual(['L1', 'L2']);
+        expect(ids(first[0].data.columns[0])).toEqual(['a', 'b']);
+        expect(ids(first[1].data.columns[0])).toEqual(['c']);
+        const second = moveBlock(two, [0], [2, 'data', 'columns', 0, 1]);
+        expect(ids(second)).toEqual(['L1', 'L2']);
+        expect(ids(second[0].data.columns[0])).toEqual(['b']);
+        expect(ids(second[1].data.columns[0])).toEqual(['c', 'a']);
+    });
+    it('блок із середини списку: контейнери перед ним не зсуваються, після нього — зсуваються', () => {
+        const three = [layout('L1', [[text('x')]]), text('m'), layout('L2', [[text('y')]])];
+        const before = moveBlock(three, [1], [0, 'data', 'columns', 0, 0]);
+        expect(ids(before)).toEqual(['L1', 'L2']);
+        expect(ids(before[0].data.columns[0])).toEqual(['m', 'x']);
+        const after = moveBlock(three, [1], [2, 'data', 'columns', 0, 0]);
         expect(ids(after)).toEqual(['L1', 'L2']);
+        expect(ids(after[1].data.columns[0])).toEqual(['m', 'y']);
+    });
+    it('перенесення в глибоко вкладений макет коригує лише перший індекс шляху', () => {
+        const nested = [text('a'), layout('L1', [[text('b'), layout('L2', [[text('c')]])]])];
+        const after = moveBlock(nested, [0], [1, 'data', 'columns', 0, 1, 'data', 'columns', 0, 0]);
+        expect(ids(after)).toEqual(['L1']);
+        expect(ids(after[0].data.columns[0])).toEqual(['b', 'L2']);
+        expect(ids(after[0].data.columns[0][1].data.columns[0])).toEqual(['a', 'c']);
+    });
+    it('блок із колонки в макет нижче в тій самій колонці', () => {
+        const column = [layout('L1', [[text('x'), layout('L2', [[text('y')]])]])];
+        const after = moveBlock(column, [0, 'data', 'columns', 0, 0], [0, 'data', 'columns', 0, 1, 'data', 'columns', 0, 0]);
+        expect(ids(after[0].data.columns[0])).toEqual(['L2']);
+        expect(ids(after[0].data.columns[0][0].data.columns[0])).toEqual(['x', 'y']);
+    });
+    it('між колонками різних макетів шлях не зсувається', () => {
+        const two = [layout('L1', [[text('a'), text('b')]]), layout('L2', [[text('c')]])];
+        const after = moveBlock(two, [0, 'data', 'columns', 0, 0], [1, 'data', 'columns', 0, 0]);
         expect(ids(after[0].data.columns[0])).toEqual(['b']);
         expect(ids(after[1].data.columns[0])).toEqual(['a', 'c']);
+    });
+    it('перенесення макета у власну колонку нічого не змінює і не губить блоки', () => {
+        expect(moveBlock(tree(), [1], [1, 'data', 'columns', 0, 0])).toEqual(tree());
+        const nested = [layout('L1', [[layout('L2', [[text('y')]])]])];
+        expect(moveBlock(nested, [0], [0, 'data', 'columns', 0, 0, 'data', 'columns', 0, 0])).toEqual(nested);
+        expect(moveBlock(nested, [0, 'data', 'columns', 0, 0], [0, 'data', 'columns', 0, 0, 'data', 'columns', 0, 1])).toEqual(nested);
     });
     it('некоректні шляхи дерево не змінюють', () => {
         expect(moveBlock(tree(), null, [0])).toEqual(tree());
@@ -162,11 +199,18 @@ describe('handleDrop', () => {
         expect(ids(after)).toEqual(['a', 'L']);
         expect(ids(after[1].data.columns[1])).toEqual(['d', 'e']);
     });
-    it('KNOWN-DEFECT D-BLK-07: скидання блока з початку списку в колонку макета нижче губить блок', () => {
+    it('скидає блок з початку списку в колонку макета нижче, не втрачаючи його (D-BLK-07)', () => {
         const after = handleDrop(tree(), { path: [0] }, [1, 'data', 'columns', 1]);
         expect(ids(after)).toEqual(['L', 'e']);
-        expect(ids(after[0].data.columns[1])).toEqual(['d']);
-        expect(JSON.stringify(after)).not.toContain('"block_id":"a"');
+        expect(ids(after[0].data.columns[1])).toEqual(['d', 'a']);
+        expect(JSON.stringify(after)).toContain('"block_id":"a"');
+    });
+    it('скидає блок у кінець колонки, в якій він уже лежить', () => {
+        const after = handleDrop(tree(), { path: [1, 'data', 'columns', 0, 0] }, [1, 'data', 'columns', 0]);
+        expect(ids(after[1].data.columns[0])).toEqual(['c', 'b']);
+    });
+    it('скидання макета у власну колонку нічого не змінює', () => {
+        expect(handleDrop(tree(), { path: [1] }, [1, 'data', 'columns', 0])).toEqual(tree());
     });
     it('якщо за шляхом не масив, дерево повертається без змін', () => {
         const before = tree();

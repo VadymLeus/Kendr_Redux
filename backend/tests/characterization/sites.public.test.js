@@ -171,9 +171,9 @@ describe('видимість сторінки за статусом сайту �
       JSON.stringify(['commerce']), site.id, collaborator.id,
     ]);
     const asCollaborator = await fetchSite('olena-shop', collaborator);
-    expect(asCollaborator.body).toMatchObject({ is_collaborator: true, my_permissions: ['commerce'] });
+    expect(asCollaborator.body).toMatchObject({ is_collaborator: true, my_role: 'viewer', my_permissions: ['commerce'] });
     const asOwner = await fetchSite('olena-shop', owner);
-    expect(asOwner.body).toMatchObject({ is_collaborator: false, my_permissions: [] });
+    expect(asOwner.body).toMatchObject({ is_collaborator: false, my_role: null, my_permissions: [] });
   });
 });
 

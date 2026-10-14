@@ -45,8 +45,11 @@ const AuthPage = () => {
         setTurnstileToken('');
         turnstileRef.current?.reset();
     };
+    const location = useLocation();
     const setView = (newView) => {
-        setSearchParams({ view: newView });
+        // Стан навігації зберігаємо: з ним сторінка отримала адресу повернення (location.state.from), і перемикання
+        // «вхід ↔ реєстрація» не повинно її губити.
+        setSearchParams({ view: newView }, { state: location.state });
         setViewInternal(newView);
         resetTurnstile();
     };
@@ -65,7 +68,6 @@ const AuthPage = () => {
     }
     const { login } = useContext(AuthContext);
     const navigate = useNavigate();
-    const location = useLocation();
     const from = location.state?.from || '/';
     const [isLoading, setIsLoading] = useState(false);
     const [isAvatarUploading, setIsAvatarUploading] = useState(false);

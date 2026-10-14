@@ -128,7 +128,7 @@ const ProfileGeneralTab = () => {
     const handleLogout = () => {
         setIsLogoutModalOpen(false);
         logout();
-        navigate('/auth');
+        navigate('/login');
         toast.info("Ви вийшли з системи");
     };
 

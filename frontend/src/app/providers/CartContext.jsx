@@ -1,5 +1,5 @@
 // frontend/src/app/providers/CartContext.jsx
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
 import { AuthContext } from './AuthContext';
 import { toast } from 'react-toastify';
 
@@ -8,25 +8,35 @@ export const CartProvider = ({ children }) => {
     const { user } = useContext(AuthContext);
     const [cartItems, setCartItems] = useState([]);
     const [isLoaded, setIsLoaded] = useState(false);
+    // Актуальний вміст кошика: оновлювач читає його звідси, а не з функції setState (D-ARC-13).
+    const itemsRef = useRef([]);
     const getCartKey = () => `cart_${user?.id || 'guest'}`;
     useEffect(() => {
         const cartKey = getCartKey();
+        let items = [];
         try {
             const localData = localStorage.getItem(cartKey);
-            setCartItems(localData ? JSON.parse(localData) : []);
+            items = localData ? JSON.parse(localData) : [];
         } catch (error) {
             console.error(`Помилка парсингу кошика`, error);
-            setCartItems([]);
+            items = [];
         } finally {
+            itemsRef.current = items;
+            setCartItems(items);
             setIsLoaded(true);
         }
     }, [user]);
+    // Нове значення обчислюється один раз, поза функцією setState: у StrictMode її викликають двічі, і побічні дії
+    // (запис у localStorage) та зміна попереднього стану виконувалися б двічі.
     const updateCart = (updater) => {
-        setCartItems(prevItems => {
-            const newItems = typeof updater === 'function' ? updater(prevItems) : updater;
+        const newItems = typeof updater === 'function' ? updater(itemsRef.current) : updater;
+        itemsRef.current = newItems;
+        setCartItems(newItems);
+        try {
             localStorage.setItem(getCartKey(), JSON.stringify(newItems));
-            return newItems;
-        });
+        } catch (error) {
+            console.error('Не вдалося зберегти кошик', error);
+        }
     };
 
     const isDigitalOnly = cartItems.length > 0 && cartItems.every(item => item.type === 'digital');
@@ -39,9 +49,9 @@ export const CartProvider = ({ children }) => {
         updateCart(prevItems => {
             const existingItemIndex = prevItems.findIndex(item => item.cartItemId === cartItemId);
             if (existingItemIndex > -1) {
-                const newItems = [...prevItems];
-                newItems[existingItemIndex].quantity += 1;
-                return newItems;
+                return prevItems.map((item, index) =>
+                    index === existingItemIndex ? { ...item, quantity: item.quantity + 1 } : item
+                );
             } else {
                 return [...prevItems, { 
                     ...product, 

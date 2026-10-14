@@ -9,6 +9,7 @@ import SiteGridCard from '../../../shared/ui/complex/SiteGridCard';
 import EmptyState from '../../../shared/ui/complex/EmptyState';
 import LoadingState from '../../../shared/ui/complex/LoadingState';
 import { Button } from '../../../shared/ui/elements/Button';
+import { countOwnedSites } from '../../../shared/utils/siteUtils';
 import { Plus, Search, Globe } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 20;
@@ -39,7 +40,7 @@ const MySitesPage = () => {
         if (!user) { navigate('/login'); return; }
         apiClient.get('/tags').then(res => setTags(res.data)).catch(console.error);
         apiClient.get('/sites/catalog', { params: { scope: 'my' } })
-            .then(res => setTotalSiteCount(Array.isArray(res.data) ? res.data.length : 0))
+            .then(res => setTotalSiteCount(countOwnedSites(res.data, user.id)))
             .catch(console.error);
             
         apiClient.get('/media/limits')

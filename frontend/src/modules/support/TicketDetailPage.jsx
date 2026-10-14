@@ -9,6 +9,7 @@ import ConfirmModal from '../../shared/ui/complex/ConfirmModal';
 import { useConfirmDialog } from '../../shared/hooks/useConfirmDialog';
 import DragDropWrapper from '../../shared/ui/complex/DragDropWrapper';
 import { FILE_LIMITS } from '../../shared/config/limits';
+import { getAttachmentUrl } from '../../shared/utils/mediaUtils';
 import NotFoundPage from '../../pages/NotFoundPage';
 import { toast } from 'react-toastify';
 import { Helmet } from 'react-helmet-async';
@@ -16,7 +17,6 @@ import { Send, Loader, User, Shield, Lock, ArrowLeft, CheckCircle, Clock, XCircl
 
 const STAFF_ROLES = ['admin', 'moderator'];
 
-const API_URL = 'http://localhost:5000'; 
 const TicketDetailPage = () => {
     const { ticketId } = useParams();
     const navigate = useNavigate();
@@ -199,12 +199,6 @@ const TicketDetailPage = () => {
         } finally {
             setSending(false);
         }
-    };
-
-    const getAttachmentUrl = (url) => {
-        if (!url) return null;
-        if (url.startsWith('http') || url.startsWith('blob:')) return url;
-        return `${API_URL}${url.startsWith('/') ? url : '/' + url}`;
     };
 
     const StatusBadge = ({ status }) => {

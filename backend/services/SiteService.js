@@ -219,6 +219,7 @@ class SiteService {
         return {
             ...site,
             is_collaborator: isCollaborator,
+            my_role: collaborator ? collaborator.role : null,
             my_permissions: myPermissions,
             page_content: page.block_content,
             page_id: page.id,

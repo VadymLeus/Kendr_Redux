@@ -43,6 +43,30 @@ export const addBlockByPath = (blocks, newBlock, path) => {
     });
 };
 
+const sameSegment = (a, b) => String(a) === String(b);
+const startsWith = (path, prefix) => prefix.length <= path.length && prefix.every((segment, i) => sameSegment(path[i], segment));
+
+// Шлях призначення викликач задає для дерева ще до видалення блока (крім останнього індексу: його він уже вказує
+// для списку без блока). Якщо шлях іде через елемент того самого списку, з якого блок прибирають, і цей елемент
+// стоїть після блока, то після видалення його індекс на 1 менший (D-BLK-07).
+const shiftForRemoval = (dragPath, hoverPath) => {
+    const dragParentPath = dragPath.slice(0, -1);
+    const dragIndex = Number(dragPath[dragPath.length - 1]);
+    const depth = dragParentPath.length;
+    if (hoverPath.length > depth + 1 && startsWith(hoverPath, dragParentPath)) {
+        const siblingIndex = Number(hoverPath[depth]);
+        if (siblingIndex > dragIndex) {
+            const shifted = [...hoverPath];
+            shifted[depth] = siblingIndex - 1;
+            return shifted;
+        }
+    }
+    return hoverPath;
+};
+
+// Перенесення блока всередину самого себе (у його колонку) неможливе: після видалення місця призначення вже немає.
+const isInsideDragged = (dragPath, hoverPath) => hoverPath.length > dragPath.length && startsWith(hoverPath, dragPath);
+
 export const moveBlock = (blocks, dragPath, hoverPath) => {
     return produce(blocks, draft => {
         if (!dragPath || !hoverPath || !Array.isArray(dragPath) || !Array.isArray(hoverPath)) return;
@@ -50,14 +74,16 @@ export const moveBlock = (blocks, dragPath, hoverPath) => {
         if (!dragBlock) {
             return;
         }
+        if (isInsideDragged(dragPath, hoverPath)) return;
         const dragParentPath = dragPath.slice(0, -1);
         const dragIndex = dragPath[dragPath.length - 1];
         let parent = draft;
         if (dragParentPath.length > 0) parent = get(draft, getPathString(dragParentPath));
         if (!parent || !Array.isArray(parent) || !parent[dragIndex]) return;
+        const targetPath = shiftForRemoval(dragPath, hoverPath);
         const [movedItem] = parent.splice(dragIndex, 1);
-        const hoverParentPath = hoverPath.slice(0, -1);
-        const hoverIndex = hoverPath[hoverPath.length - 1];
+        const hoverParentPath = targetPath.slice(0, -1);
+        const hoverIndex = targetPath[targetPath.length - 1];
         let hoverParent = draft;
         if (hoverParentPath.length > 0) hoverParent = get(draft, getPathString(hoverParentPath));
         if (hoverParent && Array.isArray(hoverParent)) {

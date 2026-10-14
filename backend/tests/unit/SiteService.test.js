@@ -588,7 +588,7 @@ describe('getByPath', () => {
     const result = await SiteService.getByPath('shop', undefined, undefined);
     expect(result).toMatchObject({
       id: 7, author: 'ann', author_avatar: '/a.png',
-      is_collaborator: false, my_permissions: [], page_content: page.block_content, page_id: 21, tags: [{ id: 1, name: 'їжа' }],
+      is_collaborator: false, my_role: null, my_permissions: [], page_content: page.block_content, page_id: 21, tags: [{ id: 1, name: 'їжа' }],
     });
     expect(result.page).toBe(page);
     expect(pages.findHomepageBySiteId).toHaveBeenCalledWith(7);
@@ -693,6 +693,17 @@ describe('getByPath', () => {
     expect(collaborators.findBySiteAndUser).toHaveBeenCalledWith(7, 2);
     expect(result.is_collaborator).toBe(true);
     expect(result.my_permissions).toEqual(['pages', 'orders']);
+    expect(result.my_role).toBe('editor');
+  });
+
+  it.each(['editor', 'viewer'])('співавтор: роль %s повертається в my_role, щоб інтерфейс міг вимкнути запис', async (role) => {
+    collaborators.findBySiteAndUser.mockResolvedValue({ role, permissions: '["pages"]' });
+    expect((await SiteService.getByPath('shop', undefined, visitor)).my_role).toBe(role);
+  });
+
+  it('не співавтор: my_role = null', async () => {
+    collaborators.findBySiteAndUser.mockResolvedValue(undefined);
+    expect((await SiteService.getByPath('shop', undefined, visitor)).my_role).toBeNull();
   });
 
   it('співавтор: права-масив повертаються як є, порожні — порожнім масивом', async () => {

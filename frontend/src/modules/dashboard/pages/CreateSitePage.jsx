@@ -18,6 +18,7 @@ import { AuthContext } from '../../../app/providers/AuthContext';
 import { BASE_URL } from '../../../shared/config';
 import { TEXT_LIMITS } from '../../../shared/config/limits';
 import { validateSiteSlug, validateSiteTitle } from '../../../shared/utils/validationUtils';
+import { countOwnedSites } from '../../../shared/utils/siteUtils';
 import { useTemplateManager } from '../../../shared/hooks/useTemplateManager';
 import { getTemplatePreviewData } from '../../../shared/utils/templateUtils';
 import { Layout, Check, Loader, AlertCircle, Trash, Info, Palette, Sparkles, Globe, Image, ChevronLeft, ChevronRight, Copy, Edit, ArrowLeft } from 'lucide-react';
@@ -52,7 +53,7 @@ const CreateSitePage = () => {
                     apiClient.get('/sites/catalog', { params: { scope: 'my' } }),
                     apiClient.get('/media/limits')
                 ]);
-                if (sitesRes.status === 'fulfilled') setCurrentSiteCount(Array.isArray(sitesRes.value.data) ? sitesRes.value.data.length : 0);
+                if (sitesRes.status === 'fulfilled') setCurrentSiteCount(countOwnedSites(sitesRes.value.data, user?.id));
                 if (limitsRes.status === 'fulfilled') setLimits(limitsRes.value.data);
                 if (LOCAL_DEFAULT_LOGOS.length > 0 && !defaultRandomLogo) {
                     setDefaultRandomLogo(LOCAL_DEFAULT_LOGOS[Math.floor(Math.random() * LOCAL_DEFAULT_LOGOS.length)]);

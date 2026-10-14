@@ -41,8 +41,8 @@ const InvitePage = () => {
     };
     
     const handleAuthRedirect = () => {
-        localStorage.setItem('redirectAfterAuth', `/invite/${token}`);
-        navigate('/login');
+        // Адресу повернення читає AuthPage зі стану навігації (location.state.from), тож передаємо її так (D-CON-03).
+        navigate('/login', { state: { from: `/invite/${token}` } });
     };
     
     if (isAuthLoading) {

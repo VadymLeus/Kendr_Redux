@@ -247,25 +247,6 @@ const CartPage = () => {
         }
     };
 
-    const handleGooglePaySuccess = async (paymentRequest) => {
-        setIsSubmitting(true);
-        try {
-            await apiClient.post(`/orders/${pendingPaymentOrder.orderId}/pay/gpay`, {
-                paymentData: paymentRequest
-            });
-            toast.success('Оплата успішно пройшла!');
-            setPendingPaymentOrder(null);
-            navigate('/my-orders');
-        } catch (error) {
-            console.error(error);
-            toast.error('Помилка при збереженні статусу оплати');
-            setPendingPaymentOrder(null);
-            navigate('/my-orders'); 
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
     const handleClosePaymentModal = () => {
         toast.info('Ви зможете оплатити замовлення пізніше в розділі "Мої замовлення".');
         setPendingPaymentOrder(null);
@@ -617,11 +598,6 @@ const CartPage = () => {
                 currencySymbol={pendingPaymentOrder?.currencySymbol}
                 isLoading={isSubmitting}
                 onSelectLiqPay={handleLiqPaySelect}
-                gpayConfig={pendingPaymentOrder ? {
-                    merchantName: pendingPaymentOrder.siteTitle,
-                    totalPrice: pendingPaymentOrder.totalAmount,
-                    onSuccess: handleGooglePaySuccess
-                } : null}
             />
         </>
     );

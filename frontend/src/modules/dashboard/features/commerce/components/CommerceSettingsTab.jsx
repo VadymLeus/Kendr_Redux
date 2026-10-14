@@ -148,9 +148,9 @@ const CommerceSettingsTab = ({ siteData, onSavingChange }) => {
                                     <CreditCard size={20} />
                                 </div>
                                 <div>
-                                    <h4 className="font-semibold text-(--platform-text-primary) text-sm m-0">Онлайн оплата (Картка / GPay)</h4>
+                                    <h4 className="font-semibold text-(--platform-text-primary) text-sm m-0">Онлайн оплата (Картка)</h4>
                                     <p className="text-xs text-(--platform-text-secondary) m-0 mt-0.5">
-                                        Прийом платежів через LiqPay та Google Pay на сайті.
+                                        Прийом платежів карткою через LiqPay на сайті.
                                     </p>
                                 </div>
                             </div>

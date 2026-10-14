@@ -1,6 +1,6 @@
 // frontend/src/shared/ui/complex/PaymentMethodModal.jsx
+// Спосіб оплати лише один, LiqPay: Google Pay сервер не може підтвердити (ADR-006), тож кнопки немає.
 import React, { useEffect } from 'react';
-import GooglePayButton from '@google-pay/button-react';
 import { Button } from '../elements/Button';
 import { X, CreditCard, Loader2 } from 'lucide-react';
 
@@ -10,8 +10,7 @@ const PaymentMethodModal = ({
     amount,
     currencySymbol = '₴',
     isLoading,
-    onSelectLiqPay,
-    gpayConfig
+    onSelectLiqPay
 }) => {
     useEffect(() => {
         if (isOpen) {
@@ -71,52 +70,6 @@ const PaymentMethodModal = ({
                                 </>
                             )}
                         </Button>
-                        <div className="relative flex items-center py-2">
-                            <div className="grow border-t border-(--platform-border-color)"></div>
-                            <span className="shrink-0 mx-4 text-(--platform-text-secondary) text-xs sm:text-sm font-medium uppercase tracking-wider">або</span>
-                            <div className="grow border-t border-(--platform-border-color)"></div>
-                        </div>
-                        <div className={`w-full rounded-xl overflow-hidden shadow-sm transition-opacity min-h-14 flex items-center justify-center ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>
-                            <GooglePayButton
-                                environment="TEST"
-                                paymentRequest={{
-                                    apiVersion: 2,
-                                    apiVersionMinor: 0,
-                                    allowedPaymentMethods: [
-                                        {
-                                            type: 'CARD',
-                                            parameters: {
-                                                allowedAuthMethods: ['PAN_ONLY', 'CRYPTOGRAM_3DS'],
-                                                allowedCardNetworks: ['MASTERCARD', 'VISA'],
-                                            },
-                                            tokenizationSpecification: {
-                                                type: 'PAYMENT_GATEWAY',
-                                                parameters: {
-                                                    gateway: 'example',
-                                                    gatewayMerchantId: 'exampleGatewayMerchantId',
-                                                },
-                                            },
-                                        },
-                                    ],
-                                    merchantInfo: {
-                                        merchantId: '12345678901234567890',
-                                        merchantName: gpayConfig?.merchantName || 'Kendr Platform',
-                                    },
-                                    transactionInfo: {
-                                        totalPriceStatus: 'FINAL',
-                                        totalPriceLabel: 'Разом до сплати',
-                                        totalPrice: gpayConfig?.totalPrice || '0.00',
-                                        currencyCode: 'UAH',
-                                        countryCode: 'UA',
-                                    },
-                                }}
-                                onLoadPaymentData={gpayConfig?.onSuccess}
-                                buttonColor="black"
-                                buttonType="buy"
-                                buttonSizeMode="fill"
-                                className="w-full"
-                            />
-                        </div>
                     </div>
                 </div>
             </div>

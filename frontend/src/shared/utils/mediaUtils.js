@@ -26,6 +26,15 @@ export const getMediaUrl = (file, useThumb = false) => {
     return `${API_URL}${cleanPath}`;
 };
 
+// Адреса вкладення або аватара з відповіді сервера: відносний шлях добудовується до адреси API зі змінної
+// середовища (D-CON-04), абсолютні й blob-адреси лишаються як є, небезпечні схеми відкидаються.
+export const getAttachmentUrl = (url) => {
+    if (!url || typeof url !== 'string') return null;
+    if (/^(javascript|vbscript):/i.test(url.trim())) return null;
+    if (url.startsWith('http') || url.startsWith('blob:')) return url;
+    return `${API_URL}${url.startsWith('/') ? url : '/' + url}`;
+};
+
 export const getFileExtension = (filename) => {
     if (!filename) return '';
     return filename.split('.').pop().toUpperCase();

@@ -1,7 +1,7 @@
 // Характеризаційні тести v0: кошик у браузері (CartContext).
 // Кошик зберігає в localStorage вже порахований рядок (price × quantity на клієнті), а сервер при оформленні
 // отримує лише id, кількість і параметри (D-BIZ-01). Тут фіксується, що саме кошик запам'ятовує.
-import React, { useContext } from 'react';
+import React, { useContext, StrictMode } from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { toast } from 'react-toastify';
@@ -146,16 +146,73 @@ describe('CartProvider: addToCart', () => {
         expect(stored()).toEqual(result.current.cartItems);
     });
 
-    it('KNOWN-DEFECT D-ARC-13: повторне додавання змінює об\'єкт попереднього стану на місці', () => {
-        // Функція-оновлювач мутує елемент prevItems замість створення нового об'єкта, а також пише в localStorage
-        // усередині setState. У режимі StrictMode (dev) оновлювач викликається двічі, і кількість росте на 2.
+    // D-ARC-13 виправлено: оновлення кошика не змінює попередній стан і не пише в localStorage всередині setState.
+    it('повторне додавання створює новий об\'єкт позиції й не змінює попередній стан', () => {
         const { result } = setup();
         act(() => result.current.addToCart(coffee));
-        const itemBefore = result.current.cartItems[0];
+        const itemsBefore = result.current.cartItems;
+        const itemBefore = itemsBefore[0];
         expect(itemBefore.quantity).toBe(1);
         act(() => result.current.addToCart(coffee));
-        expect(itemBefore.quantity).toBe(2);
-        expect(result.current.cartItems[0]).toBe(itemBefore);
+        expect(itemBefore.quantity).toBe(1);
+        expect(result.current.cartItems).not.toBe(itemsBefore);
+        expect(result.current.cartItems[0]).not.toBe(itemBefore);
+        expect(result.current.cartItems[0].quantity).toBe(2);
+    });
+
+    it('інші позиції при повторному додаванні лишаються тими самими об\'єктами', () => {
+        const { result } = setup();
+        act(() => result.current.addToCart(coffee));
+        act(() => result.current.addToCart(tea));
+        const teaBefore = result.current.cartItems[1];
+        act(() => result.current.addToCart(coffee));
+        expect(result.current.cartItems[1]).toBe(teaBefore);
+        expect(result.current.cartItems.map((i) => i.quantity)).toEqual([2, 1]);
+    });
+
+    it('кілька додавань в одній дії враховуються всі', () => {
+        const { result } = setup();
+        act(() => {
+            result.current.addToCart(coffee);
+            result.current.addToCart(coffee);
+            result.current.addToCart(coffee);
+        });
+        expect(result.current.cartItems[0].quantity).toBe(3);
+        expect(stored()[0].quantity).toBe(3);
+    });
+
+    it('у StrictMode кількість росте на 1, а кошик записується один раз за дію', () => {
+        const strictWrapper = ({ children }) => (
+            <StrictMode>
+                <AuthContext.Provider value={{ user: null }}>
+                    <CartProvider>{children}</CartProvider>
+                </AuthContext.Provider>
+            </StrictMode>
+        );
+        const { result } = renderHook(() => useContext(CartContext), { wrapper: strictWrapper });
+        const setItem = vi.spyOn(Storage.prototype, 'setItem');
+        const writes = () => setItem.mock.calls.filter(([key]) => key === 'cart_guest').length;
+        act(() => result.current.addToCart(coffee));
+        expect(result.current.cartItems[0].quantity).toBe(1);
+        expect(writes()).toBe(1);
+        act(() => result.current.addToCart(coffee));
+        expect(result.current.cartItems[0].quantity).toBe(2);
+        expect(writes()).toBe(2);
+        expect(stored()[0].quantity).toBe(2);
+        setItem.mockRestore();
+    });
+
+    it('збій запису в localStorage не ламає кошик: позиція додається, помилка потрапляє в консоль', () => {
+        const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const { result } = setup();
+        const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+            throw new Error('квота вичерпана');
+        });
+        act(() => result.current.addToCart(coffee));
+        expect(result.current.cartItems).toHaveLength(1);
+        expect(error).toHaveBeenCalled();
+        setItem.mockRestore();
+        error.mockRestore();
     });
 });
 

@@ -37,27 +37,6 @@ const UpgradePage = () => {
         }
     };
 
-    const handleGooglePaySuccess = async (paymentRequest) => {
-        setIsLoading(true);
-        try {
-            const res = await apiClient.post('/transactions/upgrade/gpay', {
-                paymentData: paymentRequest
-            });
-            
-            setIsPaymentModalOpen(false);
-            toast.success(res.data.message || 'Вітаємо! Тариф Kendr PLUS успішно активовано.');
-            
-            setTimeout(() => {
-                window.location.href = '/settings';
-            }, 1500);
-
-        } catch (error) {
-            console.error("Помилка генерації платежу:", error);
-            toast.error(error.response?.data?.message || 'Не вдалося активувати тариф через Google Pay.');
-            setIsLoading(false);
-        }
-    };
-
     if (!user) return null;
     const isPremium = user.plan === 'PLUS' || user.plan === 'ADMIN';
     return (
@@ -121,11 +100,6 @@ const UpgradePage = () => {
                 amount="299.00"
                 isLoading={isLoading}
                 onSelectLiqPay={handleLiqPaySelect}
-                gpayConfig={{
-                    merchantName: 'Kendr Platform',
-                    totalPrice: '299.00',
-                    onSuccess: handleGooglePaySuccess
-                }}
             />
         </div>
     );

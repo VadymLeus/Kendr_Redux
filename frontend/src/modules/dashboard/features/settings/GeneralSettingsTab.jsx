@@ -14,6 +14,7 @@ import GeneralIdentitySection from './components/GeneralIdentitySection';
 import GeneralVisualsSection from './components/GeneralVisualsSection';
 import GeneralTemplatesSection from './components/GeneralTemplatesSection';
 import TeamSettingsSection from './components/TeamSettingsSection';
+import { canSaveSiteTemplates } from '../../../../shared/utils/siteUtils';
 import { Settings, AlertCircle, Trash, Download, Loader, FileDown } from 'lucide-react';
 
 const GeneralSettingsTab = ({ siteData, onUpdate, onSavingChange }) => {
@@ -228,9 +229,11 @@ const GeneralSettingsTab = ({ siteData, onUpdate, onSavingChange }) => {
                     getImageUrl={getImageUrl}
                 />
             </div>
-            <div className="w-full max-w-[96%] 2xl:max-w-400 mx-auto mb-8">
-                <GeneralTemplatesSection siteData={siteData} isAdmin={isAdmin} />
-            </div>
+            {canSaveSiteTemplates(siteData, user) && (
+                <div className="w-full max-w-[96%] 2xl:max-w-400 mx-auto mb-8">
+                    <GeneralTemplatesSection siteData={siteData} isAdmin={isAdmin} />
+                </div>
+            )}
             <div className="max-w-4xl mx-auto w-full flex flex-col gap-5 sm:gap-6">
                 <TeamSettingsSection 
                     siteData={siteData} 

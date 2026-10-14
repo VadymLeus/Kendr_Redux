@@ -23,6 +23,7 @@ import { isHeaderType, isFooterType } from '../../editor/core/globalBlockTypes';
 import { updateBlockDataByPath, removeBlockByPath, addBlockByPath, moveBlock, handleDrop } from '../../editor/core/blockUtils';
 import PagesManagerModal from '../features/settings/PagesManagerModal';
 import { resolveAccentColor } from '../../../shared/utils/themeUtils';
+import { isViewerOnly } from '../../../shared/utils/siteUtils';
 import FontLoader from '../../renderer/components/FontLoader';
 import { Lock, Monitor, ShieldAlert } from 'lucide-react';
 
@@ -164,7 +165,7 @@ const SiteDashboardPage = () => {
         return localStorage.getItem(`editor_view_mode_${site_path}`) || 'editor';
     });
     const [isSwitchingView, setIsSwitchingView] = useState(false);
-    const [isReadOnly, setIsReadOnly] = useState(false);
+    const [isEditorLocked, setIsEditorLocked] = useState(false);
     const [isDiscardModalOpen, setIsDiscardModalOpen] = useState(false);
     const pcScrollRef = useRef(null);
     useDragAutoScroll(pcScrollRef, activeTab === 'editor');
@@ -173,6 +174,10 @@ const SiteDashboardPage = () => {
     const settingsContainerRef = useRef(null);
     const isOwner = user?.id === siteData?.user_id;
     const isStaff = user?.role === 'admin' || user?.role === 'moderator';
+    // Співавтор з роллю «глядач» лише переглядає. У редакторі запис вимкнено, як і під час блокування платформи;
+    // розділи налаштувань лишаються відкритими для читання, а їхні запити на запис сервер відхиляє (403).
+    const isViewer = isViewerOnly(siteData, user);
+    const isReadOnly = isEditorLocked || isViewer;
     const hasNoAccess = siteData && !isOwner && !isStaff && (!siteData.my_permissions || siteData.my_permissions.length === 0);
     const checkAccess = useCallback((tabKey) => {
         if (!siteData) return false;
@@ -255,9 +260,9 @@ const SiteDashboardPage = () => {
         const handleLockStatus = (e) => {
             const serverLocked = e.detail;
             if (serverLocked && !isAdmin) {
-                setIsReadOnly(true);
+                setIsEditorLocked(true);
             } else {
-                setIsReadOnly(false);
+                setIsEditorLocked(false);
             }
         };
         window.addEventListener('editor_locked_status', handleLockStatus);
@@ -267,7 +272,7 @@ const SiteDashboardPage = () => {
     useEffect(() => {
         if (siteData && siteData.status === 'suspended') {
             toast.error('Доступ до редагування заблоковано. Сайт заблоковано.');
-            navigate('/dashboard');
+            navigate('/my-sites');
         }
     }, [siteData, navigate]);
 
@@ -518,7 +523,7 @@ const SiteDashboardPage = () => {
     const handleSaveError = (error) => {
         console.error("Помилка при збереженні:", error);
         if (error.response && (error.response.status === 503 || error.response.data?.editor_locked)) {
-            setIsReadOnly(true);
+            setIsEditorLocked(true);
         } else if (error.response?.status === 400 && error.response.data?.message) {
             toast.error(error.response.data.message);
         } else {
@@ -670,7 +675,11 @@ const SiteDashboardPage = () => {
             {isReadOnly && (
                 <div className="bg-orange-500 text-white px-4 py-2 text-center text-sm font-medium flex items-center justify-center gap-2 shadow-sm z-50 animate-in slide-in-from-top-2 duration-300">
                     <Lock size={16} />
-                    <span>Редактор тимчасово заблоковано для оновлення платформи. Ви в режимі перегляду.</span>
+                    <span>
+                        {isViewer
+                            ? 'У вас роль «Глядач»: редактор працює лише на перегляд, а зміни в налаштуваннях сервер не збереже.'
+                            : 'Редактор тимчасово заблоковано для оновлення платформи. Ви в режимі перегляду.'}
+                    </span>
                 </div>
             )}
             <DashboardHeader
@@ -807,7 +816,7 @@ const SiteDashboardPage = () => {
                         <div 
                             className={`mx-auto ${
                                 isFullHeightTab ? 'w-full h-full' : (activeTab === 'settings' ? 'w-full' : 'max-w-250')
-                            } ${isReadOnly ? 'pointer-events-none opacity-70' : ''}`}
+                            } ${isEditorLocked ? 'pointer-events-none opacity-70' : ''}`}
                         >
                             {activeTab === 'commerce' && <CommerceTab siteData={siteData} onSavingChange={handleSavingChange} />}
                             {activeTab === 'theme' && <StyleSettingsTab siteData={siteData} onUpdate={handleSiteDataUpdate} isSaving={isThemeSaving} />}
