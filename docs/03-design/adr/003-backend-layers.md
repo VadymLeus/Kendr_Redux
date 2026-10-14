@@ -1,6 +1,6 @@
 # ADR-003: Шарова архітектура backend
 
-- Статус: запропоновано
+- Статус: прийнято; виконано для зрізу `order`, `site`, `page`, `product` у `v1.0`, розширено в `v2.0`
 - Дата: 11.10.2026
 - Версія: v1.0
 - Пов'язані дефекти: D-ARC-01 (SQL у контролерах), D-ARC-02 (немає моделей), D-ARC-03 (ручні транзакції), D-ARC-05 (повторення запитів у `pageController`), D-ARC-08 (функції-велетні в контролерах `site` і `order`)
@@ -40,3 +40,22 @@ config/db.js   пул з'єднань (наявний файл) і withTransacti
 - Контролери з прямими SQL: 14 → 10; прямих викликів: 196 → 130.
 - Ручних відкриттів транзакції в зрізі: 0 (усе через `withTransaction`).
 - Характеризаційні тести (ADR-005) проходять без змін.
+
+## Результат
+
+| Перевірка | Ціль | `v1.0` | `v2.0` |
+|---|---|---|---|
+| Контролери з прямими SQL | 14 → 10 | 10 | 10 |
+| Прямі SQL-виклики в контролерах | 196 → 130 | 130 | 120 |
+| Ручні відкриття транзакції | 0 у зрізі | 0 у зрізі, усього 3 (було 9) | усього 2 (`teamController`, `supportController`) |
+| Контролери, що викликають сервіси | — | 6 | 13 |
+| Характеризаційні тести (ADR-005) | без змін | проходять, очікування не змінювались | змінюються лише тести виправлених дефектів |
+
+Розподіл SQL по каталогах, складність обробників і непереносні залишки — [`v1.0/analysis.md`](../../04-results/v1.0/analysis.md), розділ 2.1, і [`v2.0/analysis.md`](../../04-results/v2.0/analysis.md), розділ 2.1.
+
+Відхилення від чернетки:
+- Репозиторіїв дев'ять, а не чотири: до `OrderRepository`, `ProductRepository`, `SiteRepository` і `PageRepository` у `v1.0` додано `CollaboratorRepository`, `GlobalSettingsRepository`, `TemplateRepository`, `TransactionRepository` і `UserRepository` для запитів до суміжних таблиць (співавтори, глобальні налаштування, шаблони, транзакції, користувачі).
+- Файлів у `services/` 18, а не шість: у `v1.0` їх 12, у `v2.0` додано `AuthPolicy`, `PaymentService`, `SubscriptionService`, `blockContentValidation`, `productValidation` і `productVisibility` (ADR-004, ADR-006, ADR-002). Сервіси, як і раніше, не містять SQL.
+- Обгортка `withTransaction` реалізована в `config/transaction.js` і підключена як `pool.withTransaction` у `config/db.js`.
+- У `v2.0` обробники оплати тарифу переїхали з `transactionController` у `SubscriptionService`, тому `transactionController` втратив 8 SQL-викликів (14 → 6).
+- Десять контролерів зі 120 викликами (`adminController` 43, `teamController` 30, `authController` 13 та інші) не перенесено: це перспективи, як і передбачало рішення.
