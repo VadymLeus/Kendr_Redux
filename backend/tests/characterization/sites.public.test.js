@@ -1,5 +1,5 @@
-// Публічна частина сайтів: видача сторінки за статусом і роллю глядача, маскування ключа LiqPay, відкриті поля
-// (D-SEC-05), облік відвідувань (trackVisit), каталог, шаблони (D-SEC-17), конфлікти маршрутів (D-ARC-11).
+// Публічна частина сайтів: видача сторінки за статусом і роллю глядача, маскування ключа LiqPay, поля про власника
+// (D-SEC-05, виправлено), облік відвідувань (trackVisit), каталог, шаблони (D-SEC-17), конфлікти маршрутів (D-ARC-11).
 import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import { app } from '../helpers/app.js';
@@ -177,36 +177,68 @@ describe('видимість сторінки за статусом сайту �
   });
 });
 
-describe('відкриті поля про власника', () => {
-  // KNOWN-DEFECT D-SEC-05: email власника віддається будь-кому без автентифікації.
-  it('KNOWN-DEFECT D-SEC-05: GET /api/sites/info/:id без токена віддає email власника', async () => {
+describe('поля про власника', () => {
+  // D-SEC-05 виправлено: email власника бачать лише власник, співавтори з доступом до налаштувань і персонал платформи.
+  it('D-SEC-05: GET /api/sites/info/:id без токена не віддає email власника', async () => {
     const res = await request(app).get(`/api/sites/info/${site.id}`);
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({
       site_path: 'olena-shop',
       title: 'Крамниця Олени',
       author: 'olena',
-      author_email: owner.email,
       is_online_payment_enabled: 1,
       is_cod_enabled: 1,
     });
+    expect(res.body).not.toHaveProperty('author_email');
+    expect(JSON.stringify(res.body)).not.toContain(owner.email);
   });
 
-  it('KNOWN-DEFECT D-SEC-05: GET /api/sites/:site_path без токена теж віддає author_email', async () => {
+  it('D-SEC-05: GET /api/sites/:site_path без токена не віддає author_email', async () => {
     const res = await fetchSite('olena-shop');
     expect(res.status).toBe(200);
-    expect(res.body.author_email).toBe(owner.email);
+    expect(res.body.author).toBe('olena');
+    expect(res.body).not.toHaveProperty('author_email');
   });
 
-  it('KNOWN-DEFECT D-SEC-05: числові ідентифікатори дозволяють перебором зібрати email власників', async () => {
+  it('D-SEC-05: перебір ідентифікаторів сайтів не дає жодного email', async () => {
     const other = await createUser();
     const otherSite = await createSite(other);
-    const emails = [];
     for (let id = site.id; id <= otherSite.id; id++) {
       const res = await request(app).get(`/api/sites/info/${id}`);
-      if (res.status === 200) emails.push(res.body.author_email);
+      if (res.status === 200) {
+        expect(res.body).not.toHaveProperty('author_email');
+        expect(JSON.stringify(res.body)).not.toContain('@');
+      }
     }
-    expect(emails).toEqual(expect.arrayContaining([owner.email, other.email]));
+  });
+
+  describe('author_email на GET /api/sites/:site_path за роллю глядача', () => {
+    let settingsViewer, settingsEditor, themeEditor, stranger, admin, moderator;
+    beforeEach(async () => {
+      settingsViewer = await createUser();
+      settingsEditor = await createUser();
+      themeEditor = await createUser();
+      stranger = await createUser();
+      admin = await createUser({ role: 'admin' });
+      moderator = await createUser({ role: 'moderator' });
+      await addCollaborator(site, settingsViewer, 'viewer', ['settings']);
+      await addCollaborator(site, settingsEditor, 'editor', ['settings']);
+      await addCollaborator(site, themeEditor, 'editor', ['theme']);
+    });
+
+    it.each(['owner', 'settingsViewer', 'settingsEditor', 'admin', 'moderator'])('%s бачить email власника', async (name) => {
+      const viewer = { owner, settingsViewer, settingsEditor, admin, moderator }[name];
+      const res = await fetchSite('olena-shop', viewer);
+      expect(res.status).toBe(200);
+      expect(res.body.author_email).toBe(owner.email);
+    });
+
+    it.each(['themeEditor', 'stranger'])('%s email власника не бачить', async (name) => {
+      const viewer = { themeEditor, stranger }[name];
+      const res = await fetchSite('olena-shop', viewer);
+      expect(res.status).toBe(200);
+      expect(res.body).not.toHaveProperty('author_email');
+    });
   });
 
   it('info/:id для неіснуючого сайту — 404', async () => {

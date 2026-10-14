@@ -543,3 +543,87 @@ describe('getPurchaseStatus', () => {
     });
   });
 });
+
+describe('видимість digital_file_url (D-SEC-14)', () => {
+  const FILE = 'https://files.test/book.pdf';
+  const book = { id: 7, site_id: 3, name: 'Книга', type: 'digital', digital_file_url: FILE };
+  const coffee = { id: 8, site_id: 3, name: 'Кава', type: 'physical', digital_file_url: null };
+  const stripped = { id: 7, site_id: 3, name: 'Книга', type: 'digital' };
+  const OWNER = { id: 11 };
+  const STRANGER = { id: 99 };
+
+  beforeEach(() => {
+    repo.findById.mockResolvedValue({ ...book });
+    vi.spyOn(ProductRepository, 'findBySiteId').mockResolvedValue([{ ...book }, { ...coffee }]);
+    vi.spyOn(ProductRepository, 'findWithFilters').mockResolvedValue([{ ...book }, { ...coffee }]);
+  });
+
+  describe('getPublic', () => {
+    it('анонімний відвідувач: без файлу, перевірка доступу не виконується', async () => {
+      expect(await ProductService.getPublic(7, undefined)).toEqual(stripped);
+      expect(site).not.toHaveBeenCalled();
+    });
+
+    it('власник отримує повний запис', async () => {
+      expect(await ProductService.getPublic(7, OWNER)).toEqual(book);
+      expect(site).toHaveBeenCalledWith(3, 11);
+    });
+
+    it('сторонній користувач — без файлу', async () => {
+      site.mockResolvedValue({ id: 3, user_id: 11, collaborator_role: null, collaborator_permissions: null });
+      expect(await ProductService.getPublic(7, STRANGER)).toEqual(stripped);
+    });
+
+    it('редактор із секцією commerce — з файлом; глядач і редактор без commerce — без', async () => {
+      site.mockResolvedValue(collaboratorSite('editor', ['commerce']));
+      expect(await ProductService.getPublic(7, STRANGER)).toEqual(book);
+      site.mockResolvedValue(collaboratorSite('viewer', ['commerce']));
+      expect(await ProductService.getPublic(7, STRANGER)).toEqual(stripped);
+      site.mockResolvedValue(collaboratorSite('editor', ['theme']));
+      expect(await ProductService.getPublic(7, STRANGER)).toEqual(stripped);
+    });
+
+    it('404, якщо товару немає', async () => {
+      repo.findById.mockResolvedValue(undefined);
+      const error = await failure(() => ProductService.getPublic(7, OWNER));
+      expect(error.status).toBe(404);
+    });
+  });
+
+  describe('getBySite і list', () => {
+    it('анонімному відвідувачу віддають список без digital_file_url, інші поля й порядок збережено', async () => {
+      const bySite = await ProductService.getBySite(3, undefined);
+      expect(bySite).toEqual([stripped, coffee].map((product) => {
+        const { digital_file_url, ...rest } = product;
+        return rest;
+      }));
+      const listed = await ProductService.list({ siteId: 3 }, undefined);
+      expect(listed.map((product) => product.id)).toEqual([7, 8]);
+      expect(listed.every((product) => !('digital_file_url' in product))).toBe(true);
+    });
+
+    it('власник отримує список як є; доступ перевіряється один раз на сайт', async () => {
+      const bySite = await ProductService.getBySite(3, OWNER);
+      expect(bySite[0].digital_file_url).toBe(FILE);
+      expect(bySite[1]).toEqual(coffee);
+      expect(site).toHaveBeenCalledTimes(1);
+    });
+
+    it('список із товарами кількох сайтів: файл лишається лише там, де є право змінювати товари', async () => {
+      const other = { id: 9, site_id: 4, name: 'Курс', type: 'digital', digital_file_url: 'https://files.test/course.pdf' };
+      ProductRepository.findWithFilters.mockResolvedValue([{ ...book }, { ...other }]);
+      site.mockImplementation(async (siteId) => (siteId === 3 ? OWNER_SITE : { id: 4, user_id: 1, collaborator_role: null, collaborator_permissions: null }));
+      const result = await ProductService.list({ ids: ['7', '9'] }, OWNER);
+      expect(result[0].digital_file_url).toBe(FILE);
+      expect(result[1]).not.toHaveProperty('digital_file_url');
+    });
+
+    it('фільтри передаються в репозиторій без змін', async () => {
+      const filters = { ids: ['7'], categoryId: '2', limit: '5', siteId: '3' };
+      await ProductService.list(filters, undefined);
+      expect(ProductRepository.findWithFilters).toHaveBeenCalledWith(filters);
+      await ProductService.getBySite(3, undefined);
+      expect(ProductRepository.findBySiteId).toHaveBeenCalledWith(3);
+    });
+  });
+});

@@ -3,6 +3,7 @@ const User = require('../models/User');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { signAccessToken } = require('../utils/authTokens');
+const { isAllowedAvatarUrl } = require('../utils/avatarUrl');
 const AuthPolicy = require('../services/AuthPolicy');
 const { sendOtpEmail } = require('../utils/emailService');
 const { deleteFile } = require('../utils/fileUtils');
@@ -29,6 +30,9 @@ exports.register = async (req, res, next) => {
         const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
         if (!passwordRegex.test(password)) {
             return res.status(400).json({ message: 'Пароль занадто слабкий.' });
+        }
+        if (!req.file && selected_avatar_url && !isAllowedAvatarUrl(selected_avatar_url)) {
+            return res.status(400).json({ message: 'Недопустима адреса аватара.' });
         }
         const existingUserByEmail = await User.findByEmail(email);
         if (existingUserByEmail) return res.status(400).json({ message: 'Користувач з таким email вже існує.' });

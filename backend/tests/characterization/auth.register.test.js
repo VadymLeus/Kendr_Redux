@@ -73,6 +73,17 @@ describe('POST /api/auth/register', () => {
   });
 
   it.each([
+    ['зовнішня адреса', 'https://example.test/a.png'],
+    ['відносний шлях із «..»', 'uploads/avatars/custom/../../../.env'],
+    ['каталог користувацьких файлів', '/uploads/avatars/custom/x.webp'],
+  ])('D-SEC-19: аватар «%s» відхиляється — 400 без створення акаунта', async (_label, avatar_url) => {
+    const res = await register(newUser({ avatar_url }));
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ message: 'Недопустима адреса аватара.' });
+    expect(await getUserByEmail('olena@test.local')).toBeUndefined();
+  });
+
+  it.each([
     ['коротший за 8 символів', 'Short1A'],
     ['без великої літери', 'alllowercase1'],
     ['без цифри', 'NoDigitsHere'],

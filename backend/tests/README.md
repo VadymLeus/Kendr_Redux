@@ -43,7 +43,7 @@ npm run test:coverage         # покриття (v8)
 |---|---|
 | `transaction.test.js` | `config/transaction.js`: порядок `getConnection → begin → work → commit → release`, відкат при помилці, збій відкату не приховує причину, з'єднання завжди повертається в пул; те саме на реальній БД через `pool.withTransaction` |
 | `sendServiceError.test.js` | `utils/sendServiceError.js`: `ServiceError` → `res.status(status).json({ message, ...extra })`, решта помилок → `next(error)` |
-| `ProductService.test.js` | `services/ProductService.js`: права доступу (за секціями співавтора), перевірка й нормалізація полів товару, часткове оновлення, ліміт товарів за тарифом власника сайту, правила відгуків; перевіряє виправлення D-SEC-06, D-SEC-18, D-BIZ-03, D-BIZ-10, D-BIZ-11, D-DEAD-08 (v2.0) |
+| `ProductService.test.js` | `services/ProductService.js`: права доступу (за секціями співавтора), перевірка й нормалізація полів товару, часткове оновлення, ліміт товарів за тарифом власника сайту, правила відгуків; перевіряє виправлення D-SEC-06, D-SEC-14, D-SEC-18, D-BIZ-03, D-BIZ-10, D-BIZ-11, D-DEAD-08 (v2.0) |
 | `productValidation.test.js` | `services/productValidation.js`: ціна, знижка товару, залишок, тип товару, знижка категорії (допустимі значення, межі, нечислові й нетипові вхідні дані; D-BIZ-10, D-BIZ-11) |
 | `PageService.test.js` | `services/PageService.js`: права доступу до сторінки (власник, редактор із секцією `editor`, глядач, співавтор без дозволів; D-SEC-06), обов'язкові поля, переклад дубля slug у 400, правила видалення (головна й остання сторінка), D-BLK-05 на рівні сервісу |
 | `OrderService.test.js` | `services/OrderService.js`: оформлення замовлення (перевірки магазину, ліміт неоплачених, залишок, адреса, цифрові товари), оплата LiqPay і Google Pay, списки замовлень, права й білий список статусів; перевіряє виправлення D-BIZ-01, D-BIZ-02, D-BIZ-08, D-BIZ-09, D-SEC-02, D-SEC-03, D-SEC-07, D-CFG-01 (v2.0): ефективна ціна позицій, перевірка кількості, сумарний залишок і блокування рядків, списання при післяплаті, повернення залишку при скасуванні |
@@ -54,8 +54,11 @@ npm run test:coverage         # покриття (v8)
 | `PlanPolicy.test.js` | `services/PlanPolicy.js`: ліміти тарифів FREE, PLUS, ADMIN, невідомий тариф, регістр і пробіли; перевірка ліміту сайтів, товарів і категорій (D-BIZ-03) |
 | `AuthPolicy.test.js` | `services/AuthPolicy.js`: хто є співробітником, які призначення коду дозволено повторно надсилати, кому код можна надіслати, хто завершує вхід до панелі (D-SEC-04) |
 | `authTokens.test.js` | `utils/authTokens.js`: склад токена, токен лише для відновлення, відмова видавати токен без `token_version` (D-SEC-10) |
+| `avatarUrl.test.js` | `utils/avatarUrl.js`: допустимі адреси аватара (типові, ресурси Cloudinary свого акаунта), відхилення зовнішніх адрес, `..`, чужих акаунтів, не рядків (D-SEC-19) |
+| `fileUtils.test.js` | `utils/fileUtils.js`: `deleteFile` видаляє лише файли в `uploads/` (веб-шлях зі слешем, відносний, абсолютний), блокує вихід за каталог, не чіпає типові аватари (D-SEC-19, D-ARC-12) |
+| `productVisibility.test.js` | `services/productVisibility.js`: прибирання `digital_file_url`, одне рішення про доступ на сайт (D-SEC-14) |
 | `siteAccess.test.js` | `services/siteAccess.js`: вимоги `OWNER`, `read`, `write` за роллю й секціями співавтора, розбір дозволів із JSON, `requireSiteAccess` і `hasSiteAccess` (D-SEC-06) |
-| `SiteService.test.js` | `services/SiteService.js`: створення сайту (вимкнене створення, адреса, шаблон, транзакція), каталог, відкриття за адресою (статуси suspended, probation, private), збереження налаштувань (права, блокування, статус), перейменування, скидання до шаблону, закріплення, аналітика; фіксує D-ARC-10, D-BIZ-03, D-SEC-05, D-SEC-17 на рівні сервісу; перевіряє виправлення D-SEC-06 (права за групами полів, скидання й закріплення лише власником, аналітика за секцією `overview`) |
+| `SiteService.test.js` | `services/SiteService.js`: створення сайту (вимкнене створення, адреса, шаблон, транзакція), каталог, відкриття за адресою (статуси suspended, probation, private), збереження налаштувань (права, блокування, статус), перейменування, скидання до шаблону, закріплення, аналітика; фіксує D-ARC-10, D-BIZ-03, D-SEC-17 на рівні сервісу; перевіряє виправлення D-SEC-05, D-SEC-14, D-SEC-06 (права за групами полів, скидання й закріплення лише власником, аналітика за секцією `overview`) |
 | `siteValidation.test.js` | `services/siteValidation.js`: правила адреси сайту (довжина, символи, зарезервовані й прості послідовності, D-BIZ-05) і назви сайту |
 | `siteTemplate.test.js` | `services/siteTemplate.js`: перегенерація ідентифікаторів блоків, розбір вмісту шаблону (рядок, об'єкт, масив блоків), значення за замовчуванням |
 | `siteSettings.test.js` | `services/siteSettings.js`: складання даних оновлення налаштувань сайту, шапка й назва, шифрування ключа LiqPay, заборона зміни статусу заблокованого сайту, віднесення полів налаштувань до секцій співавтора (`requiredSections`) |
@@ -82,9 +85,9 @@ npm run test:coverage         # покриття (v8)
 | D-BIZ-09 | `orders.checkout.input.test.js` | кількість у позиції — ціле число не менше 1, інакше 400 (виправлено в v2.0, крок 7.3) |
 | D-ARC-10 | `orders.checkout.input.test.js`, `sites.create.test.js`, `sites.access.test.js`, `products.test.js`, `team.test.js` | збій SQL повертається як 400 із текстом БД; помилки клієнта (немає шаблону, дубль категорії, відсутній пароль) повертаються як 500; код `createSite` визначається за фрагментом тексту |
 | D-CFG-01 | `orders.checkout.test.js`, `orders.payment.test.js`, `transactions.upgrade.test.js` | `sandbox: 1` і статус `sandbox` діють лише за `LIQPAY_SANDBOX=1` (виправлено в v2.0, крок 7.1) |
-| D-SEC-05 | `sites.public.test.js` | `author_email` віддається без токена двома маршрутами (`/info/:id`, `/:site_path`), перебір ідентифікаторів збирає email власників |
+| D-SEC-05 | `sites.public.test.js` | `/info/:id` не віддає email; `/:site_path` віддає `author_email` лише власнику, співавторам із секцією `settings` і персоналу; перебір ідентифікаторів не збирає жодного email (виправлено в v2.0, крок 7.4b) |
 | D-SEC-06 | `sites.access.test.js`, `pages.test.js`, `products.test.js`, `orders.access.test.js`, `forms.test.js`, `userTemplates.test.js` | права співавтора за роллю й секціями: налаштування за групами полів, ключі LiqPay лише з секцією `commerce`, сторінки, товари, категорії, відгуки, замовлення, аналітика, заявки з форм (секція `overview`); скидання, закріплення сайту й шаблони користувача лише власником (виправлено в v2.0, кроки 7.2a і 7.2b) |
-| D-SEC-14 | `products.test.js` | `digital_file_url` входить до відповідей чотирьох публічних маршрутів |
+| D-SEC-14 | `products.test.js`, `ProductService.test.js`, `SiteService.test.js` | `digital_file_url` у чотирьох публічних маршрутах лишається лише власнику й редактору із секцією `commerce`, решті — немає (виправлено в v2.0, крок 7.4b) |
 | D-SEC-15 | `team.test.js` | список співавторів із поштою й правами бачать власник, співавтори із секцією `settings` і персонал платформи, решта — 403 (виправлено в v2.0, крок 7.2b) |
 | D-SEC-16 | `team.test.js` | сайт блокують лише власник і співавтор-редактор з дозволом; сторонній, глядач і співавтор іншого сайту отримують 403, чуже блокування не знімається (виправлено в v2.0, крок 7.2b) |
 | D-SEC-17 | `sites.public.test.js`, `sites.create.test.js` | шаблони `admin_only` видно анонімно, сайт створюється з неготового шаблону |
@@ -101,12 +104,12 @@ npm run test:coverage         # покриття (v8)
 | D-SEC-09 | `auth.tokens.test.js` | без `JWT_SECRET` токен із секретом `secret_key` приймається, вхід підписує ним, відновлення акаунта повертає 500 |
 | D-SEC-10 | `auth.tokens.test.js`, `auth.google.test.js`, `users.lifecycle.test.js` | усі токени несуть `token_version` (вхід, `refresh`, відновлення, перший вхід через Google, зміна пароля), токен без нього відхиляється (виправлено в v2.0, крок 7.4a) |
 | D-SEC-12 | `auth.register.test.js` | код одноразового пароля повністю визначається `Math.random()` |
-| D-SEC-19 | `users.profile.test.js` | відносний шлях із `..` в `avatar_url` дозволяє видалити довільний файл у каталозі backend |
+| D-SEC-19 | `users.profile.test.js`, `auth.register.test.js`, `avatarUrl.test.js`, `fileUtils.test.js` | `avatar-url` і реєстрація приймають лише типовий аватар або ресурс Cloudinary свого акаунта; `deleteFile` не видаляє нічого поза `uploads/`, навіть якщо шлях із `..` уже лежить у БД (виправлено в v2.0, крок 7.4b) |
 | D-SEC-20 | `auth.guards.test.js`, `auth.register.test.js` | після блокування IP підбір коду триває з іншої адреси, лічильника на акаунт немає |
 | D-SEC-21 | `users.profile.test.js` | зміна пароля збільшує `token_version`, відкликає старі токени й повертає новий токен (виправлено в v2.0, крок 7.4a) |
 | D-SEC-22 | `auth.google.test.js` | Google прив'язується до наявного акаунта лише після підтвердження його пошти; непідтверджений акаунт із паролем зловмисника не змінюється (виправлено в v2.0, крок 7.4a) |
 | D-SEC-23 | `users.lifecycle.test.js` | для видаленого акаунта відкрито лише `GET /api/auth/me` і `POST /api/users/me/restore` за точним шляхом, рядок запиту не береться до уваги (виправлено в v2.0, крок 7.4a) |
-| D-SEC-24 | `support.test.js` | сторонній подає апеляцію від імені чужого робочого сайту, власнику вже відмовлено |
+| D-SEC-24 | `support.test.js` | апеляцію подає лише власник сайту й лише на заблокований сайт; чужий і неіснуючий сайт — 403, працюючий — 400, звернення не створюється (виправлено в v2.0, крок 7.4b) |
 | D-SEC-25 | `auth.guards.test.js` | Turnstile вимикає змінна `TURNSTILE_DISABLED=true` (ігнорується при `NODE_ENV=production`), ім'я хоста й `X-Forwarded-Host` ролі не відіграють (виправлено в v2.0, крок 7.4a) |
 | D-SEC-26 | `auth.login.test.js`, `auth.admin.test.js` | стан акаунта (заблокований, непідтверджений, не staff) і його email віддаються до перевірки пароля |
 | D-SEC-28 | `forms.test.js` | статус заявки чужого сайту змінюється через власний `siteId` у URL; після виправлення вибірка й зміна заявки виконуються за парою `id` і `site_id`, чужа заявка дає 404 (виправлено в v2.0, крок 7.2b) |
@@ -114,8 +117,8 @@ npm run test:coverage         # покриття (v8)
 | D-BIZ-06 | `users.lifecycle.test.js` | видалення акаунта дає 500, акаунт позначено видаленим, сайти лишаються опублікованими |
 | D-BIZ-13 | `auth.register.test.js`, `auth.login.test.js`, `users.profile.test.js` | відсутні й некоректні поля дають 500 із текстом помилки, порожнє ім'я зберігається |
 | D-BIZ-14 | `users.lifecycle.test.js` | подія БД для видалення акаунтів відсутня, акаунт стирається лише при вході власника після 14 днів |
-| D-BIZ-15 | `users.profile.test.js` | повторне збереження профілю чергує slug `olena` і `olena-1` |
-| D-ARC-12 | `users.profile.test.js` | файл за штатним шляхом `/uploads/avatars/custom/…` при заміні аватара не видаляється |
+| D-BIZ-15 | `users.profile.test.js` | повторне збереження профілю з тим самим іменем не змінює `slug` (виправлено в v2.0, крок 7.4b) |
+| D-ARC-12 | `users.profile.test.js`, `fileUtils.test.js` | файл за штатним шляхом `/uploads/avatars/custom/…` видаляється при заміні аватара; початковий слеш знімається (виправлено в v2.0, крок 7.4b) |
 | D-CON-01 | `support.test.js` | `PUT /api/support/admin/:id/status` дає 404, модератор бачить список, але не відкриває звернення, не відповідає й не змінює статус |
 | D-CON-05 | `users.profile.test.js` | публічний профіль віддає попередження без причини |
 

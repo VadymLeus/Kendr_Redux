@@ -5,7 +5,7 @@ const sendServiceError = require('../utils/sendServiceError');
 
 exports.getProductById = async (req, res, next) => {
     try {
-        const product = await ProductService.getById(req.params.productId);
+        const product = await ProductService.getPublic(req.params.productId, req.user);
         res.json(product);
     } catch (error) {
         sendServiceError(error, res, next);
@@ -15,7 +15,7 @@ exports.getProductById = async (req, res, next) => {
 exports.getProductsForSite = async (req, res, next) => {
     try {
         const { siteId } = req.params;
-        const products = await ProductService.getBySite(siteId);
+        const products = await ProductService.getBySite(siteId, req.user);
         res.json(products);
     } catch (error) {
         next(error);
@@ -34,7 +34,7 @@ exports.getProducts = async (req, res, next) => {
             categoryId: category,
             limit: limit,
             siteId: siteId
-        });
+        }, req.user);
         res.json(products);
     } catch (error) {
         next(error);

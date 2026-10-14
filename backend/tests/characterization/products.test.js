@@ -119,25 +119,35 @@ describe('цифрові товари: посилання на файл у пу�
     await createPage(site, { slug: 'home', is_homepage: 1 });
   });
 
-  // KNOWN-DEFECT D-SEC-14: digital_file_url входить у відповіді публічних маршрутів, тож файл доступний без покупки.
-  it('KNOWN-DEFECT D-SEC-14: GET /api/products/:id віддає digital_file_url без токена', async () => {
-    const res = await request(app).get(`/api/products/${digital.id}`);
-    expect(res.body.digital_file_url).toBe(FILE_URL);
+  // D-SEC-14 виправлено: посилання на файл бачать лише ті, хто може змінювати товари сайту (власник і редактор із секцією commerce).
+  const READ_ROUTES = [
+    ['GET /api/products/:id', () => `/api/products/${digital.id}`, (body) => body],
+    ['GET /api/products/site/:siteId', () => `/api/products/site/${site.id}`, (body) => body.find((p) => p.id === digital.id)],
+    ['GET /api/products?siteId=', () => `/api/products?siteId=${site.id}`, (body) => body.find((p) => p.id === digital.id)],
+    ['GET /api/sites/:site_path', () => '/api/sites/acme-shop', (body) => body.products.find((p) => p.id === digital.id)],
+  ];
+
+  describe.each(READ_ROUTES)('%s', (_label, url, pick) => {
+    it.each(['anon', 'stranger', 'viewer', 'themeOnly', 'bare'])('D-SEC-14: для %s digital_file_url немає, решта полів товару є', async (name) => {
+      const res = await withAuth(request(app).get(url()), actor(name));
+      expect(res.status).toBe(200);
+      const item = pick(res.body);
+      expect(item).toMatchObject({ id: digital.id, name: 'Електронна книга', type: 'digital' });
+      expect(item).not.toHaveProperty('digital_file_url');
+      expect(JSON.stringify(res.body)).not.toContain(FILE_URL);
+    });
+
+    it.each(['owner', 'editor'])('D-SEC-14: для %s digital_file_url віддається (форма редагування товару)', async (name) => {
+      const res = await withAuth(request(app).get(url()), actor(name));
+      expect(pick(res.body).digital_file_url).toBe(FILE_URL);
+    });
   });
 
-  it('KNOWN-DEFECT D-SEC-14: GET /api/products/site/:siteId віддає digital_file_url без токена', async () => {
-    const res = await request(app).get(`/api/products/site/${site.id}`);
-    expect(res.body.find((p) => p.id === digital.id).digital_file_url).toBe(FILE_URL);
-  });
-
-  it('KNOWN-DEFECT D-SEC-14: GET /api/products?siteId= віддає digital_file_url без токена', async () => {
-    const res = await request(app).get(`/api/products?siteId=${site.id}`);
-    expect(res.body.find((p) => p.id === digital.id).digital_file_url).toBe(FILE_URL);
-  });
-
-  it('KNOWN-DEFECT D-SEC-14: GET /api/sites/:site_path віддає digital_file_url у списку товарів', async () => {
-    const res = await request(app).get('/api/sites/acme-shop');
-    expect(res.body.products.find((p) => p.id === digital.id).digital_file_url).toBe(FILE_URL);
+  it('D-SEC-14: права на інший сайт файл не відкривають: власник чужого сайту його не бачить', async () => {
+    await createSite(stranger, { site_path: 'other-shop' });
+    const res = await withAuth(request(app).get(`/api/products/${digital.id}`), stranger);
+    expect(res.status).toBe(200);
+    expect(res.body).not.toHaveProperty('digital_file_url');
   });
 });
 

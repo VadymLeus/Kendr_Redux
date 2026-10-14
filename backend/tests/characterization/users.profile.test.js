@@ -1,6 +1,6 @@
 // Профіль користувача (/api/users): публічний профіль, редагування, зміна пароля, аватар.
-// Фіксує D-BIZ-04 (зміна пароля без перевірки складності), D-BIZ-13 (немає валідації), D-BIZ-15 (slug мінливий при збереженні),
-// D-SEC-19 (довільне видалення файлів через avatar-url), виправлення D-SEC-21 (зміна пароля відкликає сесії), D-CON-05, D-ARC-12.
+// Фіксує D-BIZ-04 (зміна пароля без перевірки складності), D-BIZ-13 (немає валідації), виправлення D-BIZ-15 (slug не змінюється при збереженні),
+// виправлення D-SEC-19 і D-ARC-12 (avatar-url і видалення файлів аватарів), виправлення D-SEC-21 (зміна пароля відкликає сесії), D-CON-05.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
@@ -204,14 +204,14 @@ describe('PUT /api/users/profile', () => {
     expect(res.body.user.username).toBe('Mykola_Bondar');
   });
 
-  // KNOWN-DEFECT D-BIZ-15: форма профілю надсилає username при кожному збереженні, а slug перевипускається щоразу;
-  // власний slug вважається зайнятим, тож публічна адреса профілю чергується між olena і olena-1.
-  it('KNOWN-DEFECT D-BIZ-15: повторне збереження того самого імені змінює slug (olena → olena-1 → olena)', async () => {
+  it('D-BIZ-15: повторне збереження того самого імені не змінює slug', async () => {
     const first = await putProfile({ username: 'olena', bio: 'один' });
-    expect(first.body.user.slug).toBe('olena-1');
+    expect(first.status).toBe(200);
+    expect(first.body.user.slug).toBe('olena');
     const second = await putProfile({ username: 'olena', bio: 'два' });
     expect(second.body.user.slug).toBe('olena');
-    expect((await getProfile('olena-1')).status).toBe(404);
+    expect((await getProfile('olena')).status).toBe(200);
+    expect(await getUser(owner.id)).toMatchObject({ slug: 'olena', bio: 'два' });
   });
 
   it('телефон: допускає цифри й символи + - ( ), інше — 400', async () => {
@@ -387,32 +387,54 @@ describe('аватар', () => {
     expect(res.body).toEqual({ message: 'Файл не завантажено.' });
   });
 
-  // KNOWN-DEFECT D-ARC-12: deleteFile вважає шлях зі слешем на початку абсолютним (path.isAbsolute), тож гілка, що знімає
-  // початковий слеш, недосяжна, а штатний шлях аватара /uploads/avatars/custom/... відхиляється як вихід за межі каталогу.
-  it('KNOWN-DEFECT D-ARC-12: файл за штатним шляхом /uploads/avatars/custom/… при заміні аватара не видаляється', async () => {
+  it('D-ARC-12: файл за штатним шляхом /uploads/avatars/custom/… видаляється при заміні аватара', async () => {
     const name = `d-arc-12-${Date.now()}.webp`;
     const file = writeSentinel('uploads', 'avatars', 'custom', name);
     await patchUser(owner, { avatar_url: `/uploads/avatars/custom/${name}` });
-    const res = await quietly(() =>
-      as(request(app).put('/api/users/profile/avatar-url'), owner).send({ avatar_url: 'https://example.test/new.png' })
-    );
+    const res = await as(request(app).put('/api/users/profile/avatar-url'), owner).send({ avatar_url: '/uploads/avatars/default/a2.webp' });
     expect(res.status).toBe(200);
-    expect(fs.existsSync(file)).toBe(true);
+    expect(fs.existsSync(file)).toBe(false);
+    expect((await getUser(owner.id)).avatar_url).toBe('/uploads/avatars/default/a2.webp');
   });
 
-  // KNOWN-DEFECT D-SEC-19: avatar-url зберігає довільний рядок, а при наступній заміні він передається в deleteFile. Перевірка в
-  // deleteFile лише вимагає, щоб підсумковий шлях був у каталозі backend, тож відносний шлях із «..» видаляє будь-який файл у ньому
-  // (конфіги, .env, файли інших користувачів). У тесті видаляється власний файл-мітка в backend/tests/.tmp.
-  it('KNOWN-DEFECT D-SEC-19: відносний шлях із «..» у avatar-url дозволяє видалити довільний файл у каталозі backend', async () => {
+  it.each([
+    ['зовнішня адреса', 'https://example.test/new.png'],
+    ['відносний шлях із «..»', 'uploads/avatars/custom/../../../.env'],
+    ['«..» усередині типового каталогу', '/uploads/avatars/default/../custom/x.webp'],
+    ['власний каталог користувацьких файлів', '/uploads/avatars/custom/x.webp'],
+    ['Cloudinary іншого акаунта', 'https://res.cloudinary.com/other-cloud/image/upload/a.webp'],
+    ['Cloudinary без https', 'http://res.cloudinary.com/test/image/upload/a.webp'],
+    ['порожній рядок', ''],
+    ['число', 123],
+  ])('D-SEC-19: avatar-url відхиляє значення «%s»', async (_label, avatar_url) => {
+    const before = (await getUser(owner.id)).avatar_url;
+    const res = await as(request(app).put('/api/users/profile/avatar-url'), owner).send({ avatar_url });
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ message: 'Недопустима адреса аватара.' });
+    expect((await getUser(owner.id)).avatar_url).toBe(before);
+  });
+
+  it('D-SEC-19: avatar-url без поля відхиляється', async () => {
+    const res = await as(request(app).put('/api/users/profile/avatar-url'), owner).send({});
+    expect(res.status).toBe(400);
+  });
+
+  it.each(['/uploads/avatars/default/a1.webp', 'https://res.cloudinary.com/test/image/upload/v1/kendr/general/a.webp'])(
+    'D-SEC-19: avatar-url приймає %s', async (avatar_url) => {
+      const res = await as(request(app).put('/api/users/profile/avatar-url'), owner).send({ avatar_url });
+      expect(res.status).toBe(200);
+      expect(res.body.user.avatar_url).toBe(avatar_url);
+    }
+  );
+
+  it('D-SEC-19: шлях із «..», що вже лежить у БД, не дозволяє видалити файл поза каталогом uploads', async () => {
     const name = `d-sec-19-${Date.now()}.txt`;
     const file = writeSentinel('tests', '.tmp', name);
-    const stored = await as(request(app).put('/api/users/profile/avatar-url'), owner)
-      .send({ avatar_url: `uploads/avatars/custom/../../../tests/.tmp/${name}` });
-    expect(stored.status).toBe(200);
-    expect(fs.existsSync(file)).toBe(true);
-
-    const replaced = await as(request(app).put('/api/users/profile/avatar-url'), owner).send({ avatar_url: 'https://example.test/new.png' });
+    await patchUser(owner, { avatar_url: `uploads/avatars/custom/../../../tests/.tmp/${name}` });
+    const replaced = await quietly(() =>
+      as(request(app).put('/api/users/profile/avatar-url'), owner).send({ avatar_url: '/uploads/avatars/default/a2.webp' })
+    );
     expect(replaced.status).toBe(200);
-    expect(fs.existsSync(file)).toBe(false);
+    expect(fs.existsSync(file)).toBe(true);
   });
 });

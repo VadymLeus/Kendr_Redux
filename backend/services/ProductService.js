@@ -5,6 +5,7 @@ const UserRepository = require('../repositories/UserRepository');
 const { requireSiteAccess, hasSiteAccess, write } = require('./siteAccess');
 const { ServiceError } = require('./ServiceError');
 const PlanPolicy = require('./PlanPolicy');
+const { visibleProducts } = require('./productVisibility');
 const { readPrice, readSalePercentage, readStock, readType } = require('./productValidation');
 
 class ProductService {
@@ -16,12 +17,24 @@ class ProductService {
         return product;
     }
 
-    static getBySite(siteId) {
-        return ProductRepository.findBySiteId(siteId);
+    static async getPublic(productId, viewer) {
+        const product = await ProductService.getById(productId);
+        const [visible] = await ProductService.visibleTo(viewer, [product]);
+        return visible;
     }
 
-    static list(filters) {
-        return ProductRepository.findWithFilters(filters);
+    static async getBySite(siteId, viewer) {
+        return ProductService.visibleTo(viewer, await ProductRepository.findBySiteId(siteId));
+    }
+
+    static async list(filters, viewer) {
+        return ProductService.visibleTo(viewer, await ProductRepository.findWithFilters(filters));
+    }
+
+    static visibleTo(viewer, products) {
+        return visibleProducts(products, (siteId) => (
+            viewer ? hasSiteAccess(siteId, viewer.id, write('commerce')) : false
+        ));
     }
 
     static async getAccessible(productId, userId, forbiddenMessage) {

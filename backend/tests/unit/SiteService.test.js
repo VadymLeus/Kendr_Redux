@@ -148,7 +148,7 @@ describe('getInfoById', () => {
     expect(repo.findInfoById).toHaveBeenCalledWith(9);
   });
 
-  it('повертає лише публічні поля разом з даними автора (KNOWN-DEFECT D-SEC-05: email віддається без автентифікації)', async () => {
+  it('повертає лише публічні поля разом з іменем і аватаром автора, без email (D-SEC-05)', async () => {
     repo.findInfoById.mockResolvedValue({
       site_path: 'shop', title: 'Магазин', is_online_payment_enabled: 1, is_cod_enabled: 0,
       author: 'ann', author_email: 'ann@test.local', author_avatar: '/a.png', secret: 'не віддається',
@@ -156,9 +156,9 @@ describe('getInfoById', () => {
     const info = await SiteService.getInfoById(9);
     expect(info).toEqual({
       site_path: 'shop', title: 'Магазин', is_online_payment_enabled: 1, is_cod_enabled: 0,
-      author: 'ann', author_email: 'ann@test.local', author_avatar: '/a.png',
+      author: 'ann', author_avatar: '/a.png',
     });
-    expect(Object.keys(info)).toHaveLength(7);
+    expect(info).not.toHaveProperty('author_email');
   });
 });
 
@@ -587,7 +587,7 @@ describe('getByPath', () => {
     repo.findTags.mockResolvedValue([{ id: 1, name: 'їжа' }]);
     const result = await SiteService.getByPath('shop', undefined, undefined);
     expect(result).toMatchObject({
-      id: 7, author: 'ann', author_email: 'ann@test.local', author_avatar: '/a.png',
+      id: 7, author: 'ann', author_avatar: '/a.png',
       is_collaborator: false, my_permissions: [], page_content: page.block_content, page_id: 21, tags: [{ id: 1, name: 'їжа' }],
     });
     expect(result.page).toBe(page);
@@ -595,9 +595,69 @@ describe('getByPath', () => {
     expect(repo.findTags).toHaveBeenCalledWith(7);
   });
 
-  it('KNOWN-DEFECT D-SEC-05: email автора віддається анонімному відвідувачу', async () => {
-    const result = await SiteService.getByPath('shop', undefined, undefined);
-    expect(result.author_email).toBe('ann@test.local');
+  describe('email автора (D-SEC-05)', () => {
+    it('анонімному відвідувачу не віддається', async () => {
+      const result = await SiteService.getByPath('shop', undefined, undefined);
+      expect(result).not.toHaveProperty('author_email');
+    });
+
+    it('стороннім користувачам і співавторам без доступу до налаштувань не віддається', async () => {
+      expect(await SiteService.getByPath('shop', undefined, visitor)).not.toHaveProperty('author_email');
+      collaborators.findBySiteAndUser.mockResolvedValue({ role: 'editor', permissions: ['theme'] });
+      expect(await SiteService.getByPath('shop', undefined, visitor)).not.toHaveProperty('author_email');
+    });
+
+    it('власнику віддається', async () => {
+      expect((await SiteService.getByPath('shop', undefined, owner)).author_email).toBe('ann@test.local');
+    });
+
+    it.each([['viewer'], ['editor']])('співавтору з роллю %s і секцією settings віддається', async (role) => {
+      collaborators.findBySiteAndUser.mockResolvedValue({ role, permissions: ['settings'] });
+      expect((await SiteService.getByPath('shop', undefined, visitor)).author_email).toBe('ann@test.local');
+    });
+
+    it('персоналу платформи віддається', async () => {
+      users.findRole.mockResolvedValue('moderator');
+      expect((await SiteService.getByPath('shop', undefined, visitor)).author_email).toBe('ann@test.local');
+    });
+  });
+
+  describe('посилання на файл цифрових товарів (D-SEC-14)', () => {
+    const products = [
+      { id: 1, site_id: 7, name: 'Книга', type: 'digital', digital_file_url: 'https://files.test/a.pdf' },
+      { id: 2, site_id: 7, name: 'Кава', type: 'physical', digital_file_url: null },
+    ];
+    beforeEach(() => {
+      repo.findByPath.mockResolvedValue(makeSite({ products: products.map((product) => ({ ...product })) }));
+    });
+
+    it('анонімний відвідувач і сторонній користувач бачать товари без digital_file_url', async () => {
+      for (const viewer of [undefined, visitor]) {
+        const result = await SiteService.getByPath('shop', undefined, viewer);
+        expect(result.products).toEqual([
+          { id: 1, site_id: 7, name: 'Книга', type: 'digital' },
+          { id: 2, site_id: 7, name: 'Кава', type: 'physical' },
+        ]);
+      }
+    });
+
+    it('власник і редактор із секцією commerce отримують повні записи', async () => {
+      expect((await SiteService.getByPath('shop', undefined, owner)).products[0].digital_file_url).toBe('https://files.test/a.pdf');
+      collaborators.findBySiteAndUser.mockResolvedValue({ role: 'editor', permissions: ['commerce'] });
+      expect((await SiteService.getByPath('shop', undefined, visitor)).products[0].digital_file_url).toBe('https://files.test/a.pdf');
+    });
+
+    it('глядач із секцією commerce і редактор без неї файл не бачать', async () => {
+      collaborators.findBySiteAndUser.mockResolvedValue({ role: 'viewer', permissions: ['commerce'] });
+      expect((await SiteService.getByPath('shop', undefined, visitor)).products[0]).not.toHaveProperty('digital_file_url');
+      collaborators.findBySiteAndUser.mockResolvedValue({ role: 'editor', permissions: ['theme'] });
+      expect((await SiteService.getByPath('shop', undefined, visitor)).products[0]).not.toHaveProperty('digital_file_url');
+    });
+
+    it('персонал платформи файл не бачить', async () => {
+      users.findRole.mockResolvedValue('admin');
+      expect((await SiteService.getByPath('shop', undefined, visitor)).products[0]).not.toHaveProperty('digital_file_url');
+    });
   });
 
   it('якщо автора не знайдено, поля автора не додаються', async () => {

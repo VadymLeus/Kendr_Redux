@@ -10,6 +10,7 @@ const { ServiceError } = require('./ServiceError');
 const PlanPolicy = require('./PlanPolicy');
 const { requireSiteAccess, isAllowed, OWNER, read, write } = require('./siteAccess');
 const { validateSlug, validateSiteCreation } = require('./siteValidation');
+const { visibleProducts } = require('./productVisibility');
 const { regenerateBlockIds, readTemplate, parseTemplateContent } = require('./siteTemplate');
 const { buildSettingsUpdate, assertStatusChangeAllowed, requiredSections } = require('./siteSettings');
 const { v4: uuidv4 } = require('uuid');
@@ -53,7 +54,6 @@ class SiteService {
             is_online_payment_enabled: site.is_online_payment_enabled,
             is_cod_enabled: site.is_cod_enabled,
             author: site.author,
-            author_email: site.author_email,
             author_avatar: site.author_avatar
         };
     }
@@ -177,15 +177,15 @@ class SiteService {
         const author = await UserRepository.findAuthor(site.user_id);
         if (author) {
             site.author = author.username;
-            site.author_email = author.email;
             site.author_avatar = author.avatar_url;
         }
         let isStaff = false;
         let isCollaborator = false;
         let myPermissions = [];
+        let collaborator = null;
         if (currentUser) {
             isStaff = await SiteService.isStaff(currentUser.id);
-            const collaborator = await CollaboratorRepository.findBySiteAndUser(site.id, currentUser.id);
+            collaborator = await CollaboratorRepository.findBySiteAndUser(site.id, currentUser.id);
             if (collaborator) {
                 isCollaborator = true;
                 const permissions = collaborator.permissions;
@@ -193,6 +193,7 @@ class SiteService {
             }
         }
         const isOwner = Boolean(currentUser && currentUser.id === site.user_id);
+        const canManage = (requirement) => Boolean(currentUser) && isAllowed(site.user_id, collaborator, currentUser.id, requirement);
         if (site.status === 'suspended' && !isStaff) {
             throw new ServiceError(403, 'Цей сайт заблоковано за порушення правил платформи.', { isSuspended: true });
         }
@@ -208,6 +209,13 @@ class SiteService {
         if (!page) return null;
         const tags = await SiteRepository.findTags(site.id);
         site.liqpay_private_key = site.liqpay_private_key ? '********' : '';
+        if (author && (isStaff || canManage(read('settings')))) {
+            site.author_email = author.email;
+        }
+        if (Array.isArray(site.products)) {
+            const canManageCommerce = canManage(write('commerce'));
+            site.products = await visibleProducts(site.products, () => canManageCommerce);
+        }
         return {
             ...site,
             is_collaborator: isCollaborator,

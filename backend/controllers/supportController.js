@@ -27,6 +27,14 @@ exports.createTicket = async (req, res, next) => {
         }
         let ticketType = 'general';
         if (siteId) {
+            const [sites] = await connection.query('SELECT user_id, status FROM sites WHERE id = ?', [siteId]);
+            const site = sites[0];
+            if (!site || String(site.user_id) !== String(userId)) {
+                return res.status(403).json({ message: 'Апеляцію можна подати лише на власний сайт.' });
+            }
+            if (site.status !== 'suspended') {
+                return res.status(400).json({ message: 'Апеляцію можна подати лише на заблокований сайт.' });
+            }
             ticketType = 'appeal';
             const [existingAppeals] = await connection.query(
                 'SELECT id FROM site_appeals WHERE site_id = ?', 

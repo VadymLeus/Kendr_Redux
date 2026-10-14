@@ -356,7 +356,7 @@ class SiteRepository {
   static async findInfoById(siteId) {
     const [sites] = await db.query(`
         SELECT s.site_path, s.title, s.is_online_payment_enabled, s.is_cod_enabled,
-               u.username as author, u.email as author_email, u.avatar_url as author_avatar
+               u.username as author, u.avatar_url as author_avatar
         FROM sites s
         LEFT JOIN users u ON s.user_id = u.id
         WHERE s.id = ?

@@ -1,12 +1,11 @@
 // Підтримка (/api/support): звернення, відповіді, статуси, апеляції щодо сайтів.
-// Фіксує D-CON-01 (маршрут адмін-панелі не існує, модератор бачить список, але не може працювати зі зверненнями) і D-SEC-24
-// (апеляцію можна подати від імені чужого сайту й заблокувати справжню). Завантаження вкладень (Cloudinary) не охоплене.
+// Фіксує D-CON-01 (маршрут адмін-панелі не існує, модератор бачить список, але не може працювати зі зверненнями) і виправлення
+// D-SEC-24 (апеляцію подає лише власник заблокованого сайту). Завантаження вкладень (Cloudinary) не охоплене.
 import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import { app } from '../helpers/app.js';
 import { useTestDatabase } from '../helpers/suite.js';
 import { authHeader } from '../helpers/auth.js';
-import { quietly } from '../helpers/outbound.js';
 import { query } from '../helpers/testDb.js';
 import {
   createUser, createSite, createTicket, addTicketReply, getTicket, getTicketReplies, countRows,
@@ -104,25 +103,34 @@ describe('POST /api/support (створення звернення)', () => {
     expect(await countRows('support_tickets')).toBe(1);
   });
 
-  // KNOWN-DEFECT D-SEC-24: siteId береться з тіла запиту без перевірки, що сайт належить автору й заблокований.
-  // Сторонній користувач займає єдину апеляцію чужого сайту, і власник уже не може її подати.
-  it('KNOWN-DEFECT D-SEC-24: сторонній подає апеляцію від імені чужого робочого сайту, власнику вже відмовлено', async () => {
-    const site = await createSite(owner, { status: 'published' });
+  // D-SEC-24 виправлено: апеляцію подає лише власник сайту, і лише коли сайт заблоковано.
+  it('D-SEC-24: сторонній не подає апеляцію від імені чужого сайту, власник її подає', async () => {
+    const site = await createSite(owner, { status: 'suspended' });
     const squatted = await open(other, { subject: 'Апеляція', body: 'Текст', siteId: site.id });
-    expect(squatted.status).toBe(201);
-    expect(squatted.body.type).toBe('appeal');
-    const appeals = await query('SELECT user_id FROM site_appeals WHERE site_id = ?', [site.id]);
-    expect(appeals[0].user_id).toBe(other.id);
+    expect(squatted.status).toBe(403);
+    expect(squatted.body).toEqual({ message: 'Апеляцію можна подати лише на власний сайт.' });
+    expect(await countRows('support_tickets')).toBe(0);
+    expect(await countRows('site_appeals')).toBe(0);
 
     const rightful = await open(owner, { subject: 'Моя апеляція', body: 'Текст', siteId: site.id });
-    expect(rightful.status).toBe(400);
-    expect(rightful.body.message).toBe('Для цього сайту вже подано апеляцію. Ви не можете створити нову.');
+    expect(rightful.status).toBe(201);
+    const appeals = await query('SELECT user_id FROM site_appeals WHERE site_id = ?', [site.id]);
+    expect(appeals.map((appeal) => appeal.user_id)).toEqual([owner.id]);
   });
 
-  it('неіснуючий сайт: помилка зовнішнього ключа — 500, звернення відкочується разом із транзакцією', async () => {
-    const res = await quietly(() => open(owner, { subject: 'Апеляція', body: 'Текст', siteId: 999999 }));
-    expect(res.status).toBe(500);
-    expect(res.body.message).toMatch(/foreign key/i);
+  it('D-SEC-24: на працюючий сайт власника апеляцію подати не можна', async () => {
+    const site = await createSite(owner, { status: 'published' });
+    const res = await open(owner, { subject: 'Апеляція', body: 'Текст', siteId: site.id });
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ message: 'Апеляцію можна подати лише на заблокований сайт.' });
+    expect(await countRows('support_tickets')).toBe(0);
+    expect(await countRows('site_appeals')).toBe(0);
+  });
+
+  it('D-SEC-24: неіснуючий сайт — 403 без звернення й без помилки зовнішнього ключа', async () => {
+    const res = await open(owner, { subject: 'Апеляція', body: 'Текст', siteId: 999999 });
+    expect(res.status).toBe(403);
+    expect(res.body).toEqual({ message: 'Апеляцію можна подати лише на власний сайт.' });
     expect(await countRows('support_tickets')).toBe(0);
     expect(await countRows('site_appeals')).toBe(0);
   });

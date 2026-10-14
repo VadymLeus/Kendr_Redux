@@ -8,6 +8,7 @@ const path = require('path');
 const jwt = require('jsonwebtoken');
 const { deleteFile } = require('../utils/fileUtils');
 const { signAccessToken } = require('../utils/authTokens');
+const { isAllowedAvatarUrl } = require('../utils/avatarUrl');
 const db = require('../config/db');
 const PlanPolicy = require('../services/PlanPolicy');
 const getUserStats = async (userId, plan, role) => {
@@ -160,11 +161,14 @@ exports.updateProfile = async (req, res, next) => {
             updates.social_instagram = updates.social_instagram.replace(/[<>]/g, '').trim();
         }
         if (updates.username) {
-            const [rows] = await db.query('SELECT id FROM users WHERE username = ? AND id != ?', [updates.username, userId]);
-            if (rows.length > 0) {
-                return res.status(400).json({ message: 'Це ім\'я користувача вже зайнято.' });
+            const currentUser = await User.findById(userId);
+            if (updates.username !== currentUser.username) {
+                const [rows] = await db.query('SELECT id FROM users WHERE username = ? AND id != ?', [updates.username, userId]);
+                if (rows.length > 0) {
+                    return res.status(400).json({ message: 'Це ім\'я користувача вже зайнято.' });
+                }
+                updates.slug = await User.generateSlug(updates.username);
             }
-            updates.slug = await User.generateSlug(updates.username);
         }
         if (Object.keys(updates).length === 0) {
             return res.status(400).json({ message: 'Немає даних для оновлення' });
@@ -254,6 +258,9 @@ exports.restoreAccount = async (req, res, next) => {
 exports.updateAvatarUrl = async (req, res, next) => {
     const { avatar_url } = req.body;
     const userId = req.user.id;
+    if (!isAllowedAvatarUrl(avatar_url)) {
+        return res.status(400).json({ message: 'Недопустима адреса аватара.' });
+    }
     try {
         const currentUser = await User.findById(userId);
         const oldAvatarUrl = currentUser.avatar_url;
