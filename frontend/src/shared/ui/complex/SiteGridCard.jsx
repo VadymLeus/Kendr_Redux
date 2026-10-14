@@ -283,21 +283,23 @@ const SiteGridCard = ({
                 ${isMaintenance ? 'border-dashed border-(--platform-border-color) bg-[repeating-linear-gradient(45deg,var(--platform-card-bg),var(--platform-card-bg)_10px,var(--platform-bg)_10px,var(--platform-bg)_20px)]' : ''}
             `}>
                 <div className="absolute top-2.5 left-2.5 z-20 flex items-center gap-2">
-                    <button 
-                        className="bg-(--platform-card-bg) shadow-md rounded-full w-8 h-8 flex items-center justify-center cursor-pointer border transition-colors p-0 hover:border-(--platform-accent) hover:text-(--platform-accent) shrink-0"
-                        onClick={(e) => {
-                            e.preventDefault(); e.stopPropagation();
-                            if (canEdit && onTogglePin) onTogglePin(site.id);
-                            if (!canEdit && onToggleFavorite) onToggleFavorite(site.id);
-                        }}
-                        title={canEdit ? "Закріпити" : "В обране"}
-                        style={{ 
-                            color: isPinnedOrFav ? 'var(--platform-accent)' : 'var(--platform-text-secondary)',
-                            borderColor: isPinnedOrFav ? 'var(--platform-accent)' : 'var(--platform-border-color)'
-                        }}
-                    >
-                        <Star size={16} fill={isPinnedOrFav ? "currentColor" : "none"} />
-                    </button>
+                    {!isCollaborator && (
+                        <button 
+                            className="bg-(--platform-card-bg) shadow-md rounded-full w-8 h-8 flex items-center justify-center cursor-pointer border transition-colors p-0 hover:border-(--platform-accent) hover:text-(--platform-accent) shrink-0"
+                            onClick={(e) => {
+                                e.preventDefault(); e.stopPropagation();
+                                if (canEdit && onTogglePin) onTogglePin(site.id);
+                                if (!canEdit && onToggleFavorite) onToggleFavorite(site.id);
+                            }}
+                            title={canEdit ? "Закріпити" : "В обране"}
+                            style={{ 
+                                color: isPinnedOrFav ? 'var(--platform-accent)' : 'var(--platform-text-secondary)',
+                                borderColor: isPinnedOrFav ? 'var(--platform-accent)' : 'var(--platform-border-color)'
+                            }}
+                        >
+                            <Star size={16} fill={isPinnedOrFav ? "currentColor" : "none"} />
+                        </button>
+                    )}
                     {isCollaborator && (
                         <span 
                             className="flex items-center gap-1.5 px-3 py-1.5 bg-(--platform-card-bg) shadow-md rounded-full text-[10px] font-bold uppercase tracking-wider border shrink-0 whitespace-nowrap"
