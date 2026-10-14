@@ -81,4 +81,4 @@
 java -jar plantuml.jar -tpng -Sdpi=110 docs/03-design/to-be/*.puml
 ```
 
-Потрібні Java, Graphviz (`dot`) і шрифт DejaVu Sans.
+Потрібні Java, Graphviz (`dot`) і шрифт DejaVu Sans. `plantuml.jar` — це сама програма PlantUML: її скачують зі сторінки релізів <https://github.com/plantuml/plantuml/releases> (файл `plantuml-<версія>.jar`, у команді його можна перейменувати або вказати повну назву). Поточні PNG згенеровано PlantUML 1.2026.8.

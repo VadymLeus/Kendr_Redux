@@ -9,7 +9,6 @@ skinparam defaultFontSize 12
 skinparam shadowing false
 skinparam sequenceMessageAlign left
 skinparam sequenceArrowThickness 1.2
-skinparam ParticipantPadding 12
 skinparam noteBorderColor #8a8a8a
 
 actor "Покупець" as U
